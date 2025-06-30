@@ -4,7 +4,7 @@ import React from 'react';
 
 const leagueRecords = [
   {
-    year: 2021,
+    year: 2020,
     records: [
       {
         title: '🏆 Largest Margin of Victory',

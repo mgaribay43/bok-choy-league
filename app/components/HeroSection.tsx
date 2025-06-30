@@ -16,7 +16,7 @@ export default function HeroSection() {
       </p>
 
       <Link
-        href="../teams.tsx"
+        href="/teams"
         className="inline-block bg-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-green-800 transition"
       >
         Explore Teams

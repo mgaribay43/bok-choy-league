@@ -1,0 +1,21 @@
+[debug] [2025-06-30T03:05:05.395Z] ----------------------------------------------------------------------
+[debug] [2025-06-30T03:05:05.397Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Mike\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init hosting
+[debug] [2025-06-30T03:05:05.398Z] CLI Version:   14.9.0
+[debug] [2025-06-30T03:05:05.398Z] Platform:      win32
+[debug] [2025-06-30T03:05:05.398Z] Node Version:  v22.17.0
+[debug] [2025-06-30T03:05:05.398Z] Time:          Sun Jun 29 2025 23:05:05 GMT-0400 (Eastern Daylight Time)
+[debug] [2025-06-30T03:05:05.398Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-06-30T03:05:05.403Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-06-30T03:05:05.403Z] > authorizing via signed-in user (mikeyjordan43@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\Mike\Documents\vscode\fantasyleaguesite\bok-choy-league
+

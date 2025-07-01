@@ -11,7 +11,7 @@ export default function Ices() {
         Ice videos will be found here soon.
       </p>
       <div className="bg-green-200 rounded-full px-4 py-2 text-sm font-medium text-green-800">
-        Launching 2025
+        Launching 2025 Maybe
       </div>
     </div>
   );

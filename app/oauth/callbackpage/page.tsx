@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 
 function OAuthStatusHandler() {
     const searchParams = useSearchParams();
-    const [status, setStatus] = useState('Exchanging authorization code...');
+    const [status] = useState('Exchanging authorization code...');
 
     useEffect(() => {
   const authCode = "7dme4pqzqauczm28y5jd7kekk5rp6q4h";

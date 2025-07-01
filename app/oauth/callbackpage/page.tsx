@@ -9,27 +9,19 @@ function OAuthStatusHandler() {
     const [status, setStatus] = useState('Exchanging authorization code...');
 
     useEffect(() => {
-        const code = searchParams.get('code');
+  const authCode = "7dme4pqzqauczm28y5jd7kekk5rp6q4h";
 
-        if (code) {
-            fetch('https://us-central1-bokchoyleague.cloudfunctions.net/getYahooAccessToken', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code }),
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    setStatus('Authorization successful ✅');
-                    console.log('Yahoo OAuth tokens:', data);
-                })
-                .catch((err) => {
-                    console.error(err);
-                    setStatus('Error exchanging token ❌');
-                });
-        } else {
-            setStatus('No authorization code found ❌');
-        }
-    }, [searchParams]);
+  if (authCode) {
+    fetch('https://us-central1-YOUR_PROJECT.cloudfunctions.net/exchangeYahooCode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: authCode }),
+    })
+      .then(res => res.json())
+      .then(data => console.log('Yahoo Tokens:', data))
+      .catch(err => console.error(err));
+  }
+}, [searchParams]);
 
     return <p>{status}</p>;
 }

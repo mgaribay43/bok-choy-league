@@ -1,1 +1,9 @@
-// This is a google firebase cloud function that will be used to receive the code from the callback url to then exchange for tokens that can then be used to access the yahoo fantasy api.
+// firebase cloud functions
+//
+// deploy all functions
+// firebase deploy --only functions
+//
+// if you only want to deploy one
+// firebase deploy --only functions:FUNCTION_NAME
+
+export { yahooOAuth } from './yahooOAuth';

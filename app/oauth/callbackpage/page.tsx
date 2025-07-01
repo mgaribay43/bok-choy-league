@@ -12,7 +12,7 @@ function OAuthCallbackInner() {
 
     if (code) {
         // Send to your backend or Firebase function to exchange for tokens
-      fetch('/functions/src', {
+      fetch('https://yahoooauth-4mkk4ype2a-uc.a.run.app', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),

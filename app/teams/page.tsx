@@ -1,77 +1,55 @@
-// app/teams/page.tsx
+import teams from '../../public/data/teams/teams.json';
+
 export default function TeamsPage() {
-  const teams = [
-    {
-      id: 1,
-      name: 'Kale’d It',
-      manager: 'Sarah L.',
-      bio: 'The reigning champ. Strategic, calm, and ruthless in trades.',
-    },
-    {
-      id: 2,
-      name: 'Choyzilla',
-      manager: 'Mike T.',
-      bio: 'Explosive scorer with an all-or-nothing draft approach.',
-    },
-    {
-      id: 3,
-      name: 'Leaf Me Alone',
-      manager: 'Jenna R.',
-      bio: 'Known for epic comebacks and late-season dominance.',
-    },
-    {
-      id: 4,
-      name: 'Bok ‘n’ Roll',
-      manager: 'Carlos D.',
-      bio: 'The wildcard pick master. Loves sleeper RBs and chaos.',
-    },
-    {
-      id: 5,
-      name: 'The Green Machine',
-      manager: 'Alex C.',
-      bio: 'Plays the waiver wire like a fiddle. Never out of the hunt.',
-    },
-    {
-      id: 6,
-      name: 'Sack Choy',
-      manager: 'Ricky B.',
-      bio: 'Trash talk legend. 0.2pt wins? That’s his specialty.',
-    },
-    {
-      id: 7,
-      name: 'Turnip the Heat',
-      manager: 'Nia W.',
-      bio: 'Drafts bold. Trades bigger. Never afraid to shake things up.',
-    },
-    {
-      id: 8,
-      name: 'Brocc the Vote',
-      manager: 'Dan E.',
-      bio: 'The people\'s manager. Once tied a playoff with a kicker.',
-    },
-    {
-      id: 9,
-      name: 'Fantasy Salad',
-      manager: 'Olivia P.',
-      bio: 'Always balanced. Never flashy. Just consistent domination.',
-    },
-    {
-      id: 10,
-      name: 'Team Crunchy',
-      manager: 'Josh M.',
-      bio: 'Known for heartbreakers, but always fighting to the end.',
-    },
-  ];
+  const champion = teams.find((team) => team.Champion === true);
+  const rest = teams.filter((team) => team.Champion !== true);
 
   return (
     <div className="min-h-screen bg-green-50 p-6">
-      <h1 className="text-4xl font-bold mb-6 text-center">🌿 League Teams</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams.map((team) => (
-          <div key={team.id} className="bg-green-100 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2">{team.name}</h2>
-            <p className="text-sm text-gray-600">Manager: {team.manager}</p>
-            <p>{team.bio}</p>
+      <h1 className="text-4xl font-extrabold mb-10 text-center text-green-800">
+        The Bok Choy League Members
+      </h1>
+
+      {/* Champion Card */}
+      {champion && (
+        <div className="max-w-xl mx-auto mb-12">
+          <div className="bg-yellow-100 border-4 border-yellow-400 rounded-2xl shadow-2xl p-8 text-center">
+            <h2 className="text-3xl font-extrabold text-yellow-700 mb-2">
+              🏆 {champion["Team Name"]}
+            </h2>
+            <p className="text-md text-gray-700 mb-1">
+              Owner: <span className="font-medium">{champion["Team Owner"]}</span>
+            </p>
+            <p className="text-lg font-bold text-yellow-600">
+              Championships: {champion["Championships Won"]}
+            </p>
+            <p className="text-sm text-yellow-600">
+              {champion["Years Won"].join(', ')}
+            </p>
+            <p className="mt-2 text-sm italic text-gray-600">Reigning Champion</p>
+          </div>
+        </div>
+      )}
+
+      {/* All Other Teams */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        {rest.map((team, index) => (
+          <div
+            key={index}
+            className="bg-white border border-green-200 rounded-2xl shadow-md p-6 text-center transition-transform duration-300 hover:scale-105"
+          >
+            <h2 className="text-2xl font-bold text-green-700 mb-2">
+              {team["Team Name"]}
+            </h2>
+            <p className="text-sm text-gray-500 mb-2">
+              Owner: <span className="font-medium">{team["Team Owner"]}</span>
+            </p>
+            <p className="text-md font-semibold text-yellow-600">
+              🏆 Championships: {team["Championships Won"]}
+            </p>
+            <p className="text-sm text-yellow-500">
+              {team["Years Won"].join(', ')}
+            </p>
           </div>
         ))}
       </div>

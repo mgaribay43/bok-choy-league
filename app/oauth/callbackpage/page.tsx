@@ -1,9 +1,9 @@
 'use client';
 // this page accepts the callback from yahoo and receives the code in the URL
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function OAuthCallback() {
+function OAuthCallbackInner() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Exchanging authorization code...');
 
@@ -11,7 +11,7 @@ export default function OAuthCallback() {
     const code = searchParams.get('code');
 
     if (code) {
-      // Send to your backend or Firebase function to exchange for tokens
+        // Send to your backend or Firebase function to exchange for tokens
       fetch('/functions/src', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,11 +31,17 @@ export default function OAuthCallback() {
     }
   }, [searchParams]);
 
+  return <p>{status}</p>;
+}
+
+export default function OAuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50">
       <div className="bg-white p-6 rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold mb-4">OAuth Callback</h1>
-        <p>{status}</p>
+        <Suspense fallback={<p>Loading...</p>}>
+          <OAuthCallbackInner />
+        </Suspense>
       </div>
     </div>
   );

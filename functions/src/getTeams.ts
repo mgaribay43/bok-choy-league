@@ -12,14 +12,8 @@ export const getTeams = onRequest(
   },
   async (req, res) => {
     try {
-      const userId = req.query.userId as string;
 
-      if (!userId) {
-        res.status(400).json({ error: "Missing userId query param" });
-        return;
-      }
-
-      const tokens = await getTokensForUser(userId);
+      const tokens = await getTokensForUser();
       if (!tokens || !tokens.access_token) {
         res.status(401).json({ error: "Access token not found" });
         return;

@@ -15,7 +15,7 @@ const TeamViewer = () => {
   useEffect(() => {
     async function loadTeams() {
       try {
-        const response = await fetch("https://getteams-4mkk4ype2a-uc.a.run.app ");
+        const response = await fetch("https://getteams-4mkk4ype2a-uc.a.run.app");
         if (!response.ok) throw new Error("Failed to fetch teams");
         const data = await response.json();
         setTeams(data.teams || data); // adjust if your API returns { teams: [...] }

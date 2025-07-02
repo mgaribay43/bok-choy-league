@@ -10,7 +10,7 @@ const ApiTestPage = () => {
   return (
     <div>
       <h1>API Test</h1>
-      <TeamViewer userId={userId} />
+      <TeamViewer/>
     </div>
   );
 };

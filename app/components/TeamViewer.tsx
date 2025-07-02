@@ -5,27 +5,28 @@ import React, { useEffect, useState } from "react";
 interface Team {
   id: string;
   name: string;
-  // add more properties if you want
+  // add more properties if needed
 }
 
-const TeamViewer = ({ userId }: { userId: string }) => {
+const TeamViewer = () => {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTeams() {
       try {
-        const response = await fetch(`/api/getTeams?userId=${userId}`);
+        const response = await fetch("/api/getTeams");
         if (!response.ok) throw new Error("Failed to fetch teams");
         const data = await response.json();
-        setTeams(data.teams || data); // adjust to your API shape
+        setTeams(data.teams || data); // adjust if your API returns { teams: [...] }
       } catch (err: unknown) {
         if (err instanceof Error) setError(err.message);
         else setError("Unknown error");
       }
     }
+
     loadTeams();
-  }, [userId]);
+  }, []);
 
   if (error) return <p>Error: {error}</p>;
   if (!teams) return <p>Loading...</p>;

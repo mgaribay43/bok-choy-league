@@ -1,9 +1,9 @@
-// functions/src/getTeams.ts
+// functions/src/getStandings.ts
 import { onRequest } from "firebase-functions/v2/https";
 import axios from "axios";
 import { getTokensForUser } from "./utils/tokenStorage";
 
-const leagueKeyMap: Record<string, string> = {
+const leagueKeysByYear: Record<string, string> = {
   "2017": "371.l.912608",
   "2018": "380.l.727261",
   "2019": "390.l.701331",
@@ -15,7 +15,7 @@ const leagueKeyMap: Record<string, string> = {
   "2025": "461.l.128797",
 };
 
-export const getTeams = onRequest(
+export const getStandings = onRequest(
   {
     region: "us-central1",
     cors: true,
@@ -26,20 +26,22 @@ export const getTeams = onRequest(
     try {
       const year = req.query.year as string;
 
-      if (!year || !leagueKeyMap[year]) {
-        res.status(400).json({ error: "Invalid or missing year. Supported years: 2017–2025." });
+      if (!year || !(year in leagueKeysByYear)) {
+        res.status(400).json({ error: "Invalid or missing 'year' query parameter" });
         return;
       }
 
+      const leagueKey = leagueKeysByYear[year];
+
       const tokens = await getTokensForUser();
-      if (!tokens?.access_token) {
+      if (!tokens || !tokens.access_token) {
         res.status(401).json({ error: "Access token not found" });
         return;
       }
 
       const accessToken = tokens.access_token;
-      const leagueKey = leagueKeyMap[year];
-      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/teams?format=json`;
+
+      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings?format=json`;
 
       const response = await axios.get(url, {
         headers: {
@@ -61,7 +63,8 @@ export const getTeams = onRequest(
         console.error("Unknown Error:", error);
       }
 
-      res.status(500).json({ error: "Failed to fetch team data" });
+      res.status(500).json({ error: "Failed to fetch standings data" });
     }
   }
 );
+export{};

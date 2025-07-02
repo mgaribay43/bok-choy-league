@@ -11,7 +11,7 @@ interface Team {
 const TeamViewer = () => {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<any>(null);
+  const [setErrorDetails] = useState<any>(null);
 
   useEffect(() => {
     async function loadTeams() {

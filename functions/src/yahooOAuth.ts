@@ -47,7 +47,7 @@ export const yahooOAuth = onRequest(
       const { access_token, refresh_token, expires_in } = response.data;
 
       // 🟢 ✅ Store tokens using your utility function
-      await saveTokensForUser('master', access_token, refresh_token, expires_in);
+      await saveTokensForUser(access_token, refresh_token, expires_in);
 
       res.status(200).send({ access_token, refresh_token, expires_in });
     } catch (error: any) {

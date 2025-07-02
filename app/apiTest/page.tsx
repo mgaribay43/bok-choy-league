@@ -1,40 +1,18 @@
-"use client";
+"use client"; // since we want hooks like useState, useEffect
 
-import React, { useEffect, useState } from "react";
+import React from "react";
+import TeamViewer from "../components/TeamViewer";
 
-const TeamViewer = ({ userId }: { userId: string }) => {
-    const [teams, setTeams] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+const ApiTestPage = () => {
+  // For example, get userId from localStorage or context, or hardcode for now
+  const userId = "some-user-id";
 
-    useEffect(() => {
-        async function loadTeams() {
-            try {
-                const res = await fetch(
-                    `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/getYahooTeam?userId=${encodeURIComponent(userId)}`
-                );
-
-                if (!res.ok) throw new Error("Failed to fetch team data");
-
-                const data = await res.json();
-                setTeams(data);
-            } catch (err: unknown) {
-                if (err instanceof Error) setError(err.message);
-                else setError("Unknown error");
-            }
-        }
-
-        loadTeams();
-    }, [userId]);
-
-    if (error) return <p>Error: {error}</p>;
-    if (!teams) return <p>Loading...</p>;
-
-    return (
-        <div>
-            <h2>Your Yahoo Teams</h2>
-            <pre>{JSON.stringify(teams, null, 2)}</pre>
-        </div>
-    );
+  return (
+    <div>
+      <h1>API Test</h1>
+      <TeamViewer userId={userId} />
+    </div>
+  );
 };
 
-export default TeamViewer;
+export default ApiTestPage;

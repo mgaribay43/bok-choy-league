@@ -4,7 +4,7 @@ import { defineSecret } from "firebase-functions/params";
 
 const YAHOO_CLIENT_ID = defineSecret("YAHOO_CLIENT_ID");
 const YAHOO_CLIENT_SECRET = defineSecret("YAHOO_CLIENT_SECRET");
-const REDIRECT_URI = "https://thebokchoyleague.com/oauth/callbackpage/";
+const REDIRECT_URI = defineSecret("YAHOO_REDIRECT_URI");
 import { saveTokensForUser } from './utils/tokenStorage';
 
 export const yahooOAuth = onRequest(
@@ -32,7 +32,7 @@ export const yahooOAuth = onRequest(
 
       const params = new URLSearchParams({
         grant_type: "authorization_code",
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: REDIRECT_URI.value(),
         code,
       });
 

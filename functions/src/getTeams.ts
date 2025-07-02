@@ -21,11 +21,16 @@ export const getTeams = onRequest(
 
       const accessToken = tokens.access_token;
 
+      // const url = `https://fantasysports.yahooapis.com/fantasy/v2/users;use_login=1/games?format=json`; <-- Use to gather game codes for all years
+
       // Example league key, you can dynamically get this from another API call
-      const leagueKey = "nfl.l.128797"; // replace with actual league key
+      // Where "461" = 2025 year game code | "1" = league | "128797" = league ID (new every year) (can append t.1 to the end for data from only team x i.e 1-10)
+
+      //const leagueKey25 = "461.l.128797";
+      const leagueKey24 = "449.l.111890";
 
       // Yahoo Fantasy Team API: Get user's teams in a league
-      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/teams?format=json`;
+      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey24}/teams?format=json`;
 
       const response = await axios.get(url, {
         headers: {
@@ -36,7 +41,17 @@ export const getTeams = onRequest(
 
       res.status(200).json(response.data);
     } catch (error: any) {
-      console.error("Yahoo API Error:", error.response?.data || error.message);
+      if (axios.isAxiosError(error)) {
+        console.error("Yahoo API Error:");
+        console.error("Message:", error.message);
+        console.error("Status:", error.response?.status);
+        console.error("Headers:", error.response?.headers);
+        console.error("Data:", JSON.stringify(error.response?.data, null, 2));
+        console.error("Config:", error.config);
+      } else {
+        console.error("Unknown Error:", error);
+      }
+
       res.status(500).json({ error: "Failed to fetch team data" });
     }
   }

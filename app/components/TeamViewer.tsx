@@ -11,6 +11,7 @@ interface Team {
 const TeamViewer = () => {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
 
   useEffect(() => {
     async function loadTeams() {
@@ -19,9 +20,14 @@ const TeamViewer = () => {
         if (!response.ok) throw new Error("Failed to fetch teams");
         const data = await response.json();
         setTeams(data.teams || data); // adjust if your API returns { teams: [...] }
-      } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
-        else setError("Unknown error");
+      } catch (err: any) {
+        console.error("Fetch error:", err);
+
+        setError(err.message || "An error occurred");
+        setErrorDetails({
+          stack: err.stack || null,
+          raw: err,
+        });
       }
     }
 

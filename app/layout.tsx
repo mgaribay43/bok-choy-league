@@ -6,6 +6,9 @@ import type { ReactNode } from 'react';
 export const metadata = {
   title: 'The Bok Choy League',
   description: 'Fantasy football with flavor',
+  icons: {
+    apple: "../public/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

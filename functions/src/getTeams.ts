@@ -30,6 +30,7 @@ export const getTeams = onRequest(
       const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
         },
       });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface TeamEntry {
   id: string;
@@ -105,10 +106,12 @@ const StandingsViewer = () => {
         <div className="mb-12">
           <h3 className="text-center text-2xl font-bold text-yellow-500 mb-4">🥇 Champion</h3>
           <div className="bg-gradient-to-r from-yellow-200 to-yellow-100 border border-yellow-400 rounded-3xl shadow-lg p-6 flex flex-col items-center max-w-md mx-auto">
-            <img
+            <Image
               src={champion.logo}
               alt={`${champion.name} logo`}
-              className="w-28 h-28 rounded-full object-cover border-4 border-yellow-500 mb-4"
+              width={112}
+              height={112}
+              className="rounded-full object-cover border-4 border-yellow-500 mb-4"
             />
             <h3 className="text-2xl font-bold text-yellow-700">{champion.name}</h3>
             <p className="text-gray-700">
@@ -118,10 +121,6 @@ const StandingsViewer = () => {
         </div>
       )}
 
-      {/*
-          If year is 2025, show all teams (including top one) together.
-          Else, show all except champion (which is rendered above).
-        */}
       {/* Teams Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {(year === "2025" ? teams : others).map((team) => (
@@ -129,10 +128,12 @@ const StandingsViewer = () => {
             key={team.id}
             className="bg-white rounded-3xl shadow-md p-6 flex flex-col items-center text-center hover:shadow-xl transition-all"
           >
-            <img
+            <Image
               src={team.logo}
               alt={`${team.name} logo`}
-              className="w-20 h-20 rounded-full object-cover mb-3"
+              width={80}
+              height={80}
+              className="rounded-full object-cover mb-3"
             />
             <h3 className="text-lg font-semibold text-slate-800">{team.name}</h3>
             <p className="text-sm text-gray-600">

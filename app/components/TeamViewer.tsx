@@ -93,9 +93,13 @@ const StandingsViewer = () => {
       </div>
 
       {/* Heading */}
-      <h2 className="text-4xl font-extrabold text-center mb-10 text-slate-800">
+      <h2 className="text-4xl font-extrabold text-center mb-4 text-slate-800">
         🏈 Bok Choy League Standings {year}
       </h2>
+
+      {year === "2025" && (
+        <p className="text-center text-gray-600 mb-10">Check back once the season has begun.</p>
+      )}
 
       {/* Error or Loading */}
       {error && <p className="text-red-500 text-center">{error}</p>}

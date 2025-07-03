@@ -7,19 +7,19 @@ export default function HeroSection() {
   return (
     <main className="flex-grow container mx-auto px-6 py-16 text-center">
       <h2 className="text-5xl font-extrabold text-green-900 mb-6 drop-shadow">
-        Welcome to The Bok Choy League
+        Welcome to the Bok Choy League
       </h2>
       <p className="max-w-3xl mx-auto text-green-800 text-lg md:text-xl mb-12">
-        The ultimate fantasy football league where strategy meets passion. Join us as we battle
-        weekly to crown the best team in the league. Track your progress, view records, and
-        celebrate your victories with fellow Bok Choy enthusiasts!
+        The Bok Choy League is where fantasy football gets serious — and fun. Each week, teams go
+        head-to-head in a battle of strategy, luck, and bragging rights. Dive in, track your team,
+        relive the highlights, and celebrate every win with the Bok Choy crew.
       </p>
 
       <Link
-        href="/teams"
+        href="/standings"
         className="inline-block bg-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-green-800 transition"
       >
-        Explore Teams
+        Current Standings
       </Link>
     </main>
   );

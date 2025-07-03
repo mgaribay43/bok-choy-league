@@ -30,12 +30,12 @@ export default function Navbar() {
             isOpen ? 'block' : 'hidden'
           } md:flex md:space-x-6 text-lg absolute md:static top-full left-0 w-full md:w-auto bg-green-700 md:bg-transparent px-6 md:px-0 py-4 md:py-0`}
         >
-          <li><Link href="/teams" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Teams</Link></li>
+          <li><Link href="/standings" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Standings</Link></li>
           <li><Link href="/ices" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Ices</Link></li>
           <li><Link href="/champions" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Hall of Champions</Link></li>
           <li><Link href="/keepers" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Keepers</Link></li>
           <li><Link href="/rules" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Rules</Link></li>
-          {/* <li><Link href="/rules" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Events</Link></li> */}
+          <li><Link href="/events" onClick={closeMenu} className="hover:underline block py-2 md:py-0">Events</Link></li>
         </ul>
       </div>
     </nav>

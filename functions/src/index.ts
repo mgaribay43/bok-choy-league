@@ -10,3 +10,4 @@ export { getTeams } from './getTeams';
 export { yahooOAuth } from './yahooOAuth';
 export { refreshTokens } from './refreshTokens';
 export { getStandings } from './getStandings';
+export { yahooAPI } from './yahooAPI';

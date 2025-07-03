@@ -19,6 +19,7 @@ const endpoints = ["teams", "standings", "scoreboard", "draftresults", "roster"]
 const YahooViewer = () => {
   const [selectedYear, setSelectedYear] = useState("2025");
   const [selectedEndpoint, setSelectedEndpoint] = useState("teams");
+  const [selectedTeamId, setSelectedTeamId] = useState("1");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,10 +30,12 @@ const YahooViewer = () => {
     setData(null);
 
     try {
-      const response = await fetch(
-        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=${selectedEndpoint}&year=${selectedYear}`
-      );
+      let url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=${selectedEndpoint}&year=${selectedYear}`;
+      if (selectedEndpoint === "roster") {
+        url += `&teamId=${selectedTeamId}`;
+      }
 
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch from Yahoo API");
 
       const json = await response.json();
@@ -47,12 +50,12 @@ const YahooViewer = () => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedEndpoint]);
+  }, [selectedYear, selectedEndpoint, selectedTeamId]);
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 mb-6">
         <select
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
@@ -78,11 +81,29 @@ const YahooViewer = () => {
             </option>
           ))}
         </select>
+
+        {selectedEndpoint === "roster" && (
+          <select
+            value={selectedTeamId}
+            onChange={(e) => setSelectedTeamId(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-2 text-lg"
+          >
+            {[...Array(10)]
+              .map((_, i) => i + 1)
+              .filter((teamId) => !(selectedYear === "2017" && teamId > 8))
+              .map((teamId) => (
+                <option key={teamId} value={teamId}>
+                  Team {teamId}
+                </option>
+              ))}
+          </select>
+        )}
       </div>
 
       {/* Results */}
       <h2 className="text-xl font-bold text-center mb-4">
         {selectedEndpoint} data for {selectedYear}
+        {selectedEndpoint === "roster" && ` – Team ${selectedTeamId}`}
       </h2>
 
       {error && <p className="text-red-500 text-center">{error}</p>}

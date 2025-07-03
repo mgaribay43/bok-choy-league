@@ -69,10 +69,18 @@ export const yahooAPI = functions.https.onRequest(
                 case "players":
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/players?format=json`;
                     break;
-                case "roster":
-                    // Defaulting to team 1; you could also pass `teamId` as another query param
-                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.1/roster?format=json`;
+                case "roster": {
+                    const teamId = req.query.teamId as string || "1";
+                    const validTeam = /^[1-9]$|^10$/.test(teamId);
+                    if (!validTeam) {
+                        res.status(400).json({ error: "Invalid teamId (must be 1–10)" });
+                        return;
+                    }
+
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster?format=json`;
                     break;
+                }
+
                 default:
                     res.status(400).json({ error: "Invalid 'type' parameter" });
                     return;

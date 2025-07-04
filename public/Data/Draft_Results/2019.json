@@ -1,0 +1,1249 @@
+{
+    "fantasy_content": {
+        "xml:lang": "en-US",
+        "yahoo:uri": "/fantasy/v2/league/390.l.701331/draftresults",
+        "league": [
+            {
+                "league_key": "390.l.701331",
+                "league_id": "701331",
+                "name": "The Bok Choy League",
+                "url": "https://football.fantasysports.yahoo.com/2019/f1/701331",
+                "logo_url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/56515734983_ad2b2a.jpg",
+                "password": "",
+                "draft_status": "postdraft",
+                "num_teams": 10,
+                "edit_key": "16",
+                "weekly_deadline": "",
+                "league_update_timestamp": "1577869473",
+                "scoring_type": "head",
+                "league_type": "private",
+                "renew": "380_727261",
+                "renewed": "399_635829",
+                "felo_tier": "silver",
+                "matchup_week": 16,
+                "iris_group_chat_id": "",
+                "short_invitation_url": "https://football.fantasysports.yahoo.com/2019/f1/701331/invitation?key=9fe7701be265918d&ikey=324e9bc270f67b2b",
+                "allow_add_to_dl_extra_pos": 1,
+                "is_pro_league": "0",
+                "is_cash_league": "0",
+                "current_week": "16",
+                "start_week": "1",
+                "start_date": "2019-09-05",
+                "end_week": "16",
+                "end_date": "2019-12-23",
+                "is_finished": 1,
+                "is_plus_league": "0",
+                "game_code": "nfl",
+                "season": "2019"
+            },
+            {
+                "draft_results": {
+                    "0": {
+                        "draft_result": {
+                            "pick": 1,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.30972"
+                        }
+                    },
+                    "1": {
+                        "draft_result": {
+                            "pick": 2,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.30180"
+                        }
+                    },
+                    "2": {
+                        "draft_result": {
+                            "pick": 3,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.30121"
+                        }
+                    },
+                    "3": {
+                        "draft_result": {
+                            "pick": 4,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.31005"
+                        }
+                    },
+                    "4": {
+                        "draft_result": {
+                            "pick": 5,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.29238"
+                        }
+                    },
+                    "5": {
+                        "draft_result": {
+                            "pick": 6,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.30218"
+                        }
+                    },
+                    "6": {
+                        "draft_result": {
+                            "pick": 7,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.28474"
+                        }
+                    },
+                    "7": {
+                        "draft_result": {
+                            "pick": 8,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.26671"
+                        }
+                    },
+                    "8": {
+                        "draft_result": {
+                            "pick": 9,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.30161"
+                        }
+                    },
+                    "9": {
+                        "draft_result": {
+                            "pick": 10,
+                            "round": 1,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.26650"
+                        }
+                    },
+                    "10": {
+                        "draft_result": {
+                            "pick": 11,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.27581"
+                        }
+                    },
+                    "11": {
+                        "draft_result": {
+                            "pick": 12,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.27540"
+                        }
+                    },
+                    "12": {
+                        "draft_result": {
+                            "pick": 13,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.29281"
+                        }
+                    },
+                    "13": {
+                        "draft_result": {
+                            "pick": 14,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.24793"
+                        }
+                    },
+                    "14": {
+                        "draft_result": {
+                            "pick": 15,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.28398"
+                        }
+                    },
+                    "15": {
+                        "draft_result": {
+                            "pick": 16,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.30175"
+                        }
+                    },
+                    "16": {
+                        "draft_result": {
+                            "pick": 17,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.29399"
+                        }
+                    },
+                    "17": {
+                        "draft_result": {
+                            "pick": 18,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.24171"
+                        }
+                    },
+                    "18": {
+                        "draft_result": {
+                            "pick": 19,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.26686"
+                        }
+                    },
+                    "19": {
+                        "draft_result": {
+                            "pick": 20,
+                            "round": 2,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.30259"
+                        }
+                    },
+                    "20": {
+                        "draft_result": {
+                            "pick": 21,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.27535"
+                        }
+                    },
+                    "21": {
+                        "draft_result": {
+                            "pick": 22,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.26699"
+                        }
+                    },
+                    "22": {
+                        "draft_result": {
+                            "pick": 23,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.30123"
+                        }
+                    },
+                    "23": {
+                        "draft_result": {
+                            "pick": 24,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.30154"
+                        }
+                    },
+                    "24": {
+                        "draft_result": {
+                            "pick": 25,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.28534"
+                        }
+                    },
+                    "25": {
+                        "draft_result": {
+                            "pick": 26,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.28115"
+                        }
+                    },
+                    "26": {
+                        "draft_result": {
+                            "pick": 27,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.31013"
+                        }
+                    },
+                    "27": {
+                        "draft_result": {
+                            "pick": 28,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.26658"
+                        }
+                    },
+                    "28": {
+                        "draft_result": {
+                            "pick": 29,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.30295"
+                        }
+                    },
+                    "29": {
+                        "draft_result": {
+                            "pick": 30,
+                            "round": 3,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.29279"
+                        }
+                    },
+                    "30": {
+                        "draft_result": {
+                            "pick": 31,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.30256"
+                        }
+                    },
+                    "31": {
+                        "draft_result": {
+                            "pick": 32,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.30971"
+                        }
+                    },
+                    "32": {
+                        "draft_result": {
+                            "pick": 33,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.7200"
+                        }
+                    },
+                    "33": {
+                        "draft_result": {
+                            "pick": 34,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.27631"
+                        }
+                    },
+                    "34": {
+                        "draft_result": {
+                            "pick": 35,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.27277"
+                        }
+                    },
+                    "35": {
+                        "draft_result": {
+                            "pick": 36,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.30117"
+                        }
+                    },
+                    "36": {
+                        "draft_result": {
+                            "pick": 37,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.27548"
+                        }
+                    },
+                    "37": {
+                        "draft_result": {
+                            "pick": 38,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.26664"
+                        }
+                    },
+                    "38": {
+                        "draft_result": {
+                            "pick": 39,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.28392"
+                        }
+                    },
+                    "39": {
+                        "draft_result": {
+                            "pick": 40,
+                            "round": 4,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.25802"
+                        }
+                    },
+                    "40": {
+                        "draft_result": {
+                            "pick": 41,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.8780"
+                        }
+                    },
+                    "41": {
+                        "draft_result": {
+                            "pick": 42,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.31856"
+                        }
+                    },
+                    "42": {
+                        "draft_result": {
+                            "pick": 43,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.31001"
+                        }
+                    },
+                    "43": {
+                        "draft_result": {
+                            "pick": 44,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.30125"
+                        }
+                    },
+                    "44": {
+                        "draft_result": {
+                            "pick": 45,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.24815"
+                        }
+                    },
+                    "45": {
+                        "draft_result": {
+                            "pick": 46,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.28403"
+                        }
+                    },
+                    "46": {
+                        "draft_result": {
+                            "pick": 47,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.30197"
+                        }
+                    },
+                    "47": {
+                        "draft_result": {
+                            "pick": 48,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.9496"
+                        }
+                    },
+                    "48": {
+                        "draft_result": {
+                            "pick": 49,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.30120"
+                        }
+                    },
+                    "49": {
+                        "draft_result": {
+                            "pick": 50,
+                            "round": 5,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.30132"
+                        }
+                    },
+                    "50": {
+                        "draft_result": {
+                            "pick": 51,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.24788"
+                        }
+                    },
+                    "51": {
+                        "draft_result": {
+                            "pick": 52,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.28461"
+                        }
+                    },
+                    "52": {
+                        "draft_result": {
+                            "pick": 53,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.30362"
+                        }
+                    },
+                    "53": {
+                        "draft_result": {
+                            "pick": 54,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.30136"
+                        }
+                    },
+                    "54": {
+                        "draft_result": {
+                            "pick": 55,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.29288"
+                        }
+                    },
+                    "55": {
+                        "draft_result": {
+                            "pick": 56,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.29269"
+                        }
+                    },
+                    "56": {
+                        "draft_result": {
+                            "pick": 57,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.29315"
+                        }
+                    },
+                    "57": {
+                        "draft_result": {
+                            "pick": 58,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.100003"
+                        }
+                    },
+                    "58": {
+                        "draft_result": {
+                            "pick": 59,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.31905"
+                        }
+                    },
+                    "59": {
+                        "draft_result": {
+                            "pick": 60,
+                            "round": 6,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.31379"
+                        }
+                    },
+                    "60": {
+                        "draft_result": {
+                            "pick": 61,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.100014"
+                        }
+                    },
+                    "61": {
+                        "draft_result": {
+                            "pick": 62,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.25785"
+                        }
+                    },
+                    "62": {
+                        "draft_result": {
+                            "pick": 63,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.28457"
+                        }
+                    },
+                    "63": {
+                        "draft_result": {
+                            "pick": 64,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.27658"
+                        }
+                    },
+                    "64": {
+                        "draft_result": {
+                            "pick": 65,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.5479"
+                        }
+                    },
+                    "65": {
+                        "draft_result": {
+                            "pick": 66,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.30209"
+                        }
+                    },
+                    "66": {
+                        "draft_result": {
+                            "pick": 67,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.29236"
+                        }
+                    },
+                    "67": {
+                        "draft_result": {
+                            "pick": 68,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.27589"
+                        }
+                    },
+                    "68": {
+                        "draft_result": {
+                            "pick": 69,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.9353"
+                        }
+                    },
+                    "69": {
+                        "draft_result": {
+                            "pick": 70,
+                            "round": 7,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.30182"
+                        }
+                    },
+                    "70": {
+                        "draft_result": {
+                            "pick": 71,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.27591"
+                        }
+                    },
+                    "71": {
+                        "draft_result": {
+                            "pick": 72,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.25881"
+                        }
+                    },
+                    "72": {
+                        "draft_result": {
+                            "pick": 73,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.30346"
+                        }
+                    },
+                    "73": {
+                        "draft_result": {
+                            "pick": 74,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.100030"
+                        }
+                    },
+                    "74": {
+                        "draft_result": {
+                            "pick": 75,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.29235"
+                        }
+                    },
+                    "75": {
+                        "draft_result": {
+                            "pick": 76,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.25755"
+                        }
+                    },
+                    "76": {
+                        "draft_result": {
+                            "pick": 77,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.30996"
+                        }
+                    },
+                    "77": {
+                        "draft_result": {
+                            "pick": 78,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.26561"
+                        }
+                    },
+                    "78": {
+                        "draft_result": {
+                            "pick": 79,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.31885"
+                        }
+                    },
+                    "79": {
+                        "draft_result": {
+                            "pick": 80,
+                            "round": 8,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.29384"
+                        }
+                    },
+                    "80": {
+                        "draft_result": {
+                            "pick": 81,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.30115"
+                        }
+                    },
+                    "81": {
+                        "draft_result": {
+                            "pick": 82,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.29785"
+                        }
+                    },
+                    "82": {
+                        "draft_result": {
+                            "pick": 83,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.6770"
+                        }
+                    },
+                    "83": {
+                        "draft_result": {
+                            "pick": 84,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.5228"
+                        }
+                    },
+                    "84": {
+                        "draft_result": {
+                            "pick": 85,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.30142"
+                        }
+                    },
+                    "85": {
+                        "draft_result": {
+                            "pick": 86,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.24791"
+                        }
+                    },
+                    "86": {
+                        "draft_result": {
+                            "pick": 87,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.26534"
+                        }
+                    },
+                    "87": {
+                        "draft_result": {
+                            "pick": 88,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.28465"
+                        }
+                    },
+                    "88": {
+                        "draft_result": {
+                            "pick": 89,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.100016"
+                        }
+                    },
+                    "89": {
+                        "draft_result": {
+                            "pick": 90,
+                            "round": 9,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.7867"
+                        }
+                    },
+                    "90": {
+                        "draft_result": {
+                            "pick": 91,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.100005"
+                        }
+                    },
+                    "91": {
+                        "draft_result": {
+                            "pick": 92,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.30994"
+                        }
+                    },
+                    "92": {
+                        "draft_result": {
+                            "pick": 93,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.100024"
+                        }
+                    },
+                    "93": {
+                        "draft_result": {
+                            "pick": 94,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.31017"
+                        }
+                    },
+                    "94": {
+                        "draft_result": {
+                            "pick": 95,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.30153"
+                        }
+                    },
+                    "95": {
+                        "draft_result": {
+                            "pick": 96,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.100033"
+                        }
+                    },
+                    "96": {
+                        "draft_result": {
+                            "pick": 97,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.30118"
+                        }
+                    },
+                    "97": {
+                        "draft_result": {
+                            "pick": 98,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.30232"
+                        }
+                    },
+                    "98": {
+                        "draft_result": {
+                            "pick": 99,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.30223"
+                        }
+                    },
+                    "99": {
+                        "draft_result": {
+                            "pick": 100,
+                            "round": 10,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.27532"
+                        }
+                    },
+                    "100": {
+                        "draft_result": {
+                            "pick": 101,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.26678"
+                        }
+                    },
+                    "101": {
+                        "draft_result": {
+                            "pick": 102,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.29307"
+                        }
+                    },
+                    "102": {
+                        "draft_result": {
+                            "pick": 103,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.31056"
+                        }
+                    },
+                    "103": {
+                        "draft_result": {
+                            "pick": 104,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.7924"
+                        }
+                    },
+                    "104": {
+                        "draft_result": {
+                            "pick": 105,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.29754"
+                        }
+                    },
+                    "105": {
+                        "draft_result": {
+                            "pick": 106,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.24830"
+                        }
+                    },
+                    "106": {
+                        "draft_result": {
+                            "pick": 107,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.29255"
+                        }
+                    },
+                    "107": {
+                        "draft_result": {
+                            "pick": 108,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.25876"
+                        }
+                    },
+                    "108": {
+                        "draft_result": {
+                            "pick": 109,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.31833"
+                        }
+                    },
+                    "109": {
+                        "draft_result": {
+                            "pick": 110,
+                            "round": 11,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.26804"
+                        }
+                    },
+                    "110": {
+                        "draft_result": {
+                            "pick": 111,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.30997"
+                        }
+                    },
+                    "111": {
+                        "draft_result": {
+                            "pick": 112,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.31029"
+                        }
+                    },
+                    "112": {
+                        "draft_result": {
+                            "pick": 113,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.31041"
+                        }
+                    },
+                    "113": {
+                        "draft_result": {
+                            "pick": 114,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.31002"
+                        }
+                    },
+                    "114": {
+                        "draft_result": {
+                            "pick": 115,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.30423"
+                        }
+                    },
+                    "115": {
+                        "draft_result": {
+                            "pick": 116,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.6762"
+                        }
+                    },
+                    "116": {
+                        "draft_result": {
+                            "pick": 117,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.27369"
+                        }
+                    },
+                    "117": {
+                        "draft_result": {
+                            "pick": 118,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.28188"
+                        }
+                    },
+                    "118": {
+                        "draft_result": {
+                            "pick": 119,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.6763"
+                        }
+                    },
+                    "119": {
+                        "draft_result": {
+                            "pick": 120,
+                            "round": 12,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.28378"
+                        }
+                    },
+                    "120": {
+                        "draft_result": {
+                            "pick": 121,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.28514"
+                        }
+                    },
+                    "121": {
+                        "draft_result": {
+                            "pick": 122,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.29792"
+                        }
+                    },
+                    "122": {
+                        "draft_result": {
+                            "pick": 123,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.27618"
+                        }
+                    },
+                    "123": {
+                        "draft_result": {
+                            "pick": 124,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.100034"
+                        }
+                    },
+                    "124": {
+                        "draft_result": {
+                            "pick": 125,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.29369"
+                        }
+                    },
+                    "125": {
+                        "draft_result": {
+                            "pick": 126,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.31366"
+                        }
+                    },
+                    "126": {
+                        "draft_result": {
+                            "pick": 127,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.27538"
+                        }
+                    },
+                    "127": {
+                        "draft_result": {
+                            "pick": 128,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.24070"
+                        }
+                    },
+                    "128": {
+                        "draft_result": {
+                            "pick": 129,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.31014"
+                        }
+                    },
+                    "129": {
+                        "draft_result": {
+                            "pick": 130,
+                            "round": 13,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.28389"
+                        }
+                    },
+                    "130": {
+                        "draft_result": {
+                            "pick": 131,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.100017"
+                        }
+                    },
+                    "131": {
+                        "draft_result": {
+                            "pick": 132,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.26708"
+                        }
+                    },
+                    "132": {
+                        "draft_result": {
+                            "pick": 133,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.30977"
+                        }
+                    },
+                    "133": {
+                        "draft_result": {
+                            "pick": 134,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.31902"
+                        }
+                    },
+                    "134": {
+                        "draft_result": {
+                            "pick": 135,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.100002"
+                        }
+                    },
+                    "135": {
+                        "draft_result": {
+                            "pick": 136,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.100018"
+                        }
+                    },
+                    "136": {
+                        "draft_result": {
+                            "pick": 137,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.30552"
+                        }
+                    },
+                    "137": {
+                        "draft_result": {
+                            "pick": 138,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.8285"
+                        }
+                    },
+                    "138": {
+                        "draft_result": {
+                            "pick": 139,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.100021"
+                        }
+                    },
+                    "139": {
+                        "draft_result": {
+                            "pick": 140,
+                            "round": 14,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.100012"
+                        }
+                    },
+                    "140": {
+                        "draft_result": {
+                            "pick": 141,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.2",
+                            "player_key": "390.p.3727"
+                        }
+                    },
+                    "141": {
+                        "draft_result": {
+                            "pick": 142,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.9",
+                            "player_key": "390.p.24057"
+                        }
+                    },
+                    "142": {
+                        "draft_result": {
+                            "pick": 143,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.1",
+                            "player_key": "390.p.8447"
+                        }
+                    },
+                    "143": {
+                        "draft_result": {
+                            "pick": 144,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.6",
+                            "player_key": "390.p.100007"
+                        }
+                    },
+                    "144": {
+                        "draft_result": {
+                            "pick": 145,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.7",
+                            "player_key": "390.p.30266"
+                        }
+                    },
+                    "145": {
+                        "draft_result": {
+                            "pick": 146,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.5",
+                            "player_key": "390.p.31073"
+                        }
+                    },
+                    "146": {
+                        "draft_result": {
+                            "pick": 147,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.10",
+                            "player_key": "390.p.100006"
+                        }
+                    },
+                    "147": {
+                        "draft_result": {
+                            "pick": 148,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.4",
+                            "player_key": "390.p.31896"
+                        }
+                    },
+                    "148": {
+                        "draft_result": {
+                            "pick": 149,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.3",
+                            "player_key": "390.p.29274"
+                        }
+                    },
+                    "149": {
+                        "draft_result": {
+                            "pick": 150,
+                            "round": 15,
+                            "team_key": "390.l.701331.t.8",
+                            "player_key": "390.p.31144"
+                        }
+                    },
+                    "count": 150
+                }
+            }
+        ],
+        "time": "34.039974212646ms",
+        "copyright": "Certain Data by Sportradar, Stats Perform and Rotowire",
+        "refresh_rate": "60"
+    }
+}

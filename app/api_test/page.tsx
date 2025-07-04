@@ -14,7 +14,7 @@ const leagueKeysByYear: Record<string, string> = {
   "2025": "461.l.128797",
 };
 
-const endpoints = ["teams", "standings", "scoreboard", "draftresults", "roster"];
+const endpoints = ["teams", "standings", "scoreboard", "draftresults", "roster", "players"];
 
 const YahooViewer = () => {
   const [selectedYear, setSelectedYear] = useState("2025");

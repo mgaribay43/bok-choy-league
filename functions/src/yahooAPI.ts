@@ -1,4 +1,3 @@
-// index.ts
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import fetch from "node-fetch";
@@ -29,7 +28,8 @@ export const yahooAPI = functions.https.onRequest(
     },
     async (req, res) => {
         const type = req.query.type as string;
-        const year = req.query.year as string || "2025"; // default to 2025
+        const year = (req.query.year as string) || "2025"; // default to 2025
+        const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
 
         if (!type) {
             res.status(400).json({ error: "Missing 'type' parameter" });
@@ -67,25 +67,90 @@ export const yahooAPI = functions.https.onRequest(
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/draftresults?format=json`;
                     break;
                 case "players":
-                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/players?format=json`;
+                    if (playerKeys.trim() === "") {
+                        // If no playerKeys provided, get all players in league (single call)
+                        endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/players?format=json`;
+                        const yahooResponse = await fetch(endpoint, {
+                            headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                                Accept: "application/json",
+                            },
+                        });
+                        const text = await yahooResponse.text();
+                        const json = JSON.parse(text.replace(/^callback\((.*)\)$/, "$1"));
+                        res.status(200).json(json);
+                        return;
+                    } else {
+                        // Batch playerKeys in groups of 25
+                        const keysArray = playerKeys.split(",");
+                        const batchSize = 25;
+                        const batchedResponses = [];
+
+                        for (let i = 0; i < keysArray.length; i += batchSize) {
+                            const batchKeys = keysArray.slice(i, i + batchSize).join(",");
+                            const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}?format=json`;
+
+                            console.log(`Fetching batch: ${batchKeys}`);
+                            const batchResponse = await fetch(batchEndpoint, {
+                                headers: {
+                                    Authorization: `Bearer ${accessToken}`,
+                                    Accept: "application/json",
+                                },
+                            });
+
+                            const batchText = await batchResponse.text();
+                            const batchJson = JSON.parse(batchText.replace(/^callback\((.*)\)$/, "$1"));
+
+                            batchedResponses.push(batchJson);
+                        }
+
+                        // Combine batchedResponses into one response structure
+                        // Yahoo's response structure nests players inside fantasy_content.league[1].players
+                        // We'll merge all players objects
+
+                        const combinedPlayers: Record<string, any> = {};
+                        for (const response of batchedResponses) {
+                            const playersObj = response.fantasy_content?.players || {};
+                            Object.entries(playersObj).forEach(([key, value]) => {
+                                if (key !== "count") {
+                                    combinedPlayers[key] = value;
+                                }
+                            });
+                        }
+
+                        // Compose a combined JSON response similar to the original Yahoo format
+                        const combinedResponse = {
+                            fantasy_content: {
+                                ...batchedResponses[0]?.fantasy_content,
+                                league: [
+                                    batchedResponses[0]?.fantasy_content?.league?.[0], // league info
+                                    {
+                                        players: combinedPlayers,
+                                    },
+                                ],
+                            },
+                        };
+                        res.status(200).json(combinedResponse);
+                        return;
+                    }
                     break;
                 case "roster": {
-                    const teamId = req.query.teamId as string || "1";
+                    const teamId = (req.query.teamId as string) || "1";
                     const validTeam = /^[1-9]$|^10$/.test(teamId);
                     if (!validTeam) {
                         res.status(400).json({ error: "Invalid teamId (must be 1–10)" });
                         return;
                     }
-
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster?format=json`;
                     break;
                 }
-
                 default:
                     res.status(400).json({ error: "Invalid 'type' parameter" });
                     return;
             }
-            console.log(endpoint);
+
+            console.log("Yahoo API Endpoint:", endpoint);
+
             const yahooResponse = await fetch(endpoint, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,

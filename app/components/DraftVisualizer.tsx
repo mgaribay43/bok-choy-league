@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface DraftPick {
     pick: number;
@@ -40,7 +41,7 @@ const positionColors: Record<string, string> = {
 };
 
 export default function DraftBoardPage() {
-    const [selectedYear, setSelectedYear] = useState("2024");
+    const [selectedYear, setSelectedYear] = useState("");
     const [draftPicks, setDraftPicks] = useState<DraftPick[]>([]);
     const [players, setPlayers] = useState<Record<string, Player>>({});
     const [loading, setLoading] = useState(false);
@@ -48,6 +49,15 @@ export default function DraftBoardPage() {
     const [teamManagers, setTeamManagers] = useState<Record<string, string>>({});
 
     useEffect(() => {
+        if (!selectedYear) {
+            // Clear previous data when no year selected
+            setDraftPicks([]);
+            setPlayers({});
+            setError(null);
+            setLoading(false);
+            return;
+        }
+
         async function fetchData() {
             if (!leagueKeysByYear[selectedYear]) {
                 setError(`No league key for year ${selectedYear}`);
@@ -118,19 +128,11 @@ export default function DraftBoardPage() {
         teamKeyToName[key] = teamManagers[key] || key;
     }
 
-    // Calculate column width (subtract left sticky col)
-    // On desktop: evenly divide width by teams
-    // On mobile: not used because stacked cards
-
-    const colWidthPercent = teamOrder.length
-        ? Math.floor(100 / teamOrder.length)
-        : 100;
-
-    // Responsive view: table on md+ screens, stacked cards on smaller
-
     return (
-        <div className="w-full overflow-x-auto px-2 py-10">
-            <h1 className="text-4xl font-extrabold text-center mb-8 text-green-800">Draft Board</h1>
+        <div className="w-full overflow-x-auto px-2 py-0">
+            <h1 className="text-4xl font-extrabold text-center mb-8 text-green-800">
+                Draft Board
+            </h1>
 
             <div className="mb-6 flex justify-center gap-4 flex-wrap">
                 <label htmlFor="year-select" className="font-semibold self-center">
@@ -140,31 +142,47 @@ export default function DraftBoardPage() {
                     id="year-select"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="border border-gray-300 rounded px-3 py-2"
+                    className="border border-gray-300 rounded px-3 py-2 bg-white text-black"
                 >
-                    {Object.keys(leagueKeysByYear).map((year) => (
-                        <option key={year} value={year}>
-                            {year}
-                        </option>
-                    ))}
+                    <option value="">
+                        Select Year
+                    </option>
+                    {Object.keys(leagueKeysByYear)
+                        .sort((a, b) => Number(b) - Number(a))
+                        .map((year) => (
+                            <option
+                                key={year}
+                                value={year}
+                                disabled={year === "2025"}
+                                className={year === "2025" ? "text-gray-400" : ""}
+                            >
+                                {year === "2025" ? "2025 (coming soon)" : year}
+                            </option>
+                        ))}
                 </select>
             </div>
+
+            {!selectedYear && (
+                <p className="text-center italic text-gray-600">
+                    Please select a year to view the draft board.
+                </p>
+            )}
 
             {loading && <p className="text-center">Loading draft data...</p>}
             {error && <p className="text-center text-red-500">{error}</p>}
 
-            {!loading && !error && (
-                <div className="overflow-x-auto">
+            {selectedYear && !loading && !error && (
+                <div className="overflow-x-auto max-h-[80vh]">
                     <table className="table-fixed border-collapse w-full text-sm sm:text-xs md:text-sm min-w-[900px]">
-                        <thead>
+                        <thead className="sticky top-0 z-20 bg-gray-100">
                             <tr>
-                                <th className="border p-2 bg-gray-100 text-left w-24 sticky left-0 bg-white z-10">
+                                <th className="border p-2 text-left w-24 sticky left-0 bg-gray-100 z-30">
                                     Round
                                 </th>
                                 {teamOrder.map((teamKey) => (
                                     <th
                                         key={teamKey}
-                                        className="border p-2 bg-gray-100 text-center w-40 whitespace-nowrap"
+                                        className="border p-2 text-center w-40 whitespace-nowrap truncate"
                                     >
                                         {teamKeyToName[teamKey] || teamKey}
                                     </th>
@@ -174,7 +192,7 @@ export default function DraftBoardPage() {
                         <tbody>
                             {rounds.map((round) => (
                                 <tr key={round}>
-                                    <td className="border p-2 font-bold text-center bg-gray-50 w-24 sticky left-0 bg-white z-0">
+                                    <td className="border p-2 font-bold text-center bg-gray-50 w-24 sticky left-0 z-10">
                                         {round}
                                     </td>
                                     {teamOrder.map((teamKey) => {
@@ -188,7 +206,7 @@ export default function DraftBoardPage() {
                                         return (
                                             <td
                                                 key={teamKey}
-                                                className={`border p-2 text-center align-top truncate ${positionColorClass} w-40`}
+                                                className={`border text-center align-top w-40 p-1 rounded-md ${positionColorClass}`}
                                                 title={
                                                     player
                                                         ? `${player.name} (${player.team} - ${player.position})`
@@ -196,13 +214,22 @@ export default function DraftBoardPage() {
                                                 }
                                             >
                                                 {player ? (
-                                                    <>
-                                                        <p className="font-semibold truncate">{player.name}</p>
-                                                        <p className="text-xs truncate">
-                                                            {player.team} – {player.position}
-                                                        </p>
-                                                        <p className="text-xs text-gray-700">Pick {pick.pick}</p>
-                                                    </>
+                                                    <div className="flex items-start gap-2 p-2 rounded-md shadow-sm h-full">
+                                                        <Image
+                                                            src={player.image_url}
+                                                            alt={player.name}
+                                                            width={40}
+                                                            height={40}
+                                                            className="rounded-md object-cover"
+                                                        />
+                                                        <div className="text-left overflow-hidden">
+                                                            <p className="font-semibold truncate">{player.name}</p>
+                                                            <p className="text-xs text-gray-600 truncate">
+                                                                {player.team} – {player.position}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">Pick {pick.pick}</p>
+                                                        </div>
+                                                    </div>
                                                 ) : (
                                                     <span className="italic text-gray-400">—</span>
                                                 )}
@@ -217,7 +244,6 @@ export default function DraftBoardPage() {
             )}
         </div>
     );
-
 }
 
 /** Helper: Extract Team Names from Yahoo JSON */
@@ -255,7 +281,6 @@ function extractTeamManagerMap(teamsData: any): Record<string, string> {
 
     return result;
 }
-
 
 /** Helper: Extract draft picks from Yahoo draftresults JSON */
 function extractDraftPicks(draftData: any): DraftPick[] {

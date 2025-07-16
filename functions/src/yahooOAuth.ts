@@ -4,12 +4,12 @@ import { defineSecret } from "firebase-functions/params";
 
 const YAHOO_CLIENT_ID = defineSecret("YAHOO_CLIENT_ID");
 const YAHOO_CLIENT_SECRET = defineSecret("YAHOO_CLIENT_SECRET");
-const REDIRECT_URI = defineSecret("YAHOO_REDIRECT_URI");
+const YAHOO_REDIRECT_URI = defineSecret("YAHOO_REDIRECT_URI");
 import { saveTokensForUser } from './utils/tokenStorage';
 
 export const yahooOAuth = onRequest(
   {
-    secrets: [YAHOO_CLIENT_ID, YAHOO_CLIENT_SECRET],
+    secrets: [YAHOO_CLIENT_ID, YAHOO_CLIENT_SECRET, YAHOO_REDIRECT_URI],
     memory: "256MiB",
     timeoutSeconds: 60,
     cors: true,
@@ -21,6 +21,7 @@ export const yahooOAuth = onRequest(
       // Access secrets from environment variables injected by Firebase at runtime
       const CLIENT_ID = process.env.YAHOO_CLIENT_ID!;
       const CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET!;
+      const REDIRECT_URI = process.env.YAHOO_REDIRECT_URI!;
       const code = req.body.code;
 
       if (!code) {
@@ -32,7 +33,7 @@ export const yahooOAuth = onRequest(
 
       const params = new URLSearchParams({
         grant_type: "authorization_code",
-        redirect_uri: REDIRECT_URI.value(),
+        redirect_uri: REDIRECT_URI,
         code,
       });
 

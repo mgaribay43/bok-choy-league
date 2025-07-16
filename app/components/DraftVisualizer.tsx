@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface DraftPick {
     pick: number;
@@ -36,11 +37,10 @@ const positionColors: Record<string, string> = {
     TE: "bg-yellow-200",
     K: "bg-purple-200",
     DEF: "bg-gray-300",
-    // fallback: bg-white (no class)
 };
 
 export default function DraftBoardPage() {
-    const [selectedYear, setSelectedYear] = useState("2024");
+    const [selectedYear, setSelectedYear] = useState("");
     const [draftPicks, setDraftPicks] = useState<DraftPick[]>([]);
     const [players, setPlayers] = useState<Record<string, Player>>({});
     const [loading, setLoading] = useState(false);
@@ -48,6 +48,14 @@ export default function DraftBoardPage() {
     const [teamManagers, setTeamManagers] = useState<Record<string, string>>({});
 
     useEffect(() => {
+        if (!selectedYear) {
+            setDraftPicks([]);
+            setPlayers({});
+            setError(null);
+            setLoading(false);
+            return;
+        }
+
         async function fetchData() {
             if (!leagueKeysByYear[selectedYear]) {
                 setError(`No league key for year ${selectedYear}`);
@@ -58,7 +66,6 @@ export default function DraftBoardPage() {
             setLoading(true);
             setError(null);
             try {
-                // Fetch teams + managers
                 const teamsRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=teams&year=${selectedYear}`
                 );
@@ -66,7 +73,6 @@ export default function DraftBoardPage() {
                 const teamsJson = JSON.parse(teamsText.replace(/^callback\((.*)\)$/, "$1"));
                 setTeamManagers(extractTeamManagerMap(teamsJson));
 
-                // Fetch draft picks
                 const draftRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${selectedYear}`
                 );
@@ -75,7 +81,6 @@ export default function DraftBoardPage() {
                 const picks = extractDraftPicks(draftJson);
                 setDraftPicks(picks);
 
-                // Fetch player details in batches
                 const uniquePlayerKeys = [...new Set(picks.map((p) => p.player_key))];
                 const batchSize = 25;
                 const allPlayers: Record<string, Player> = {};
@@ -98,38 +103,30 @@ export default function DraftBoardPage() {
         fetchData();
     }, [selectedYear]);
 
-    // Group data for easy lookup
     const groupedByRoundAndTeam: Record<number, Record<string, DraftPick>> = {};
     draftPicks.forEach((pick) => {
         if (!groupedByRoundAndTeam[pick.round]) groupedByRoundAndTeam[pick.round] = {};
         groupedByRoundAndTeam[pick.round][pick.team_key] = pick;
     });
 
-    // Sort rounds & teams
     const rounds = [...new Set(draftPicks.map((p) => p.round))].sort((a, b) => a - b);
     const teamOrder = draftPicks
         .filter((p) => p.round === 1)
         .sort((a, b) => a.pick - b.pick)
         .map((p) => p.team_key);
 
-    // Map team_key to name
     const teamKeyToName: Record<string, string> = {};
     for (const key of teamOrder) {
         teamKeyToName[key] = teamManagers[key] || key;
     }
 
-    // Calculate column width (subtract left sticky col)
-    // On desktop: evenly divide width by teams
-    // On mobile: not used because stacked cards
-
-    const colWidthPercent = teamOrder.length
-        ? Math.floor(100 / teamOrder.length)
-        : 100;
-
-    // Responsive view: table on md+ screens, stacked cards on smaller
+    const pickMap: Record<number, DraftPick> = {};
+    draftPicks.forEach((p) => {
+        pickMap[p.pick] = p;
+    });
 
     return (
-        <div className="w-full overflow-x-auto px-2 py-10">
+        <div className="w-full overflow-x-auto px-2 py-0">
             <h1 className="text-4xl font-extrabold text-center mb-8 text-green-800">Draft Board</h1>
 
             <div className="mb-6 flex justify-center gap-4 flex-wrap">
@@ -140,31 +137,41 @@ export default function DraftBoardPage() {
                     id="year-select"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="border border-gray-300 rounded px-3 py-2"
+                    className="border border-gray-300 rounded px-3 py-2 bg-white text-black"
                 >
-                    {Object.keys(leagueKeysByYear).map((year) => (
-                        <option key={year} value={year}>
-                            {year}
-                        </option>
-                    ))}
+                    <option value="">Select Year</option>
+                    {Object.keys(leagueKeysByYear)
+                        .sort((a, b) => Number(b) - Number(a))
+                        .map((year) => (
+                            <option
+                                key={year}
+                                value={year}
+                                disabled={year === "2025"}
+                                className={year === "2025" ? "text-gray-400" : ""}
+                            >
+                                {year === "2025" ? "2025 (coming soon)" : year}
+                            </option>
+                        ))}
                 </select>
             </div>
+
+            {!selectedYear && (
+                <p className="text-center italic text-gray-600">Please select a year to view the draft board.</p>
+            )}
 
             {loading && <p className="text-center">Loading draft data...</p>}
             {error && <p className="text-center text-red-500">{error}</p>}
 
-            {!loading && !error && (
-                <div className="overflow-x-auto">
-                    <table className="table-fixed border-collapse w-full text-sm sm:text-xs md:text-sm min-w-[900px]">
-                        <thead>
+            {selectedYear && !loading && !error && (
+                <div className="overflow-x-auto max-h-[80vh] rounded shadow-md">
+                    <table className="min-w-[900px] w-full border-separate border-spacing-0 text-sm md:text-base">
+                        <thead className="bg-white sticky top-0 z-30 shadow-sm">
                             <tr>
-                                <th className="border p-2 bg-gray-100 text-left w-24 sticky left-0 bg-white z-10">
-                                    Round
-                                </th>
                                 {teamOrder.map((teamKey) => (
                                     <th
                                         key={teamKey}
-                                        className="border p-2 bg-gray-100 text-center w-40 whitespace-nowrap"
+                                        className="px-3 py-2 text-center w-28 whitespace-normal break-words font-semibold text-gray-700 border-b border-gray-300"
+                                        title={teamKeyToName[teamKey]}
                                     >
                                         {teamKeyToName[teamKey] || teamKey}
                                     </th>
@@ -173,11 +180,8 @@ export default function DraftBoardPage() {
                         </thead>
                         <tbody>
                             {rounds.map((round) => (
-                                <tr key={round}>
-                                    <td className="border p-2 font-bold text-center bg-gray-50 w-24 sticky left-0 bg-white z-0">
-                                        {round}
-                                    </td>
-                                    {teamOrder.map((teamKey) => {
+                                <tr key={round} className="hover:bg-gray-50 transition-colors duration-150">
+                                    {teamOrder.map((teamKey, colIndex) => {
                                         const pick = groupedByRoundAndTeam[round]?.[teamKey];
                                         const player = pick ? players[pick.player_key] : null;
                                         const positionColorClass =
@@ -185,23 +189,122 @@ export default function DraftBoardPage() {
                                                 ? positionColors[player.position]
                                                 : "bg-white";
 
+                                        const nextPick = pick ? pickMap[pick.pick + 1] : undefined;
+
+                                        type ArrowDirection = "right" | "down" | "left" | null;
+                                        let arrowDirection: ArrowDirection = null;
+
+                                        if (nextPick) {
+                                            const nextRound = nextPick.round;
+                                            const nextTeamKey = nextPick.team_key;
+                                            const nextColIndex = teamOrder.indexOf(nextTeamKey);
+
+                                            if (nextRound === round) {
+                                                if (nextColIndex === colIndex + 1) arrowDirection = "right";
+                                                else if (nextColIndex === colIndex - 1) arrowDirection = "left";
+                                            } else if (nextRound === round + 1) {
+                                                if (nextColIndex === colIndex) {
+                                                    arrowDirection = "down";
+                                                } else if (nextColIndex < colIndex) {
+                                                    arrowDirection = "left";
+                                                }
+                                            }
+                                        }
+
+                                        const rotationDegrees: Record<Exclude<ArrowDirection, null>, number> = {
+                                            right: 0,
+                                            down: 90,
+                                            left: 180,
+                                        };
+
                                         return (
                                             <td
                                                 key={teamKey}
-                                                className={`border p-2 text-center align-top truncate ${positionColorClass} w-40`}
+                                                className={`align-top p-1 rounded-md max-w-[9rem] min-w-[8rem] relative cursor-default ${positionColorClass}`}
                                                 title={
                                                     player
-                                                        ? `${player.name} (${player.team} - ${player.position})`
+                                                        ? `${player.name} (${player.team} - ${player.position})\nPick ${pick.pick}`
                                                         : undefined
                                                 }
                                             >
                                                 {player ? (
                                                     <>
-                                                        <p className="font-semibold truncate">{player.name}</p>
-                                                        <p className="text-xs truncate">
-                                                            {player.team} – {player.position}
-                                                        </p>
-                                                        <p className="text-xs text-gray-700">Pick {pick.pick}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Image
+                                                                src={player.image_url}
+                                                                alt={player.name}
+                                                                width={28}
+                                                                height={28}
+                                                                className="rounded-full object-cover flex-shrink-0"
+                                                            />
+                                                            <div className="flex flex-col flex-shrink min-w-0 text-left">
+                                                                {(() => {
+                                                                    const [firstName, ...rest] = player.name.split(" ");
+                                                                    const lastName = rest.join(" ");
+                                                                    return (
+                                                                        <>
+                                                                            <p
+                                                                                className="font-semibold text-gray-800 leading-tight"
+                                                                                style={{
+                                                                                    fontSize: "clamp(0.7rem, 1.5vw, 0.9rem)",
+                                                                                    lineHeight: 1.1,
+                                                                                }}
+                                                                                title={player.name}
+                                                                            >
+                                                                                {firstName}
+                                                                            </p>
+                                                                            <p
+                                                                                className="font-semibold text-gray-700 leading-tight"
+                                                                                style={{
+                                                                                    fontSize: "clamp(0.65rem, 1.3vw, 0.85rem)",
+                                                                                    lineHeight: 1.1,
+                                                                                }}
+                                                                            >
+                                                                                {lastName}
+                                                                            </p>
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                                <p
+                                                                    className="text-xs text-gray-600"
+                                                                    style={{ fontSize: "clamp(0.55rem, 1vw, 0.65rem)" }}
+                                                                >
+                                                                    {player.team} – {player.position}
+                                                                </p>
+                                                                <p
+                                                                    className="text-xs text-gray-500"
+                                                                    style={{ fontSize: "clamp(0.5rem, 0.9vw, 0.6rem)" }}
+                                                                >
+                                                                    Pick {pick.pick}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        {arrowDirection && (
+                                                            <div
+                                                                className="absolute bottom-1 right-1"
+                                                                style={{
+                                                                    width: "1rem",
+                                                                    height: "1rem",
+                                                                    transform: `rotate(${rotationDegrees[arrowDirection]}deg)`,
+                                                                    transition: "transform 0.3s ease",
+                                                                }}
+                                                                aria-label={`Next pick: ${nextPick!.pick}`}
+                                                                title={`Next pick: ${nextPick!.pick}`}
+                                                            >
+                                                                <svg
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="black"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    className="w-full h-full"
+                                                                >
+                                                                    <line x1="3" y1="12" x2="21" y2="12" />
+                                                                    <polyline points="15 6 21 12 15 18" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <span className="italic text-gray-400">—</span>
@@ -217,10 +320,8 @@ export default function DraftBoardPage() {
             )}
         </div>
     );
-
 }
 
-/** Helper: Extract Team Names from Yahoo JSON */
 function extractTeamManagerMap(teamsData: any): Record<string, string> {
     const teams = teamsData?.fantasy_content?.league?.[1]?.teams;
     if (!teams) return {};
@@ -233,22 +334,18 @@ function extractTeamManagerMap(teamsData: any): Record<string, string> {
         const teamArray = (value as any).team;
         if (!Array.isArray(teamArray) || teamArray.length === 0) return;
 
-        const teamInfoArray = teamArray[0]; // Array of key-value objects
+        const teamInfoArray = teamArray[0];
 
-        // Extract team_key
         const teamKeyObj = teamInfoArray.find((item: any) => "team_key" in item);
         const teamKey = teamKeyObj?.team_key;
 
-        // Extract team name
         const nameObj = teamInfoArray.find((item: any) => "name" in item);
         const teamName = nameObj?.name;
 
-        // Extract manager nickname
         const managersObj = teamInfoArray.find((item: any) => "managers" in item);
         const nickname = managersObj?.managers?.[0]?.manager?.nickname;
 
         if (teamKey) {
-            // Prefer team name, fallback to manager nickname, then team key
             result[teamKey] = teamName || nickname || teamKey;
         }
     });
@@ -256,8 +353,6 @@ function extractTeamManagerMap(teamsData: any): Record<string, string> {
     return result;
 }
 
-
-/** Helper: Extract draft picks from Yahoo draftresults JSON */
 function extractDraftPicks(draftData: any): DraftPick[] {
     const draftResultsObj = draftData.fantasy_content?.league?.[1]?.draft_results;
     if (!draftResultsObj) return [];
@@ -286,10 +381,9 @@ function extractDraftPicks(draftData: any): DraftPick[] {
     return picks;
 }
 
-/** Helper: Extract player info from Yahoo players API */
 function extractPlayerMap(playersData: any): Record<string, Player> {
     const playerList = playersData.fantasy_content?.players || {};
-    const playerEntries = Object.entries(playerList).filter(([key]) => key !== 'count');
+    const playerEntries = Object.entries(playerList).filter(([key]) => key !== "count");
 
     const playerMap: Record<string, Player> = {};
 
@@ -297,11 +391,11 @@ function extractPlayerMap(playersData: any): Record<string, Player> {
         const playerArr = (playerEntry as any).player?.[0];
         if (!Array.isArray(playerArr)) continue;
 
-        const playerKey = playerArr.find((item: any) => item.player_key)?.player_key || '';
-        const fullName = playerArr.find((item: any) => item.name)?.name?.full || 'Unknown Player';
-        const team = playerArr.find((item: any) => item.editorial_team_abbr)?.editorial_team_abbr || 'FA';
-        const position = playerArr.find((item: any) => item.display_position)?.display_position || '';
-        const image_url = playerArr.find((item: any) => item.image_url)?.image_url || '/fallback-avatar.png';
+        const playerKey = playerArr.find((item: any) => item.player_key)?.player_key || "";
+        const fullName = playerArr.find((item: any) => item.name)?.name?.full || "Unknown Player";
+        const team = playerArr.find((item: any) => item.editorial_team_abbr)?.editorial_team_abbr || "FA";
+        const position = playerArr.find((item: any) => item.display_position)?.display_position || "";
+        const image_url = playerArr.find((item: any) => item.image_url)?.image_url || "/fallback-avatar.png";
 
         if (playerKey) {
             playerMap[playerKey] = {

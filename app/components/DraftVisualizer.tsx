@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import test from "../../public/Data/League_Keys/league_keys.json";
 
 interface DraftPick {
     pick: number;
@@ -67,38 +66,54 @@ export default function DraftBoardPage() {
                 setPlayers({});
                 return;
             }
+
             setLoading(true);
             setError(null);
+
             try {
+                const safeParse = (raw: string, label: string) => {
+                    try {
+                        return JSON.parse(raw.replace(/^callback\((.*)\)$/, "$1"));
+                    } catch (err) {
+                        throw new Error(`${label} response is not valid JSON: ${raw.slice(0, 100)}...`);
+                    }
+                };
+
+                // Fetch teams
                 const teamsRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=teams&year=${selectedYear}`
                 );
                 const teamsText = await teamsRes.text();
-                const teamsJson = JSON.parse(teamsText.replace(/^callback\((.*)\)$/, "$1"));
+                const teamsJson = safeParse(teamsText, "Teams");
                 setTeamManagers(extractTeamManagerMap(teamsJson));
 
+                // Fetch draft results
                 const draftRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${selectedYear}`
                 );
                 const draftText = await draftRes.text();
-                const draftJson = JSON.parse(draftText.replace(/^callback\((.*)\)$/, "$1"));
+                const draftJson = safeParse(draftText, "Draft Results");
                 const picks = extractDraftPicks(draftJson);
                 setDraftPicks(picks);
 
+                // Fetch players
                 const uniquePlayerKeys = [...new Set(picks.map((p) => p.player_key))];
                 const batchSize = 25;
                 const allPlayers: Record<string, Player> = {};
+
                 for (let i = 0; i < uniquePlayerKeys.length; i += batchSize) {
                     const batchKeys = uniquePlayerKeys.slice(i, i + batchSize).join(",");
                     const pRes = await fetch(
                         `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=players&year=${selectedYear}&playerKeys=${batchKeys}`
                     );
                     const pText = await pRes.text();
-                    const pJson = JSON.parse(pText.replace(/^callback\((.*)\)$/, "$1"));
+                    const pJson = safeParse(pText, `Player batch ${i / batchSize + 1}`);
                     Object.assign(allPlayers, extractPlayerMap(pJson));
                 }
+
                 setPlayers(allPlayers);
             } catch (err: any) {
+                console.error("Data fetch error:", err);
                 setError(err?.message || "Failed to load draft data");
             } finally {
                 setLoading(false);

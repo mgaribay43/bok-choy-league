@@ -3,6 +3,15 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { getTokensForUser } from "./utils/tokenStorage";
 
+/* 
+This is an all-purpose function that can be used to call the Yahoo FantasyAPI to get data such as:
+- Team
+- Scoreboard
+- Standings
+- Draft Results
+- Players
+*/
+
 const leagueKeysByYear: Record<string, string> = {
     "2017": "371.l.912608",
     "2018": "380.l.727261",
@@ -54,6 +63,7 @@ export const yahooAPI = functions.https.onRequest(
             let endpoint = "";
 
             switch (type) {
+                // API URL Builders
                 case "teams":
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/teams?format=json`;
                     break;
@@ -81,7 +91,7 @@ export const yahooAPI = functions.https.onRequest(
                         res.status(200).json(json);
                         return;
                     } else {
-                        // Batch playerKeys in groups of 25
+                        // Batch playerKeys in groups of 25 (yahoo Limits each call to max of 25 player objs)
                         const keysArray = playerKeys.split(",");
                         const batchSize = 25;
                         const batchedResponses = [];
@@ -133,7 +143,7 @@ export const yahooAPI = functions.https.onRequest(
                         res.status(200).json(combinedResponse);
                         return;
                     }
-                    break;
+                    
                 case "roster": {
                     const teamId = (req.query.teamId as string) || "1";
                     const validTeam = /^[1-9]$|^10$/.test(teamId);

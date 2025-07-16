@@ -42,7 +42,7 @@ export default function KeepersPage() {
 
       try {
         const draftRes = await fetch(
-          "https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=2024"
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${(new Date().getFullYear())-1}`
         );
         const draftText = await draftRes.text();
         const draftData = JSON.parse(draftText.replace(/^callback\((.*)\)$/, "$1"));
@@ -51,7 +51,7 @@ export default function KeepersPage() {
 
         const rosterPromises = [];
         for (let teamNum = 1; teamNum <= 10; teamNum++) {
-          const url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=2024&teamId=${teamNum}`;
+          const url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=${(new Date().getFullYear())-1}&teamId=${teamNum}`;
           rosterPromises.push(fetch(url).then((res) => res.text()));
         }
 
@@ -81,7 +81,10 @@ export default function KeepersPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-4xl font-extrabold text-green-800 text-center mb-4">2025 Keepers</h1>
+      <h1 className="text-4xl font-extrabold text-green-800 text-center mb-4">
+        {new Date().getFullYear()} Keepers
+      </h1>
+
       <p className="mb-8 text-center">Use this tool to help determine the player you wish to keep next season</p>
 
       {/* Team Selector */}

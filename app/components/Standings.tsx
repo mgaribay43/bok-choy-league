@@ -25,7 +25,7 @@ const StandingsViewer = () => {
 
       try {
         const response = await fetch(
-          `https://us-central1-bokchoyleague.cloudfunctions.net/getStandings?year=${year}`
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
         );
         if (!response.ok) throw new Error("Failed to fetch standings");
 

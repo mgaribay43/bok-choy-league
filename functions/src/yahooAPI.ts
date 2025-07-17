@@ -38,6 +38,7 @@ export const yahooAPI = functions.https.onRequest(
     async (req, res) => {
         const type = req.query.type as string;
         const year = (req.query.year as string) || "2025"; // default to 2025
+        const week = ";week=" + (req.query.week as string) || ""; // dafault empty to return last available week
         const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
 
         if (!type) {
@@ -71,11 +72,15 @@ export const yahooAPI = functions.https.onRequest(
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings?format=json`;
                     break;
                 case "scoreboard":
-                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard?format=json`;
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard${week}?format=json`;
                     break;
                 case "draftresults":
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/draftresults?format=json`;
                     break;
+                // type can be season, or date;date=2011-07-06
+                // case "stats":
+                //     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/stats;type=season?format=json`;
+                //     break;
                 case "players":
                     if (playerKeys.trim() === "") {
                         // If no playerKeys provided, get all players in league (single call)
@@ -143,7 +148,7 @@ export const yahooAPI = functions.https.onRequest(
                         res.status(200).json(combinedResponse);
                         return;
                     }
-                    
+
                 case "roster": {
                     const teamId = (req.query.teamId as string) || "1";
                     const validTeam = /^[1-9]$|^10$/.test(teamId);

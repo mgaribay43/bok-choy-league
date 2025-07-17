@@ -1,15 +1,15 @@
 "use client"; // since we want hooks like useState, useEffect
 
 import React from "react";
-import TeamViewer from "../components/Standings";
+import StandingsPage from "../components/Standings";
 
-const ApiTestPage = () => {
+const Standings = () => {
   // For example, get userId from localStorage or context, or hardcode for now
   return (
     <div>
-      <TeamViewer/>
+      <StandingsPage/>
     </div>
   );
 };
 
-export default ApiTestPage;
+export default Standings;

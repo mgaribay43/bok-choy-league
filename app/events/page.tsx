@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-export default function Ices() {
+export default function Events() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-green-50 text-green-900 text-center px-6">
       <h1 className="text-5xl font-bold mb-4">🥬 The Bok Choy League</h1>

@@ -35,11 +35,6 @@ export default function Navbar() {
         >
           {/* Other Links */}
           <li>
-            <Link href="/ices" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
-              Ices
-            </Link>
-          </li>
-          <li>
             <Link href="/champions" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
               Hall of Champions
             </Link>
@@ -52,6 +47,11 @@ export default function Navbar() {
           <li>
             <Link href="/events" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
               Events
+            </Link>
+          </li>
+          <li>
+            <Link href="/ices" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
+              Ices
             </Link>
           </li>
 
@@ -75,6 +75,15 @@ export default function Navbar() {
                   className="block px-4 py-2 hover:bg-green-600"
                 >
                   Standings
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/matchups"
+                  onClick={closeMenu}
+                  className="block px-4 py-2 hover:bg-green-600"
+                >
+                  Matchups
                 </Link>
               </li>
               <li>

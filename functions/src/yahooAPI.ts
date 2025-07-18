@@ -46,8 +46,8 @@ export const yahooAPI = functions.https.onRequest(
     },
     async (req, res) => {
         const type = req.query.type as string;
-        const year = (req.query.year as string) || "2025"; // default to 2025
-        const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
+        const year = (req.query.year as string) || "2025";
+        const playerKeys = (req.query.playerKeys as string) || "";
 
         if (!type) {
             res.status(400).json({ error: "Missing 'type' parameter" });

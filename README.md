@@ -17,7 +17,7 @@ bun dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Info
-This is a next.js project for the bok choy fantasy league. Hosted on google firebase
+This is a next.js project for the bok choy fantasy league.
 
 ## Learn More
 

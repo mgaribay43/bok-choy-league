@@ -28,15 +28,6 @@ if (!admin.apps.length) {
     admin.initializeApp();
 }
 
-function tryParseJSON(text: string) {
-    try {
-        return JSON.parse(text.replace(/^callback\((.*)\)$/, "$1"));
-    } catch (e) {
-        console.error("Yahoo API returned invalid JSON:", text);
-        return null;
-    }
-}
-
 export const yahooAPI = functions.https.onRequest(
     {
         region: "us-central1",
@@ -46,8 +37,9 @@ export const yahooAPI = functions.https.onRequest(
     },
     async (req, res) => {
         const type = req.query.type as string;
-        const year = (req.query.year as string) || "2025";
-        const playerKeys = (req.query.playerKeys as string) || "";
+        const year = (req.query.year as string) || "2025"; // default to 2025
+        const week = ";week=" + (req.query.week as string) || ""; // dafault empty to return last available week
+        const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
 
         if (!type) {
             res.status(400).json({ error: "Missing 'type' parameter" });
@@ -100,11 +92,7 @@ export const yahooAPI = functions.https.onRequest(
                             },
                         });
                         const text = await yahooResponse.text();
-                        const json = tryParseJSON(text);
-                        if (!json) {
-                            res.status(502).json({ error: "Yahoo API returned invalid response" });
-                            return;
-                        }
+                        const json = JSON.parse(text.replace(/^callback\((.*)\)$/, "$1"));
                         res.status(200).json(json);
                         return;
                     } else {
@@ -117,18 +105,17 @@ export const yahooAPI = functions.https.onRequest(
                             const batchKeys = keysArray.slice(i, i + batchSize).join(",");
                             const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}?format=json`;
 
+                            console.log(`Fetching batch: ${batchKeys}`);
                             const batchResponse = await fetch(batchEndpoint, {
                                 headers: {
                                     Authorization: `Bearer ${accessToken}`,
                                     Accept: "application/json",
                                 },
                             });
+
                             const batchText = await batchResponse.text();
-                            const batchJson = tryParseJSON(batchText);
-                            if (!batchJson) {
-                                res.status(502).json({ error: "Yahoo API returned invalid batch response" });
-                                return;
-                            }
+                            const batchJson = JSON.parse(batchText.replace(/^callback\((.*)\)$/, "$1"));
+
                             batchedResponses.push(batchJson);
                         }
 
@@ -187,12 +174,7 @@ export const yahooAPI = functions.https.onRequest(
             });
 
             const text = await yahooResponse.text();
-            const json = tryParseJSON(text);
-
-            if (!json) {
-                res.status(502).json({ error: "Yahoo API returned non-JSON response" });
-                return;
-            }
+            const json = JSON.parse(text.replace(/^callback\((.*)\)$/, "$1")); // Clean Yahoo's callback wrapper
 
             res.status(200).json(json);
             return;

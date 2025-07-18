@@ -18,18 +18,6 @@ interface Player {
     image_url: string;
 }
 
-const leagueKeysByYear: Record<string, string> = {
-    "2017": "371.l.912608",
-    "2018": "380.l.727261",
-    "2019": "390.l.701331",
-    "2020": "399.l.635829",
-    "2021": "406.l.11184",
-    "2022": "414.l.548584",
-    "2023": "423.l.397633",
-    "2024": "449.l.111890",
-    "2025": "461.l.128797",
-};
-
 const positionColors: Record<string, string> = {
     QB: "bg-red-200",
     RB: "bg-green-200",
@@ -46,6 +34,21 @@ export default function DraftBoardPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [teamManagers, setTeamManagers] = useState<Record<string, string>>({});
+    const [leagueKeysByYear, setLeagueKeysByYear] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        async function loadLeagueKeys() {
+            try {
+                const res = await fetch("../../Data/League_Keys/league_keys.json");
+                if (!res.ok) throw new Error("Failed to load league keys JSON.");
+                const data = await res.json();
+                setLeagueKeysByYear(data);
+            } catch (err) {
+                console.error("Error loading league keys:", err);
+            }
+        }
+        loadLeagueKeys();
+    }, []);
 
     useEffect(() => {
         if (!selectedYear) {
@@ -63,38 +66,54 @@ export default function DraftBoardPage() {
                 setPlayers({});
                 return;
             }
+
             setLoading(true);
             setError(null);
+
             try {
+                const safeParse = (raw: string, label: string) => {
+                    try {
+                        return JSON.parse(raw.replace(/^callback\((.*)\)$/, "$1"));
+                    } catch (err) {
+                        throw new Error(`${label} response is not valid JSON: ${raw.slice(0, 100)}...`);
+                    }
+                };
+
+                // Fetch teams
                 const teamsRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=teams&year=${selectedYear}`
                 );
                 const teamsText = await teamsRes.text();
-                const teamsJson = JSON.parse(teamsText.replace(/^callback\((.*)\)$/, "$1"));
+                const teamsJson = safeParse(teamsText, "Teams");
                 setTeamManagers(extractTeamManagerMap(teamsJson));
 
+                // Fetch draft results
                 const draftRes = await fetch(
                     `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${selectedYear}`
                 );
                 const draftText = await draftRes.text();
-                const draftJson = JSON.parse(draftText.replace(/^callback\((.*)\)$/, "$1"));
+                const draftJson = safeParse(draftText, "Draft Results");
                 const picks = extractDraftPicks(draftJson);
                 setDraftPicks(picks);
 
+                // Fetch players
                 const uniquePlayerKeys = [...new Set(picks.map((p) => p.player_key))];
                 const batchSize = 25;
                 const allPlayers: Record<string, Player> = {};
+
                 for (let i = 0; i < uniquePlayerKeys.length; i += batchSize) {
                     const batchKeys = uniquePlayerKeys.slice(i, i + batchSize).join(",");
                     const pRes = await fetch(
                         `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=players&year=${selectedYear}&playerKeys=${batchKeys}`
                     );
                     const pText = await pRes.text();
-                    const pJson = JSON.parse(pText.replace(/^callback\((.*)\)$/, "$1"));
+                    const pJson = safeParse(pText, `Player batch ${i / batchSize + 1}`);
                     Object.assign(allPlayers, extractPlayerMap(pJson));
                 }
+
                 setPlayers(allPlayers);
             } catch (err: any) {
+                console.error("Data fetch error:", err);
                 setError(err?.message || "Failed to load draft data");
             } finally {
                 setLoading(false);

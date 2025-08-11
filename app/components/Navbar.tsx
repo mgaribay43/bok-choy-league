@@ -103,16 +103,6 @@ export default function Navbar() {
 
                   <div className="py-2">
                     <Link
-                      href="/team"
-                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                    >
-                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <Users size={16} className="text-emerald-600" />
-                      </div>
-                      <span className="font-medium">Teams</span>
-                    </Link>
-
-                    <Link
                       href="/standings"
                       className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
                     >
@@ -120,16 +110,6 @@ export default function Navbar() {
                         <Trophy size={16} className="text-yellow-600" />
                       </div>
                       <span className="font-medium">Standings</span>
-                    </Link>
-
-                    <Link
-                      href="/matchups"
-                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                    >
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-bold">⚔️</span>
-                      </div>
-                      <span className="font-medium">Matchups</span>
                     </Link>
 
                     <Link
@@ -149,7 +129,7 @@ export default function Navbar() {
                       <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                         <span className="text-orange-600 text-sm font-bold">🔒</span>
                       </div>
-                      <span className="font-medium">Keepers</span>
+                      <span className="font-medium">Keeper Utility</span>
                     </Link>
                   </div>
                 </div>

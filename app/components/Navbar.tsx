@@ -242,17 +242,6 @@ export default function Navbar() {
                   </Link>
 
                   <Link
-                    href="/matchups"
-                    onClick={closeMenu}
-                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
-                  >
-                    <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
-                      <span className="text-xs">⚔️</span>
-                    </div>
-                    <span>Matchups</span>
-                  </Link>
-
-                  <Link
                     href="/draft"
                     onClick={closeMenu}
                     className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"

@@ -1,32 +1,18 @@
-'use client'; // This ensures this file is treated as a Client Component
+'use client'; // Ensure this file is treated as a Client Component
 
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../../lib/firebaseConfig'; // Firebase auth instance
 import { useRouter } from 'next/navigation';
 
-const GoogleSignIn = () => {
+const GoogleSignIn = ({ onSuccess }: { onSuccess: () => void }) => {
     const router = useRouter();
-    const whitelist = [
-        'mikeyjordan43@gmail.com',
-    ];
 
     const handleGoogleSignIn = async () => {
         const provider = new GoogleAuthProvider();
 
         try {
             const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-
-            // Check if user.email is not null and if it's in the whitelist
-            if (user.email && whitelist.includes(user.email)) {
-                // Redirect to the home page if email is whitelisted
-                router.push('/');
-            } else {
-                // Log out the user if their email is not whitelisted
-                await auth.signOut();
-                alert('You are not a member of The Bok Choy League');
-                router.push('/login'); // Optionally, redirect to login again
-            }
+            onSuccess(); // Trigger the onSuccess callback after login
         } catch (error) {
             console.error('Error signing in with Google: ', error);
         }

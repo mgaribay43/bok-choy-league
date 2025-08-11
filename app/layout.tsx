@@ -7,18 +7,14 @@ import { AuthProvider, useAuth } from '../context/AuthContext'; // Import AuthPr
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// This component ensures the user is authenticated
 const AuthCheck = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth(); // Access user state from AuthContext
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!user && !loading) {
-      router.push('/login'); // Redirect to login page if not authenticated
-    }
-    if (user && !loading) {
-      // Redirect to the home page if the user is authenticated
-      router.push('/');
+      const currentPath = window.location.pathname;
+      router.push(`/login?redirect=${currentPath}`); // Pass the current path as a redirect
     }
   }, [user, loading, router]);
 
@@ -33,7 +29,7 @@ const AuthCheck = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  return <>{children}</>;
+  return <>{children}</>; // Render the page content if the user is authenticated
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

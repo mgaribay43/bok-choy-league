@@ -10,6 +10,7 @@ This is an all-purpose function that can be used to call the Yahoo FantasyAPI to
 - Standings
 - Draft Results
 - Players
+- Stats
 */
 
 const leagueKeysByYear: Record<string, string> = {
@@ -38,8 +39,10 @@ export const yahooAPI = functions.https.onRequest(
     async (req, res) => {
         const type = req.query.type as string;
         const year = (req.query.year as string) || "2025"; // default to 2025
-        const week = ";week=" + (req.query.week as string) || ""; // dafault empty to return last available week
+        const weekParam = req.query.week as string | undefined;
+        const week = weekParam && weekParam.trim() !== "" ? `;week=${weekParam}` : "";
         const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
+
 
         if (!type) {
             res.status(400).json({ error: "Missing 'type' parameter" });
@@ -156,15 +159,69 @@ export const yahooAPI = functions.https.onRequest(
                         res.status(400).json({ error: "Invalid teamId (must be 1–10)" });
                         return;
                     }
-                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster?format=json`;
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster${week}?format=json`;
                     break;
                 }
+                case "playerstats": {
+                    if (playerKeys.trim() === "") {
+                        res.status(400).json({ error: "Missing playerKeys parameter for playerstats" });
+                        return;
+                    }
+
+                    // batch player keys in groups of 25 max
+                    const keysArray = playerKeys.split(",");
+                    const batchSize = 25;
+                    const batchedResponses = [];
+
+                    for (let i = 0; i < keysArray.length; i += batchSize) {
+                        const batchKeys = keysArray.slice(i, i + batchSize).join(",");
+                        const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}/stats;type=week${week};season=${year}?format=json`;
+
+                        console.log(`Fetching player stats batch: ${batchKeys}`);
+                        const batchResponse = await fetch(batchEndpoint, {
+                            headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                                Accept: "application/json",
+                            },
+                        });
+
+                        const batchText = await batchResponse.text();
+                        const batchJson = JSON.parse(batchText.replace(/^callback\((.*)\)$/, "$1"));
+                        batchedResponses.push(batchJson);
+                    }
+
+                    // Merge batched player stats just like you do for players
+                    const combinedPlayers: Record<string, any> = {};
+                    for (const response of batchedResponses) {
+                        const playersObj = response.fantasy_content?.players || {};
+                        Object.entries(playersObj).forEach(([key, value]) => {
+                            if (key !== "count") {
+                                combinedPlayers[key] = value;
+                            }
+                        });
+                    }
+
+                    const combinedResponse = {
+                        fantasy_content: {
+                            ...batchedResponses[0]?.fantasy_content,
+                            league: [
+                                batchedResponses[0]?.fantasy_content?.league?.[0], // league info
+                                {
+                                    players: combinedPlayers,
+                                },
+                            ],
+                        },
+                    };
+
+                    res.status(200).json(combinedResponse);
+                    return;
+                }
+
                 default:
                     res.status(400).json({ error: "Invalid 'type' parameter" });
                     return;
-            }
 
-            console.log("Yahoo API Endpoint:", endpoint);
+            }
 
             const yahooResponse = await fetch(endpoint, {
                 headers: {

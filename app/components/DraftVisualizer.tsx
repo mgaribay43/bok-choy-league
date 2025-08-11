@@ -155,14 +155,18 @@ export default function DraftBoardPage() {
                 </select>
             </div>
 
-            {!selectedYear && (
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                    </div>
+                    <p className="text-slate-600 text-lg mt-6 font-medium">Loading draft data...</p>
+                </div>
+            ) : error ? (
+                <p className="text-center text-red-500">{error}</p>
+            ) : !selectedYear ? (
                 <p className="text-center italic text-gray-600">Please select a year to view the draft board.</p>
-            )}
-
-            {loading && <p className="text-center">Loading draft data...</p>}
-            {error && <p className="text-center text-red-500">{error}</p>}
-
-            {selectedYear && !loading && !error && (
+            ) : (
                 <div className="overflow-x-auto max-h-[80vh] rounded shadow-md">
                     <table className="min-w-[900px] w-full border-separate border-spacing-0 text-sm md:text-base">
                         <thead className="bg-white sticky top-0 z-30 shadow-sm">
@@ -320,6 +324,7 @@ export default function DraftBoardPage() {
             )}
         </div>
     );
+
 }
 
 function extractTeamManagerMap(teamsData: any): Record<string, string> {

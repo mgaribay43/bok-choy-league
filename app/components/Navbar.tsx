@@ -1,12 +1,12 @@
 'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, Trophy, Users, Calendar, Award } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLeagueOpen, setIsLeagueOpen] = useState(false); // Submenu toggle for mobile
+  const [isLeagueOpen, setIsLeagueOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => {
@@ -14,99 +14,279 @@ export default function Navbar() {
     setIsLeagueOpen(false);
   };
 
-  return (
-    <nav className="bg-green-700 text-white shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <Link href="/" onClick={closeMenu}>
-          <h1 className="text-2xl font-bold">🥬 The Bok Choy League</h1>
-        </Link>
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-        {/* Hamburger Toggle */}
-        <div className="md:hidden">
-          <button onClick={toggleMenu} aria-label="Toggle Menu">
-            {isOpen ? <X size={28} /> : <Menu size={28} />}
+  return (
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
+        ? 'bg-gradient-to-r from-emerald-800/95 to-teal-800/95 backdrop-blur-md shadow-2xl'
+        : 'bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg'
+      }`}>
+      <div className="container mx-auto px-4 lg:px-6">
+        <div className="flex justify-between items-center h-16 lg:h-18">
+          {/* Logo */}
+          <Link href="/" onClick={closeMenu} className="group">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="text-3xl group-hover:scale-110 transition-transform duration-200">
+                  🥬
+                </div>
+                <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-300 -z-10" />
+              </div>
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-200">
+                  The Bok Choy League
+                </h1>
+                <p className="text-xs text-emerald-200 font-medium hidden sm:block">
+                  Fantasy Football Excellence
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            {/* Main Links */}
+            <Link
+              href="/champions"
+              className="group flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+            >
+              <Trophy size={18} className="group-hover:text-yellow-300 transition-colors" />
+              <span>Champions</span>
+            </Link>
+
+            <Link
+              href="/rules"
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+            >
+              <Award size={18} />
+              <span>Rules</span>
+            </Link>
+
+            <Link
+              href="/events"
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+            >
+              <Calendar size={18} />
+              <span>Events</span>
+            </Link>
+
+            <Link
+              href="/ices"
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+            >
+              <span className="text-lg">🧊</span>
+              <span>Ices</span>
+            </Link>
+
+            {/* League Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium">
+                <Users size={18} />
+                <span>League</span>
+                <ChevronDown size={16} className="group-hover:rotate-180 transition-transform duration-200" />
+              </button>
+
+              {/* Dropdown Menu */}
+              <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden backdrop-blur-sm">
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
+                    <p className="text-sm font-semibold text-emerald-800">League</p>
+                  </div>
+
+                  <div className="py-2">
+                    <Link
+                      href="/team"
+                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                    >
+                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <Users size={16} className="text-emerald-600" />
+                      </div>
+                      <span className="font-medium">Teams</span>
+                    </Link>
+
+                    <Link
+                      href="/standings"
+                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                    >
+                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <Trophy size={16} className="text-yellow-600" />
+                      </div>
+                      <span className="font-medium">Standings</span>
+                    </Link>
+
+                    <Link
+                      href="/matchups"
+                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-blue-600 text-sm font-bold">⚔️</span>
+                      </div>
+                      <span className="font-medium">Matchups</span>
+                    </Link>
+
+                    <Link
+                      href="/draft"
+                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                    >
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <span className="text-purple-600 text-sm font-bold">📋</span>
+                      </div>
+                      <span className="font-medium">Draft Results</span>
+                    </Link>
+
+                    <Link
+                      href="/keepers"
+                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                    >
+                      <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <span className="text-orange-600 text-sm font-bold">🔒</span>
+                      </div>
+                      <span className="font-medium">Keepers</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Hamburger */}
+          <button
+            onClick={toggleMenu}
+            className="md:hidden relative w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all duration-200"
+            aria-label="Toggle Menu"
+          >
+            <div className="relative">
+              {isOpen ? (
+                <X size={24} className="text-white" />
+              ) : (
+                <Menu size={24} className="text-white" />
+              )}
+            </div>
           </button>
         </div>
 
-        {/* Nav Links */}
-        <ul
-          className={`${isOpen ? 'block' : 'hidden'
-            } md:flex md:space-x-6 text-lg absolute md:static top-full left-0 w-full md:w-auto bg-green-700 md:bg-transparent px-6 md:px-0 py-4 md:py-0`}
-        >
-          {/* Other Links */}
-          <li>
-            <Link href="/champions" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
-              Hall of Champions
-            </Link>
-          </li>
-          <li>
-            <Link href="/rules" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
-              Rules
-            </Link>
-          </li>
-          <li>
-            <Link href="/events" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
-              Events
-            </Link>
-          </li>
-          <li>
-            <Link href="/ices" onClick={closeMenu} className="hover:underline block py-2 md:py-0">
-              Ices
-            </Link>
-          </li>
-
-          {/* League Dropdown */}
-          <li className="relative group">
-            <button
-              className="flex items-center gap-1 hover:underline py-2 md:py-0"
-              onClick={() => setIsLeagueOpen(!isLeagueOpen)}
+        {/* Mobile Menu */}
+        <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'
+          }`}>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-white/20">
+            {/* Main Links */}
+            <Link
+              href="/champions"
+              onClick={closeMenu}
+              className="flex items-center space-x-3 px-4 py-4 text-white hover:bg-white/20 transition-colors border-b border-white/10"
             >
-              League <ChevronDown size={16} />
-            </button>
+              <Trophy size={20} className="text-yellow-300" />
+              <span className="font-medium">Hall of Champions</span>
+            </Link>
 
-            <ul
-              className={`pl-4 md:absolute md:left-0 md:top-full md:bg-green-800 md:rounded md:shadow-md md:min-w-[160px] ${isLeagueOpen || isOpen ? 'block' : 'hidden'
-                } md:group-hover:block`}
+            <Link
+              href="/rules"
+              onClick={closeMenu}
+              className="flex items-center space-x-3 px-4 py-4 text-white hover:bg-white/20 transition-colors border-b border-white/10"
             >
-              <li>
-                <Link
-                  href="/standings"
-                  onClick={closeMenu}
-                  className="block px-4 py-2 hover:bg-green-600"
-                >
-                  Standings
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/matchups"
-                  onClick={closeMenu}
-                  className="block px-4 py-2 hover:bg-green-600"
-                >
-                  Matchups
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/draft"
-                  onClick={closeMenu}
-                  className="block px-4 py-2 hover:bg-green-600"
-                >
-                  Draft Results
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/keepers"
-                  onClick={closeMenu}
-                  className="block px-4 py-2 hover:bg-green-600"
-                >
-                  Keepers
-                </Link>
-              </li>
-            </ul>
-          </li>
-        </ul>
+              <Award size={20} />
+              <span className="font-medium">Rules</span>
+            </Link>
+
+            <Link
+              href="/events"
+              onClick={closeMenu}
+              className="flex items-center space-x-3 px-4 py-4 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+            >
+              <Calendar size={20} />
+              <span className="font-medium">Events</span>
+            </Link>
+
+            <Link
+              href="/ices"
+              onClick={closeMenu}
+              className="flex items-center space-x-3 px-4 py-4 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+            >
+              <span className="text-xl">🧊</span>
+              <span className="font-medium">Ices</span>
+            </Link>
+
+            {/* League Section */}
+            <div className="border-b border-white/10">
+              <button
+                onClick={() => setIsLeagueOpen(!isLeagueOpen)}
+                className="flex items-center justify-between w-full px-4 py-4 text-white hover:bg-white/20 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Users size={20} />
+                  <span className="font-medium">League</span>
+                </div>
+                <ChevronDown size={16} className={`transition-transform duration-200 ${isLeagueOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div className={`transition-all duration-200 ${isLeagueOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+                <div className="bg-white/5 py-2">
+                  <Link
+                    href="/team"
+                    onClick={closeMenu}
+                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-emerald-500/20 rounded flex items-center justify-center">
+                      <Users size={12} />
+                    </div>
+                    <span>Teams</span>
+                  </Link>
+
+                  <Link
+                    href="/standings"
+                    onClick={closeMenu}
+                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-yellow-500/20 rounded flex items-center justify-center">
+                      <Trophy size={12} />
+                    </div>
+                    <span>Standings</span>
+                  </Link>
+
+                  <Link
+                    href="/matchups"
+                    onClick={closeMenu}
+                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
+                      <span className="text-xs">⚔️</span>
+                    </div>
+                    <span>Matchups</span>
+                  </Link>
+
+                  <Link
+                    href="/draft"
+                    onClick={closeMenu}
+                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-purple-500/20 rounded flex items-center justify-center">
+                      <span className="text-xs">📋</span>
+                    </div>
+                    <span>Draft Results</span>
+                  </Link>
+
+                  <Link
+                    href="/keepers"
+                    onClick={closeMenu}
+                    className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-orange-500/20 rounded flex items-center justify-center">
+                      <span className="text-xs">🔒</span>
+                    </div>
+                    <span>Keepers</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
   );

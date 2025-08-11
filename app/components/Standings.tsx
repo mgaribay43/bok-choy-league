@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface TeamEntry {
   id: string;
@@ -12,7 +13,7 @@ interface TeamEntry {
 }
 
 const StandingsViewer = () => {
-  const [year, setYear] = useState<string>("2025");
+  const [year, setYear] = useState<string>("2024");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -76,78 +77,247 @@ const StandingsViewer = () => {
   const others = teams.slice(1);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Year Selector */}
-      <div className="flex justify-center mb-8">
-        <select
-          value={year}
-          onChange={handleYearChange}
-          className="border border-gray-300 rounded-xl px-5 py-2 text-lg shadow-sm hover:shadow-md transition"
-        >
-          {Array.from({ length: 2025 - 2017 + 1 }, (_, i) => (2025 - i).toString()).map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Heading */}
-      <h2 className="text-4xl font-extrabold text-center mb-4 text-slate-800">
-        🏈 Bok Choy League Standings {year}
-      </h2>
-
-      {year === "2025" && (
-        <p className="text-center text-gray-600 mb-10">Check back once the season has begun.</p>
-      )}
-
-      {/* Error or Loading */}
-      {error && <p className="text-red-500 text-center">{error}</p>}
-      {loading && <p className="text-center text-gray-600">Loading standings...</p>}
-
-      {/* Champion Card - only for years other than 2025 */}
-      {!loading && !error && champion && year !== "2025" && (
-        <div className="mb-12">
-          <h3 className="text-center text-2xl font-bold text-yellow-500 mb-4">🥇 Champion</h3>
-          <div className="bg-gradient-to-r from-yellow-200 to-yellow-100 border border-yellow-400 rounded-3xl shadow-lg p-6 flex flex-col items-center max-w-md mx-auto">
-            <Image
-              src={champion.logo}
-              alt={`${champion.name} logo`}
-              width={112}
-              height={112}
-              className="rounded-full object-cover border-4 border-yellow-500 mb-4"
-            />
-            <h3 className="text-2xl font-bold text-yellow-700">{champion.name}</h3>
-            <p className="text-gray-700">
-              Manager: <span className="font-medium">{champion.manager}</span>
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-xl mb-8 p-6 sm:p-8">
+          <div className="text-center">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+              🏈 Bok Choy League Standings
+            </h1>
+            <p className="text-emerald-100 text-lg font-medium mb-6">
+              {year} Season Rankings
             </p>
+
+            {/* Year Selector */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <select
+                  value={year}
+                  onChange={handleYearChange}
+                  className="appearance-none bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl px-6 py-3 pr-12 font-medium text-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {Array.from({ length: 2024 - 2017 + 1 }, (_, i) => (2024 - i).toString()).map((y) => (
+                    <option key={y} value={y} className="text-gray-900 bg-white">
+                      {y} Season
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                  <svg className="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Teams Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {(year === "2025" ? teams : others).map((team) => (
-          <div
-            key={team.id}
-            className="bg-white rounded-3xl shadow-md p-6 flex flex-col items-center text-center hover:shadow-xl transition-all"
-          >
-            <Image
-              src={team.logo}
-              alt={`${team.name} logo`}
-              width={80}
-              height={80}
-              className="rounded-full object-cover mb-3"
-            />
-            <h3 className="text-lg font-semibold text-slate-800">{team.name}</h3>
-            <p className="text-sm text-gray-600">
-              Manager: <span className="font-medium">{team.manager}</span>
-            </p>
-            {!isNaN(team.rank) && (
-              <p className="text-xs text-gray-500 mt-1">Rank: {team.rank}</p>
-            )}
+        {/* Current Season Notice */}
+        {year === "2025" && (
+          <div className="text-center mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 max-w-md mx-auto shadow-sm">
+              <div className="text-3xl mb-2">⏳</div>
+              <p className="text-slate-700 font-medium">Season in Progress</p>
+              <p className="text-slate-600 text-sm mt-1">Check back once the season has begun.</p>
+            </div>
           </div>
-        ))}
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md mx-auto shadow-sm">
+              <div className="text-4xl mb-4">⚠️</div>
+              <h3 className="text-xl font-semibold text-red-800 mb-2">Unable to Load Standings</h3>
+              <p className="text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-slate-600 text-lg mt-6 font-medium">Loading league standings...</p>
+          </div>
+        )}
+
+        {/* Champion Spotlight - only for completed seasons */}
+        {!loading && !error && champion && year !== "2025" && (
+          <div className="mb-12">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent mb-2">
+                🏆 League Champion
+              </h2>
+              <p className="text-slate-600 font-medium">Congratulations to this season's winner!</p>
+            </div>
+
+            <Link href={`/roster?year=${year}&teamId=${champion.id}`} className="group block">
+              <div className="relative bg-gradient-to-br from-yellow-100 via-yellow-50 to-amber-100 border-2 border-yellow-300 rounded-3xl shadow-2xl p-8 max-w-lg mx-auto transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                {/* Sparkle Effects */}
+                <div className="absolute top-4 right-4 text-yellow-500 animate-pulse">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </div>
+                <div className="absolute bottom-4 left-4 text-yellow-400 animate-pulse delay-500">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  {/* Champion Crown */}
+                  <div className="relative mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <div className="text-4xl animate-bounce">👑</div>
+                    </div>
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 p-2 shadow-2xl">
+                      <Image
+                        src={champion.logo}
+                        alt={`${champion.name} logo`}
+                        width={112}
+                        height={112}
+                        className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-yellow-800 mb-2 group-hover:text-yellow-900 transition-colors">
+                    {champion.name}
+                  </h3>
+                  <p className="text-yellow-700 font-medium">
+                    Champion: <span className="font-bold">{champion.manager}</span>
+                  </p>
+
+                  {/* Trophy Icon */}
+                  <div className="mt-4 text-yellow-600">
+                    <svg className="w-8 h-8 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 2L7.5 8.5H2l4.5 3.5L5 18.5l5-3.5 5 3.5-1.5-6.5L18 8.5h-5.5L10 2z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Teams Grid */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {(year === "2025" ? teams : others).map((team, index) => (
+              <Link
+                href={`/roster?year=${year}&teamId=${team.id}`}
+                key={team.id}
+                className="group block"
+              >
+                <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/50 overflow-hidden">
+                  {/* Rank Badge */}
+                  {!isNaN(team.rank) && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg ${team.rank === 2
+                          ? "bg-gradient-to-r from-slate-300 to-slate-500 text-slate-800"
+                          : team.rank === 3
+                            ? "bg-gradient-to-r from-amber-400 to-amber-600 text-amber-900"
+                            : team.rank <= 6
+                              ? "bg-gradient-to-r from-emerald-400 to-emerald-600 text-emerald-900"
+                              : "bg-gradient-to-r from-red-400 to-red-600 text-red-900"
+                        }`}>
+                        #{team.rank}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative p-6 text-center">
+                    {/* Team Logo */}
+                    <div className="relative mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-2 shadow-lg">
+                        <Image
+                          src={team.logo}
+                          alt={`${team.name} logo`}
+                          width={80}
+                          height={80}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      </div>
+
+                      {/* Special Badges */}
+                      {team.rank === 2 && (
+                        <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full flex items-center justify-center shadow-lg">
+                          <span className="text-white text-sm font-bold">🥈</span>
+                        </div>
+                      )}
+                      {team.rank === 3 && (
+                        <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+                          <span className="text-white text-sm font-bold">🥉</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Team Info */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-200 truncate">
+                        {team.name}
+                      </h3>
+
+                      <p className="text-slate-600 font-medium">
+                        <span className="text-slate-500">Manager:</span>
+                        <span className="ml-1 text-slate-700">{team.manager}</span>
+                      </p>
+
+                      {!isNaN(team.rank) && (
+                        <div className="flex justify-center">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${team.rank === 2
+                              ? "bg-slate-100 text-slate-800 border border-slate-200"
+                              : team.rank === 3
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : team.rank <= 6
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : "bg-red-100 text-red-800 border border-red-200"
+                            }`}>
+                            {team.rank === 2
+                              ? "🥈 Runner-up"
+                              : team.rank === 3
+                                ? "🥉 Third Place"
+                                : team.rank <= 6
+                                  ? `Playoffs (#${team.rank})`
+                                  : `Eliminated (#${team.rank})`
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hover Effect Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                  </div>
+
+                  {/* Bottom Accent */}
+                  <div className={`h-1 bg-gradient-to-r ${team.rank === 2
+                      ? "from-slate-400 to-slate-600"
+                      : team.rank === 3
+                        ? "from-amber-400 to-amber-600"
+                        : team.rank <= 6
+                          ? "from-emerald-400 to-emerald-600"
+                          : "from-red-400 to-red-600"
+                    }`} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && (!teams || teams.length === 0) && (!others || others.length === 0) && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">🏈</div>
+            <h3 className="text-2xl font-semibold text-slate-700 mb-2">No Standings Available</h3>
+            <p className="text-slate-500">Unable to load standings for the {year} season.</p>
+          </div>
+        )}
       </div>
     </div>
   );

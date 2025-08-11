@@ -42,7 +42,7 @@ export default function KeepersPage() {
 
       try {
         const draftRes = await fetch(
-          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${(new Date().getFullYear())-1}`
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${(new Date().getFullYear()) - 1}`
         );
         const draftText = await draftRes.text();
         const draftData = JSON.parse(draftText.replace(/^callback\((.*)\)$/, "$1"));
@@ -51,7 +51,7 @@ export default function KeepersPage() {
 
         const rosterPromises = [];
         for (let teamNum = 1; teamNum <= 10; teamNum++) {
-          const url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=${(new Date().getFullYear())-1}&teamId=${teamNum}`;
+          const url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=${(new Date().getFullYear()) - 1}&teamId=${teamNum}`;
           rosterPromises.push(fetch(url).then((res) => res.text()));
         }
 
@@ -85,7 +85,9 @@ export default function KeepersPage() {
         {new Date().getFullYear()} Keepers
       </h1>
 
-      <p className="mb-8 text-center">Use this tool to help determine the player you wish to keep next season</p>
+      <p className="mb-8 text-center">
+        Use this tool to help determine the player you wish to keep next season
+      </p>
 
       {/* Team Selector */}
       {teams.length > 0 && (
@@ -121,11 +123,21 @@ export default function KeepersPage() {
         </div>
       </div>
 
-      {/* Rosters */}
-      {loading && <p className="text-center">Loading rosters and draft results...</p>}
-      {error && <p className="text-red-600 text-center">Error: {error}</p>}
-
-      {!loading && !error && (
+      {/* Loading Spinner */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-slate-600 text-lg mt-6 font-medium">
+            Loading Keepers...
+          </p>
+        </div>
+      ) : error ? (
+        <p className="text-red-600 text-center">Error: {error}</p>
+      ) : visibleTeams.length === 0 ? (
+        <p className="text-center italic text-gray-600">No teams found.</p>
+      ) : (
         <div
           className={`grid gap-8 px-2 sm:px-0 ${selectedTeamId ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
             }`}
@@ -134,8 +146,8 @@ export default function KeepersPage() {
             <div
               key={team.id}
               className={`border p-6 rounded-md shadow bg-white mx-auto ${selectedTeamId
-                ? "max-w-4xl w-full"
-                : "w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl"
+                  ? "max-w-4xl w-full"
+                  : "w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl"
                 }`}
             >
               <div className="flex flex-col items-center mb-6 gap-4">
@@ -156,10 +168,10 @@ export default function KeepersPage() {
                   <li
                     key={`${team.id}-${player.player_id || player.name}`}
                     className={`flex items-center gap-3 border rounded-lg p-3 shadow ${player.draftPick
-                      ? player.draftPick.round >= 2
-                        ? "bg-green-100"
-                        : "bg-red-100"
-                      : "bg-white"
+                        ? player.draftPick.round >= 2
+                          ? "bg-green-100"
+                          : "bg-red-100"
+                        : "bg-white"
                       } min-w-0`}
                   >
                     <Image
@@ -192,6 +204,7 @@ export default function KeepersPage() {
       )}
     </div>
   );
+
 }
 
 /**

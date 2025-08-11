@@ -14,12 +14,26 @@ const leagueKeysByYear: Record<string, string> = {
   "2025": "461.l.128797",
 };
 
-const endpoints = ["teams", "standings", "scoreboard", "draftresults", "roster", "players"];
+const endpoints = [
+  "teams",
+  "standings",
+  "scoreboard",
+  "draftresults",
+  "roster",
+  "players",
+  "playerstats", // Added for testing player stats endpoint
+];
+
+// Example player keys for testing player stats (replace with your own keys as needed)
+const examplePlayerKeys = [
+  "406.p.32676", // Justin Herbert for 2021 league
+];
 
 const YahooViewer = () => {
   const [selectedYear, setSelectedYear] = useState("2025");
   const [selectedEndpoint, setSelectedEndpoint] = useState("teams");
   const [selectedTeamId, setSelectedTeamId] = useState("1");
+  const [selectedWeek, setSelectedWeek] = useState("1"); // For player stats week selection
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,8 +45,15 @@ const YahooViewer = () => {
 
     try {
       let url = `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=${selectedEndpoint}&year=${selectedYear}`;
+
       if (selectedEndpoint === "roster") {
         url += `&teamId=${selectedTeamId}`;
+      } else if (selectedEndpoint === "playerstats") {
+        // Add playerKeys and week to query
+        const playerKeysParam = examplePlayerKeys.join(",");
+        url += `&playerKeys=${encodeURIComponent(playerKeysParam)}&week=${selectedWeek}`;
+      } else if (selectedEndpoint === "scoreboard") {
+        url += `&week=${selectedWeek}`;
       }
 
       const response = await fetch(url);
@@ -48,9 +69,9 @@ const YahooViewer = () => {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedEndpoint, selectedTeamId]);
+  }, [selectedYear, selectedEndpoint, selectedTeamId, selectedWeek]);
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -98,12 +119,48 @@ const YahooViewer = () => {
               ))}
           </select>
         )}
+
+        {selectedEndpoint === "playerstats" && (
+          <select
+            value={selectedWeek}
+            onChange={(e) => setSelectedWeek(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-2 text-lg"
+          >
+            {[...Array(17)].map((_, i) => {
+              const weekNum = (i + 1).toString();
+              return (
+                <option key={weekNum} value={weekNum}>
+                  Week {weekNum}
+                </option>
+              );
+            })}
+          </select>
+        )}
+
+        {selectedEndpoint === "scoreboard" && (
+          <select
+            value={selectedWeek}
+            onChange={(e) => setSelectedWeek(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-2 text-lg"
+          >
+            {[...Array(17)].map((_, i) => {
+              const weekNum = (i + 1).toString();
+              return (
+                <option key={weekNum} value={weekNum}>
+                  Week {weekNum}
+                </option>
+              );
+            })}
+          </select>
+        )}
       </div>
 
       {/* Results */}
       <h2 className="text-xl font-bold text-center mb-4">
         {selectedEndpoint} data for {selectedYear}
         {selectedEndpoint === "roster" && ` – Team ${selectedTeamId}`}
+        {selectedEndpoint === "playerstats" && ` – Week ${selectedWeek}`}
+        {selectedEndpoint === "scoreboard" && ` – Week ${selectedWeek}`}
       </h2>
 
       {error && <p className="text-red-500 text-center">{error}</p>}

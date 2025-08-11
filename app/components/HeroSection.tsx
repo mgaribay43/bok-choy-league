@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <main className="flex-grow container mx-auto px-6 py-16 text-center">
+    <main className=" container mx-auto px-6 pt-16 pb-8 text-center">
       <h2 className="text-5xl font-extrabold text-green-900 mb-6 drop-shadow">
         Welcome to the Bok Choy League
       </h2>

@@ -2,11 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 
 interface PlayerStats {
   byeWeek?: number | null;
-  fanPts?: number | null;   // computed from raw stats using league settings
+  fanPts?: number | null;
   [key: string]: any;
 }
 
@@ -38,9 +37,8 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- helpers: scoring + calculator ---
+
   const buildScoringMap = (settingsJson: any): ScoringMap => {
-    // Prefer stat_modifiers; fall back to points on categories if present
     const league = settingsJson?.fantasy_content?.league;
     const settings = league?.[1]?.settings?.[0] || {};
     const modifiers = settings?.stat_modifiers?.stats || [];
@@ -48,14 +46,12 @@ export default function RosterPage() {
 
     const map: ScoringMap = {};
 
-    // 1) custom modifiers
     modifiers.forEach((s: any) => {
       const id = String(s?.stat?.stat_id ?? "");
       const val = parseFloat(s?.stat?.value ?? "0");
       if (id) map[id] = val;
     });
 
-    // 2) fallback if not already set
     categories.forEach((s: any) => {
       const id = String(s?.stat?.stat_id ?? "");
       const val = parseFloat(s?.stat?.points ?? "0");
@@ -85,7 +81,6 @@ export default function RosterPage() {
       setLoading(true);
       setError(null);
       try {
-        // 0) Fetch league settings → scoring map
         const settingsRes = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${year}`
         );
@@ -93,7 +88,6 @@ export default function RosterPage() {
         const settingsJson = await settingsRes.json();
         const scoringMap = buildScoringMap(settingsJson);
 
-        // 1) Fetch roster for the selected week
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=${year}&teamId=${teamId}&week=${week}`
         );
@@ -103,7 +97,6 @@ export default function RosterPage() {
         const team = json.fantasy_content.team[0];
         const roster = json.fantasy_content.team[1].roster;
 
-        // Team info
         setTeamName(team.find((item: any) => item.name)?.name || "");
         setTeamLogo(team.find((item: any) => item.team_logos)?.team_logos[0].team_logo.url || "");
 
@@ -111,7 +104,6 @@ export default function RosterPage() {
         setManagerName(managerObj?.nickname || "");
         setManagerImg(managerObj?.image_url || "");
 
-        // Parse players
         const playersObj = roster?.["0"]?.players || {};
         const parsed: Player[] = [];
 
@@ -139,7 +131,6 @@ export default function RosterPage() {
           return;
         }
 
-        // 2) Fetch weekly player stats for those players
         const playerKeys = parsed.map((p) => p.playerKey).join(",");
         const statsResponse = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=playerstats&year=${year}&week=${week}&playerKeys=${playerKeys}`
@@ -147,7 +138,6 @@ export default function RosterPage() {
         if (!statsResponse.ok) throw new Error("Failed to fetch player stats");
         const statsJson = await statsResponse.json();
 
-        // Build a map: playerKey => computed stats
         const playersArray = statsJson?.fantasy_content?.players || {};
         const statsMap: Record<string, PlayerStats> = {};
 
@@ -160,20 +150,16 @@ export default function RosterPage() {
           const pKey = playerKeyObj?.player_key;
           if (!pKey) return;
 
-          // Bye week
           const byeObj = metaArray.find((obj: any) => "bye_weeks" in obj);
           const byeWeek = byeObj?.bye_weeks?.week ? Number(byeObj.bye_weeks.week) : null;
 
-          // RAW stats for the selected week
           const rawStats = pArr?.[1]?.player_stats?.stats ?? [];
 
-          // ✅ Compute fantasy points from raw stats using league scoring
           const computedFanPts = calculateFantasyPointsFromStats(rawStats, scoringMap);
 
           statsMap[pKey] = { byeWeek, fanPts: computedFanPts };
         });
 
-        // Merge stats into players
         const playersWithStats = parsed.map((p) => ({
           ...p,
           stats: statsMap[p.playerKey] || {},
@@ -194,13 +180,11 @@ export default function RosterPage() {
     return <p className="text-center text-red-500 mt-10">Missing year or teamId in URL.</p>;
   }
 
-  // --- Week selector dropdown ---
   const yearNum = Number(year);
   const maxWeek = yearNum >= 2017 && yearNum <= 2020 ? 16 : 17;
 
   const weekOptions = Array.from({ length: 17 }, (_, i) => i + 1);
 
-  // Normalize + order players
   const normalizeSlot = (s?: string) => {
     if (!s) return "";
     const up = s.toUpperCase();

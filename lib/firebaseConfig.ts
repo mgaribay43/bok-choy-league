@@ -1,8 +1,6 @@
-// lib/firebaseConfig.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// Your Firebase config from Firebase Console
 const firebaseConfig = {
     apiKey: "AIzaSyD-wNzUysL_Fm-5S-Rvvey9WLJZIheWvVU",
     authDomain: "bokchoyleague.firebaseapp.com",
@@ -13,7 +11,6 @@ const firebaseConfig = {
     measurementId: "G-VZ43L4BECL"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 

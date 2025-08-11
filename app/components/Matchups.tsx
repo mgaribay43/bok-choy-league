@@ -8,7 +8,6 @@ interface Team {
     name: string;
     manager: string;
     score: number;
-    projected: number;
     logo: string;
     id: string;
 }
@@ -91,7 +90,6 @@ const MatchupsPage = ({
                                 name: info.find((item: any) => item.name)?.name || "N/A",
                                 manager: managerInfo?.nickname || "N/A",
                                 score: parseFloat(stats.team_points?.total) || 0,
-                                projected: parseFloat(stats.team_projected_points?.total) || 0,
                                 logo: info.find((item: any) => item.team_logos)?.team_logos[0]?.team_logo.url || "",
                                 id: info.find((item: any) => item.team_id)?.team_id || "N/A",
                             };
@@ -118,27 +116,27 @@ const MatchupsPage = ({
     }, [selectedYear, selectedWeek]);
 
     return (
-        <div className="min-h-screen">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="min-h-screen bg-slate-50">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-xl mb-8 p-6 sm:p-8">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
-                        <div className="text-center lg:text-left">
-                            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl sm:rounded-2xl shadow-xl mb-4 sm:mb-8 p-4 sm:p-6 lg:p-8">
+                    <div className="flex flex-col gap-4 sm:gap-6">
+                        <div className="text-center">
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">
                                 ⚔️ Matchups
                             </h1>
-                            <p className="text-emerald-100 text-lg font-medium">
+                            <p className="text-emerald-100 text-base sm:text-lg font-medium">
                                 Week {selectedWeek} • {selectedYear} Season
                             </p>
                         </div>
 
                         {showSelectors && (
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-end">
-                                <div className="relative">
+                            <div className="flex flex-col xs:flex-row gap-3 sm:gap-4">
+                                <div className="relative flex-1">
                                     <select
                                         value={selectedYear}
                                         onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                        className="appearance-none bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl px-4 py-3 pr-10 font-medium focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
+                                        className="w-full appearance-none bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 pr-8 sm:pr-10 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
                                     >
                                         {availableYears.map((year) => (
                                             <option key={year} value={year} className="text-gray-900">
@@ -147,17 +145,17 @@ const MatchupsPage = ({
                                         ))}
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                                        <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </div>
                                 </div>
 
-                                <div className="relative">
+                                <div className="relative flex-1">
                                     <select
                                         value={selectedWeek}
                                         onChange={(e) => setSelectedWeek(Number(e.target.value))}
-                                        className="appearance-none bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl px-4 py-3 pr-10 font-medium focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
+                                        className="w-full appearance-none bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 pr-8 sm:pr-10 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
                                     >
                                         {availableWeeks.map((week) => (
                                             <option key={week} value={week} className="text-gray-900">
@@ -166,7 +164,7 @@ const MatchupsPage = ({
                                         ))}
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                                        <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </div>
@@ -178,168 +176,82 @@ const MatchupsPage = ({
 
                 {/* Content */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20">
+                    <div className="flex flex-col items-center justify-center py-16 sm:py-20">
                         <div className="relative">
-                            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
                         </div>
-                        <p className="text-slate-600 text-lg mt-6 font-medium">Loading matchups...</p>
+                        <p className="text-slate-600 text-base sm:text-lg mt-4 sm:mt-6 font-medium">Loading matchups...</p>
                     </div>
                 ) : matchups.length === 0 ? (
-                    <div className="text-center py-20">
-                        <div className="text-6xl mb-4">🏈</div>
-                        <h3 className="text-2xl font-semibold text-slate-700 mb-2">No Matchups Found</h3>
-                        <p className="text-slate-500">Try selecting a different week or season.</p>
+                    <div className="text-center py-16 sm:py-20">
+                        <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">🏈</div>
+                        <h3 className="text-xl sm:text-2xl font-semibold text-slate-700 mb-2">No Matchups Found</h3>
+                        <p className="text-slate-500 text-sm sm:text-base">Try selecting a different week or season.</p>
                     </div>
                 ) : (
-                    <div className="grid gap-6">
+                    <div className="space-y-4 sm:space-y-0 sm:grid sm:gap-4 md:gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                         {matchups.map((match, idx) => (
                             <Link
                                 key={idx}
                                 href={`/matchupView?team1Id=${match.team1.id}&team2Id=${match.team2.id}&year=${selectedYear}&week=${selectedWeek}`}
                                 className="group block"
                             >
-                                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-200/50 overflow-hidden">
-                                    {/* Desktop Layout */}
-                                    <div className="hidden sm:flex items-center p-6 lg:p-8">
+                                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-200/50 overflow-hidden active:scale-[0.98] sm:active:scale-100">
+                                    {/* Mobile-First Layout */}
+                                    <div className="p-4 sm:p-6">
                                         {/* Team 1 */}
-                                        <div className="flex items-center space-x-4 flex-1 min-w-0">
-                                            <div className="relative group-hover:scale-110 transition-transform duration-200">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                 <Image
                                                     src={match.team1.logo}
                                                     alt={`${match.team1.name} logo`}
-                                                    width={56}
-                                                    height={56}
-                                                    className="rounded-full border-3 border-slate-200 shadow-md"
+                                                    width={40}
+                                                    height={40}
+                                                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full border-2 border-slate-200 flex-shrink-0"
                                                 />
-                                                {match.winner === "team1" && (
-                                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                                                        <span className="text-white text-xs font-bold">👑</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div
-                                                    onClick={e => e.preventDefault()}
-                                                    className="block text-slate-800 hover:text-emerald-600 transition-colors duration-200"
-                                                >
-                                                    <h3 className="text-xl font-bold truncate">{match.team1.name}</h3>
-                                                    <p className="text-slate-500 font-medium">{match.team1.manager}</p>
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">{match.team1.name}</h3>
+                                                    <p className="text-xs sm:text-sm text-slate-500 truncate">{match.team1.manager}</p>
                                                 </div>
+                                            </div>
+                                            <div className={`text-xl sm:text-2xl font-black ml-2 ${match.winner === "team1" ? "text-emerald-600" : "text-slate-400"}`}>
+                                                {match.team1.score.toFixed(2)}
                                             </div>
                                         </div>
 
-                                        {/* Score Section */}
-                                        <div className="flex items-center justify-center space-x-8 px-8">
-                                            <div className="text-center">
-                                                <div className={`text-4xl font-black ${match.winner === "team1" ? "text-emerald-600" : "text-slate-600"}`}>
-                                                    {match.team1.score.toFixed(2)}
-                                                </div>
-                                                <div className="text-sm text-slate-400 font-medium mt-1">
-                                                    Proj: {match.team1.projected.toFixed(1)}
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-gradient-to-r from-slate-100 to-slate-200 rounded-full px-4 py-2">
-                                                <span className="text-slate-600 font-bold text-lg">VS</span>
-                                            </div>
-
-                                            <div className="text-center">
-                                                <div className={`text-4xl font-black ${match.winner === "team2" ? "text-emerald-600" : "text-slate-600"}`}>
-                                                    {match.team2.score.toFixed(2)}
-                                                </div>
-                                                <div className="text-sm text-slate-400 font-medium mt-1">
-                                                    Proj: {match.team2.projected.toFixed(1)}
-                                                </div>
-                                            </div>
+                                        {/* VS Divider */}
+                                        <div className="flex items-center justify-center my-3 sm:my-4">
+                                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                                            <span className="px-3 text-slate-400 font-bold text-xs sm:text-sm">VS</span>
+                                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
                                         </div>
 
                                         {/* Team 2 */}
-                                        <div className="flex items-center space-x-4 flex-1 min-w-0 justify-end">
-                                            <div className="min-w-0 flex-1 text-right">
-                                                <div
-                                                    onClick={e => e.preventDefault()}
-                                                    className="block text-slate-800 hover:text-emerald-600 transition-colors duration-200"
-                                                >
-                                                    <h3 className="text-xl font-bold truncate">{match.team2.name}</h3>
-                                                    <p className="text-slate-500 font-medium">{match.team2.manager}</p>
-                                                </div>
-                                            </div>
-                                            <div className="relative group-hover:scale-110 transition-transform duration-200">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                 <Image
                                                     src={match.team2.logo}
                                                     alt={`${match.team2.name} logo`}
-                                                    width={56}
-                                                    height={56}
-                                                    className="rounded-full border-3 border-slate-200 shadow-md"
+                                                    width={40}
+                                                    height={40}
+                                                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full border-2 border-slate-200 flex-shrink-0"
                                                 />
-                                                {match.winner === "team2" && (
-                                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                                                        <span className="text-white text-xs font-bold">👑</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Mobile Layout */}
-                                    <div className="flex sm:hidden flex-col p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="relative">
-                                                    <Image
-                                                        src={match.team1.logo}
-                                                        alt={`${match.team1.name} logo`}
-                                                        width={48}
-                                                        height={48}
-                                                        className="rounded-full border-2 border-slate-200"
-                                                    />
-                                                    {match.winner === "team1" && (
-                                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
-                                                            <span className="text-white text-xs">👑</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-800 truncate max-w-[120px]">{match.team1.name}</h3>
-                                                    <p className="text-sm text-slate-500">{match.team1.manager}</p>
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">{match.team2.name}</h3>
+                                                    <p className="text-xs sm:text-sm text-slate-500 truncate">{match.team2.manager}</p>
                                                 </div>
                                             </div>
-
-                                            <div className="flex items-center space-x-3">
-                                                <div>
-                                                    <h3 className="font-bold text-slate-800 truncate max-w-[120px] text-right">{match.team2.name}</h3>
-                                                    <p className="text-sm text-slate-500 text-right">{match.team2.manager}</p>
-                                                </div>
-                                                <div className="relative">
-                                                    <Image
-                                                        src={match.team2.logo}
-                                                        alt={`${match.team2.name} logo`}
-                                                        width={48}
-                                                        height={48}
-                                                        className="rounded-full border-2 border-slate-200"
-                                                    />
-                                                    {match.winner === "team2" && (
-                                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
-                                                            <span className="text-white text-xs">👑</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div className={`text-xl sm:text-2xl font-black ml-2 ${match.winner === "team2" ? "text-emerald-600" : "text-slate-400"}`}>
+                                                {match.team2.score.toFixed(2)}
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-center space-x-6">
+                                        {/* Winner indicator for mobile */}
+                                        <div className="mt-4 sm:hidden">
                                             <div className="text-center">
-                                                <div className={`text-3xl font-black ${match.winner === "team1" ? "text-emerald-600" : "text-slate-600"}`}>
-                                                    {match.team1.score.toFixed(2)}
-                                                </div>
-                                                <div className="text-xs text-slate-400">Proj: {match.team1.projected.toFixed(1)}</div>
-                                            </div>
-                                            <span className="text-slate-400 font-bold">VS</span>
-                                            <div className="text-center">
-                                                <div className={`text-3xl font-black ${match.winner === "team2" ? "text-emerald-600" : "text-slate-600"}`}>
-                                                    {match.team2.score.toFixed(2)}
-                                                </div>
-                                                <div className="text-xs text-slate-400">Proj: {match.team2.projected.toFixed(1)}</div>
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                                    🏆 {match.winner === "team1" ? match.team1.name : match.team2.name} Wins
+                                                </span>
                                             </div>
                                         </div>
                                     </div>

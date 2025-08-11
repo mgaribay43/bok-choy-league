@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 interface PlayerStats {
     byeWeek?: number | null;
-    fanPts?: number | null;
-    projPts?: number | null;
+    fanPts?: number | null;   // computed from raw stats
     [key: string]: any;
 }
 
@@ -30,6 +29,48 @@ interface TeamData {
     players: Player[];
 }
 
+type ScoringMap = Record<string, number>;
+
+// --- helpers: scoring map + calculator ---
+function buildScoringMap(settingsJson: any): ScoringMap {
+    // Prefer stat_modifiers (custom multipliers); fall back to points on categories if present.
+    const league = settingsJson?.fantasy_content?.league;
+    const settings = league?.[1]?.settings?.[0] || {};
+    const modifiers = settings?.stat_modifiers?.stats || [];
+    const categories = settings?.stat_categories?.stats || [];
+
+    const map: ScoringMap = {};
+
+    // 1) stat_modifiers (authoritative if present)
+    modifiers.forEach((s: any) => {
+        const id = String(s?.stat?.stat_id ?? "");
+        const val = parseFloat(s?.stat?.value ?? "0");
+        if (id) map[id] = val;
+    });
+
+    // 2) fallback: points on categories (if any) and not already set
+    categories.forEach((s: any) => {
+        const id = String(s?.stat?.stat_id ?? "");
+        const val = parseFloat(s?.stat?.points ?? "0");
+        if (id && !Number.isFinite(map[id]) && Number.isFinite(val)) {
+            map[id] = val;
+        }
+    });
+
+    return map;
+}
+
+function calculateFantasyPointsFromStats(statsArray: any[], scoringMap: ScoringMap): number {
+    if (!Array.isArray(statsArray)) return 0;
+    return statsArray.reduce((total, s) => {
+        const id = String(s?.stat?.stat_id ?? "");
+        const val = parseFloat(s?.stat?.value ?? "0");
+        const mult = Number(scoringMap[id] ?? 0);
+        if (!Number.isFinite(val) || !Number.isFinite(mult)) return total;
+        return total + val * mult;
+    }, 0);
+}
+
 export default function MatchupViewer() {
     const searchParams = useSearchParams();
 
@@ -50,7 +91,7 @@ export default function MatchupViewer() {
             return;
         }
 
-        async function fetchTeamData(teamId: string): Promise<TeamData> {
+        async function fetchTeamData(teamId: string, scoringMap: ScoringMap): Promise<TeamData> {
             const rosterRes = await fetch(
                 `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=roster&year=${year}&teamId=${teamId}&week=${week}`
             );
@@ -87,7 +128,9 @@ export default function MatchupViewer() {
                 });
             });
 
-            if (parsedPlayers.length === 0) return { teamId, teamName, teamLogo, managerName, managerImg, players: [] };
+            if (parsedPlayers.length === 0) {
+                return { teamId, teamName, teamLogo, managerName, managerImg, players: [] };
+            }
 
             const playerKeys = parsedPlayers.map((p) => p.playerKey).join(",");
             const statsRes = await fetch(
@@ -100,9 +143,10 @@ export default function MatchupViewer() {
             const statsMap: Record<string, PlayerStats> = {};
 
             Object.values(playersArray).forEach((playerWrapper: any) => {
-                const playerData = playerWrapper.player;
-                if (!playerData) return;
-                const metaArray = playerData[0];
+                const pArr = (playerWrapper as any).player;
+                if (!pArr) return;
+
+                const metaArray = pArr[0];
                 const playerKeyObj = metaArray.find((obj: any) => obj.player_key);
                 const pKey = playerKeyObj?.player_key;
                 if (!pKey) return;
@@ -110,14 +154,13 @@ export default function MatchupViewer() {
                 const byeObj = metaArray.find((obj: any) => "bye_weeks" in obj);
                 const byeWeek = byeObj?.bye_weeks?.week ? Number(byeObj.bye_weeks.week) : null;
 
-                let fanPts = null;
-                let projPts = null;
-                if (playerData[1]?.player_points) {
-                    fanPts = Number(playerData[1].player_points.total_points) || null;
-                    projPts = Number(playerData[1].player_points.projected_points) || null;
-                }
+                // Raw weekly stats
+                const rawStats = pArr?.[1]?.player_stats?.stats ?? [];
 
-                statsMap[pKey] = { byeWeek, fanPts, projPts };
+                // Compute fantasy points from raw stats using league scoring
+                const computedFanPts = calculateFantasyPointsFromStats(rawStats, scoringMap);
+
+                statsMap[pKey] = { byeWeek, fanPts: computedFanPts };
             });
 
             const playersWithStats = parsedPlayers.map((p) => ({
@@ -132,10 +175,23 @@ export default function MatchupViewer() {
             setLoading(true);
             setError(null);
             try {
-                const [t1, t2] = await Promise.all([fetchTeamData(team1Id), fetchTeamData(team2Id)]);
+                // 1) league settings -> scoring map
+                const settingsRes = await fetch(
+                    `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${year}`
+                );
+                if (!settingsRes.ok) throw new Error("Failed to fetch settings");
+                const settingsJson = await settingsRes.json();
+                const scoringMap = buildScoringMap(settingsJson);
+
+                // 2) team rosters + computed points
+                const [t1, t2] = await Promise.all([
+                    fetchTeamData(team1Id, scoringMap),
+                    fetchTeamData(team2Id, scoringMap),
+                ]);
                 setTeam1Data(t1);
                 setTeam2Data(t2);
-            } catch {
+            } catch (e) {
+                console.error(e);
                 setError("Failed to load matchup data.");
             } finally {
                 setLoading(false);
@@ -154,8 +210,7 @@ export default function MatchupViewer() {
         if (up.includes("WR")) return "WR";
         if (up.includes("RB")) return "RB";
         if (up.includes("TE")) return "TE";
-        if (up.includes("W/R") || up.includes("W/R/T") || up.includes("FLEX") || up === "WRT")
-            return "W/R";
+        if (up.includes("W/R") || up.includes("W/R/T") || up.includes("FLEX") || up === "WRT") return "W/R";
         if (up.includes("K")) return "K";
         if (up.includes("DEF") || up.includes("DST")) return "DEF";
         return up;
@@ -206,9 +261,8 @@ export default function MatchupViewer() {
         });
 
         const totalPoints = activePlayers.reduce((sum, p) => sum + (p.stats?.fanPts || 0), 0);
-        const totalProjected = activePlayers.reduce((sum, p) => sum + (p.stats?.projPts || 0), 0);
 
-        return { totalPoints, totalProjected };
+        return { totalPoints };
     };
 
     if (loading) {
@@ -301,13 +355,9 @@ export default function MatchupViewer() {
                                 </p>
                                 <div className="mt-1 sm:mt-2">
                                     <p
-                                        className={`text-xl sm:text-2xl font-black ${winner === "team1" ? "text-yellow-300" : "text-white/90"
-                                            }`}
+                                        className={`text-xl sm:text-2xl font-black ${winner === "team1" ? "text-yellow-300" : "text-white/90"}`}
                                     >
                                         {team1Totals.totalPoints.toFixed(2)}
-                                    </p>
-                                    <p className="text-emerald-200 text-xs sm:text-sm">
-                                        Proj: {team1Totals.totalProjected.toFixed(1)}
                                     </p>
                                 </div>
                             </div>
@@ -343,13 +393,9 @@ export default function MatchupViewer() {
                                 </p>
                                 <div className="mt-1 sm:mt-2">
                                     <p
-                                        className={`text-xl sm:text-2xl font-black ${winner === "team2" ? "text-yellow-300" : "text-white/90"
-                                            }`}
+                                        className={`text-xl sm:text-2xl font-black ${winner === "team2" ? "text-yellow-300" : "text-white/90"}`}
                                     >
                                         {team2Totals.totalPoints.toFixed(2)}
-                                    </p>
-                                    <p className="text-emerald-200 text-xs sm:text-sm">
-                                        Proj: {team2Totals.totalProjected.toFixed(1)}
                                     </p>
                                 </div>
                             </div>
@@ -360,7 +406,7 @@ export default function MatchupViewer() {
                 {/* Roster Comparison Table */}
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200/50">
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[600px] sm:min-w-full">
+                        <table className="w-full min-w-[600px] sm:min-w-full table-fixed">
                             <thead>
                                 <tr className="bg-gradient-to-r from-slate-100 to-slate-200">
                                     {/* Team 1 Headers */}
@@ -368,9 +414,6 @@ export default function MatchupViewer() {
                                         <div className="flex items-center gap-2">
                                             <span>{team1Data.teamName}</span>
                                         </div>
-                                    </th>
-                                    <th className="px-2 py-3 text-center font-semibold text-slate-700 border-b border-slate-300 text-xs sm:text-sm min-w-[60px]">
-                                        Projected
                                     </th>
                                     <th className="px-2 py-3 text-center font-semibold text-slate-700 border-b border-slate-300 text-xs sm:text-sm min-w-[60px]">
                                         Points
@@ -384,9 +427,6 @@ export default function MatchupViewer() {
                                     {/* Team 2 Headers */}
                                     <th className="px-2 py-3 text-center font-semibold text-slate-700 border-b border-slate-300 text-xs sm:text-sm min-w-[60px]">
                                         Points
-                                    </th>
-                                    <th className="px-2 py-3 text-center font-semibold text-slate-700 border-b border-slate-300 text-xs sm:text-sm min-w-[60px]">
-                                        Projected
                                     </th>
                                     <th className="px-3 py-3 text-right font-semibold text-slate-700 border-b border-slate-300 text-xs sm:text-sm">
                                         <div className="flex items-center justify-end gap-2">
@@ -413,8 +453,8 @@ export default function MatchupViewer() {
                                             <tr
                                                 key={i}
                                                 className={`transition-colors duration-150 ${isStarter
-                                                        ? "bg-white hover:bg-emerald-50 border-l-4 border-l-emerald-500"
-                                                        : "bg-slate-50 hover:bg-slate-100 border-l-4 border-l-slate-300"
+                                                    ? "bg-white hover:bg-emerald-50 border-l-4 border-l-emerald-500"
+                                                    : "bg-slate-50 hover:bg-slate-100 border-l-4 border-l-slate-300"
                                                     }`}
                                             >
                                                 {/* Team 1 Player */}
@@ -445,22 +485,16 @@ export default function MatchupViewer() {
                                                                 </div>
                                                             </div>
                                                         </td>
+                                                        {/* Points (left) */}
                                                         <td className="px-2 py-3 text-center border-b border-slate-200 text-xs sm:text-sm">
                                                             <span
                                                                 className={`font-bold ${player1.stats?.fanPts && player1.stats.fanPts > 0
-                                                                        ? "text-emerald-600"
-                                                                        : "text-slate-500"
+                                                                    ? "text-emerald-600"
+                                                                    : "text-slate-500"
                                                                     }`}
                                                             >
                                                                 {player1.stats?.fanPts != null
                                                                     ? player1.stats.fanPts.toFixed(1)
-                                                                    : "-"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-2 py-3 text-center border-b border-slate-200 text-xs sm:text-sm">
-                                                            <span className="text-slate-600 font-medium">
-                                                                {player1.stats?.projPts != null
-                                                                    ? player1.stats.projPts.toFixed(1)
                                                                     : "-"}
                                                             </span>
                                                         </td>
@@ -489,18 +523,12 @@ export default function MatchupViewer() {
                                                 {/* Team 2 Player */}
                                                 {player2 ? (
                                                     <>
-                                                        <td className="px-2 py-3 text-center border-b border-slate-200 text-xs sm:text-sm">
-                                                            <span className="text-slate-600 font-medium">
-                                                                {player2.stats?.projPts != null
-                                                                    ? player2.stats.projPts.toFixed(1)
-                                                                    : "-"}
-                                                            </span>
-                                                        </td>
+                                                        {/* Points (right) */}
                                                         <td className="px-2 py-3 text-center border-b border-slate-200 text-xs sm:text-sm">
                                                             <span
                                                                 className={`font-bold ${player2.stats?.fanPts && player2.stats.fanPts > 0
-                                                                        ? "text-emerald-600"
-                                                                        : "text-slate-500"
+                                                                    ? "text-emerald-600"
+                                                                    : "text-slate-500"
                                                                     }`}
                                                             >
                                                                 {player2.stats?.fanPts != null

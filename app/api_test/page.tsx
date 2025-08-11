@@ -22,11 +22,12 @@ const endpoints = [
   "roster",
   "players",
   "playerstats", // Added for testing player stats endpoint
-];
+  "settings"
+]
 
 // Example player keys for testing player stats (replace with your own keys as needed)
 const examplePlayerKeys = [
-  "406.p.32676", // Justin Herbert for 2021 league
+  "449.p.31002" // 2024 player
 ];
 
 const YahooViewer = () => {

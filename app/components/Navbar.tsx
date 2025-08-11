@@ -45,7 +45,7 @@ export default function Navbar() {
                   The Bok Choy League
                 </h1>
                 <p className="text-xs text-emerald-200 font-medium hidden sm:block">
-                  Fantasy Football Excellence
+                  Fantasy Football
                 </p>
               </div>
             </div>

@@ -175,7 +175,8 @@ export const yahooAPI = functions.https.onRequest(
 
                     for (let i = 0; i < keysArray.length; i += batchSize) {
                         const batchKeys = keysArray.slice(i, i + batchSize).join(",");
-                        const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}/stats;type=week${week};season=${year}?format=json`;
+                        console.log("League Key = " + leagueKey + " year =" + year);
+                        const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}/stats;type=week${week}?format=json`;
 
                         console.log(`Fetching player stats batch: ${batchKeys}`);
                         const batchResponse = await fetch(batchEndpoint, {
@@ -215,6 +216,11 @@ export const yahooAPI = functions.https.onRequest(
 
                     res.status(200).json(combinedResponse);
                     return;
+                }
+
+                case "settings": {
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/settings?format=json`;
+                    break;
                 }
 
                 default:

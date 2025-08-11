@@ -123,16 +123,6 @@ export default function Navbar() {
                     </Link>
 
                     <Link
-                      href="/matchups"
-                      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                    >
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-bold">⚔️</span>
-                      </div>
-                      <span className="font-medium">Matchups</span>
-                    </Link>
-
-                    <Link
                       href="/draft"
                       className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
                     >

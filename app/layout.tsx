@@ -1,22 +1,24 @@
 'use client'; // Ensure this file is treated as a Client Component
 
 import './globals.css';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '../context/AuthContext'; // Import AuthProvider and useAuth
+import { AuthProvider, useAuth } from '../context/AuthContext'; // Import useAuth
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
 const AuthCheck = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(); // Access user state from AuthContext
   const router = useRouter();
+  const [redirecting, setRedirecting] = useState(false); // To prevent multiple redirects
 
   useEffect(() => {
-    if (!user && !loading) {
+    if (!user && !loading && !redirecting) {
       const currentPath = window.location.pathname;
+      setRedirecting(true); // Prevent multiple redirects
       router.push(`/login?redirect=${currentPath}`); // Pass the current path as a redirect
     }
-  }, [user, loading, router]);
+  }, [user, loading, redirecting, router]);
 
   if (loading) {
     return (
@@ -34,7 +36,7 @@ const AuthCheck = ({ children }: { children: ReactNode }) => {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html>
+    <html lang="en">
       <body>
         <AuthProvider>
           <AuthCheck>

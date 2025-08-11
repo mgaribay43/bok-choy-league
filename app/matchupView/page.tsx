@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import React from "react";
+import React, { Suspense } from "react";
 import Matchup from "../components/MatchupViewer";
 
 const MatchupViewer = () => {
   return (
-    <div>
+    <Suspense>
       <Matchup/>
-    </div>
+    </Suspense>
   );
 };
 

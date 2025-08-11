@@ -1,13 +1,11 @@
-"use client";
-
-import React from "react";
+import React, { Suspense } from "react";
 import RosterViewer from "../components/RosterViewer";
 
 const Roster = () => {
   return (
-    <div>
-      <RosterViewer/>
-    </div>
+    <Suspense fallback={<p>Loading roster...</p>}>
+      <RosterViewer />
+    </Suspense>
   );
 };
 

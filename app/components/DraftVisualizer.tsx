@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import leagueKeysByYearJson from "../data/League_Keys/league_keys.json";
 
 interface DraftPick {
     pick: number;
@@ -34,21 +35,7 @@ export default function DraftBoardPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [teamManagers, setTeamManagers] = useState<Record<string, string>>({});
-    const [leagueKeysByYear, setLeagueKeysByYear] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-        async function loadLeagueKeys() {
-            try {
-                const res = await fetch("../../Data/League_Keys/league_keys.json");
-                if (!res.ok) throw new Error("Failed to load league keys JSON.");
-                const data = await res.json();
-                setLeagueKeysByYear(data);
-            } catch (err) {
-                console.error("Error loading league keys:", err);
-            }
-        }
-        loadLeagueKeys();
-    }, []);
+    const leagueKeysByYear = leagueKeysByYearJson as Record<string, string>;
 
     useEffect(() => {
         if (!selectedYear) {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <main className="flex-grow container mx-auto px-6 py-16 text-center">
+    <main className=" container mx-auto px-6 pt-16 pb-8 text-center">
       <h2 className="text-5xl font-extrabold text-green-900 mb-6 drop-shadow">
         Welcome to the Bok Choy League
       </h2>
@@ -14,13 +14,6 @@ export default function HeroSection() {
         head-to-head in a battle of strategy, luck, and bragging rights. Dive in, track your team,
         relive the highlights, and celebrate every win with the Bok Choy crew.
       </p>
-
-      <Link
-        href="/standings"
-        className="inline-block bg-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-green-800 transition"
-      >
-        Current Standings
-      </Link>
     </main>
   );
 }

@@ -1,26 +1,26 @@
-'use client';
+'use client'; // Ensure this file is treated as a Client Component
 
 import './globals.css';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '../context/AuthContext';
+import { AuthProvider, useAuth } from '../context/AuthContext'; // Import AuthProvider and useAuth
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+// This component ensures the user is authenticated
 const AuthCheck = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(); // Access user state from AuthContext
   const router = useRouter();
-  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (!user && !loading && !hasRedirected) {
-      const currentPath = window.location.pathname;
-      setHasRedirected(true);
-      router.push(`/login?redirect=${currentPath}`);
+    // Redirect to login if user is not authenticated and loading is complete
+    if (!user && !loading) {
+      router.push('/login');
     }
-  }, [user, loading, hasRedirected, router]);
+  }, [user, loading, router]);
 
   if (loading) {
+    // Show a loading spinner while checking auth state
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="relative">
@@ -31,12 +31,13 @@ const AuthCheck = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  return <>{children}</>;
+  return <>{children}</>; // Render the page content if the user is authenticated
 };
+
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html>
       <body>
         <AuthProvider>
           <AuthCheck>

@@ -261,16 +261,6 @@ export default function Navbar() {
                 <div className={`transition-all duration-200 ${isLeagueOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
                   <div className="bg-white/5 py-2">
                     <Link
-                      href="/team"
-                      onClick={closeMenu}
-                      className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                      <div className="w-6 h-6 bg-emerald-500/20 rounded flex items-center justify-center">
-                        <Users size={12} />
-                      </div>
-                      <span>Teams</span>
-                    </Link>
-                    <Link
                       href="/standings"
                       onClick={closeMenu}
                       className="flex items-center space-x-3 px-8 py-3 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"

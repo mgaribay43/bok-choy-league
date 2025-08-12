@@ -1,33 +1,55 @@
-'use client'; // Ensure this file is treated as a Client Component
+'use client';
 
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../../lib/firebaseConfig'; // Firebase auth instance
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { collection, getFirestore, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../../firebase';
 
-const GoogleSignIn = ({ onSuccess }: { onSuccess: () => void }) => {
-    const router = useRouter();
+export default function GoogleSignIn({ onSuccess }: { onSuccess: () => void }) {
+    const [message, setMessage] = useState<string | null>(null);
 
-    const handleGoogleSignIn = async () => {
+    const handleSignIn = async () => {
+        setMessage(null);
         const provider = new GoogleAuthProvider();
-
         try {
             const result = await signInWithPopup(auth, provider);
-            onSuccess(); // Trigger the onSuccess callback after login
+            const email = result.user.email;
+            if (!email) {
+                setMessage('No email found in your Google account.');
+                await auth.signOut();
+                return;
+            }
+            const dbInstance = getFirestore();
+            const q = query(
+                collection(dbInstance, "Login_ID's"),
+                where("email", "==", email)
+            );
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                onSuccess();
+            } else {
+                setMessage('You are not a member of The Bok Choy League. If you believe this is an error, please contact the league administrator.');
+                await auth.signOut();
+            }
         } catch (error) {
-            console.error('Error signing in with Google: ', error);
+            setMessage('Sign in failed.');
         }
     };
 
     return (
-        <button
-            onClick={handleGoogleSignIn}
-            className="w-full mt-6 py-3 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-            <div className="flex items-center justify-center space-x-2">
-                <span>Sign in with Google</span>
-            </div>
-        </button>
+        <div className="space-y-4">
+            {message && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">
+                    {message}
+                </div>
+            )}
+            <button
+                onClick={handleSignIn}
+                className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+            >
+                Sign in with Google
+            </button>
+        </div>
     );
-};
-
-export default GoogleSignIn;
+}

@@ -1,33 +1,44 @@
-'use client'; // Ensure this file is treated as a Client Component
+'use client';
 
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../../lib/firebaseConfig'; // Firebase auth instance
-import { useRouter } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { collection, getFirestore, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../../firebase';
 
-const GoogleSignIn = ({ onSuccess }: { onSuccess: () => void }) => {
-    const router = useRouter();
-
-    const handleGoogleSignIn = async () => {
+export default function GoogleSignIn({ onSuccess }: { onSuccess: () => void }) {
+    const handleSignIn = async () => {
         const provider = new GoogleAuthProvider();
-
         try {
             const result = await signInWithPopup(auth, provider);
-            onSuccess(); // Trigger the onSuccess callback after login
+            const email = result.user.email;
+            if (!email) {
+                alert('No email found in your Google account.');
+                await auth.signOut();
+                return;
+            }
+            const dbInstance = getFirestore();
+            const q = query(
+                collection(dbInstance, "Login_ID's"),
+                where("email", "==", email)
+            );
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                onSuccess();
+            } else {
+                alert('Your email is not authorized to access this site.');
+                await auth.signOut();
+            }
         } catch (error) {
-            console.error('Error signing in with Google: ', error);
+            alert('Sign in failed.');
         }
     };
 
     return (
         <button
-            onClick={handleGoogleSignIn}
-            className="w-full mt-6 py-3 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onClick={handleSignIn}
+            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
         >
-            <div className="flex items-center justify-center space-x-2">
-                <span>Sign in with Google</span>
-            </div>
+            Sign in with Google
         </button>
     );
-};
-
-export default GoogleSignIn;
+}

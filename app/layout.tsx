@@ -20,7 +20,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           {isUnprotected ? (
             <div className="flex flex-col min-h-screen bg-green-50">
-              <Navbar />
               <main className="flex-grow">{children}</main>
               <Footer />
             </div>

@@ -292,7 +292,7 @@ export default function Navbar() {
                       <div className="w-6 h-6 bg-orange-500/20 rounded flex items-center justify-center">
                         <span className="text-xs">🔒</span>
                       </div>
-                      <span>Keepers</span>
+                      <span>Keeper Utility</span>
                     </Link>
                   </div>
                 </div>

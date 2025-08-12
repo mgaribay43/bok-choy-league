@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation'; // For retrieving query params
 import GoogleSignIn from '../components/GoogleSignIn';
+import { Suspense } from 'react';
 
-export default function LoginPage() {
+function LoginPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get('redirect') || '/'; // Default to home if no redirect
@@ -28,3 +29,12 @@ export default function LoginPage() {
         </div>
     );
 }
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginPageContent />
+        </Suspense>
+    );
+}
+

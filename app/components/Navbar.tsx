@@ -39,125 +39,130 @@ export default function Navbar() {
         ? 'bg-gradient-to-r from-emerald-800/95 to-teal-800/95 backdrop-blur-md shadow-2xl'
         : 'bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg'
       }`}>
-      <div className="container mx-auto px-4 lg:px-6">
-        <div className="flex justify-between items-center h-16 lg:h-18">
+      <div className="container mx-auto px-4 lg:px-6 max-w-none">
+        <div className="flex w-full items-center h-16 lg:h-18">
           {/* Logo */}
-          <Link href="/" onClick={closeMenu} className="group">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="text-3xl group-hover:scale-110 transition-transform duration-200">
-                  🥬
+          <div>
+            <Link href="/" onClick={closeMenu} className="group">
+              <div className="flex flex-row items-center space-x-3">
+                <div className="relative">
+                  <div className="text-3xl group-hover:scale-110 transition-transform duration-200">
+                    🥬
+                  </div>
+                  <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-300 -z-10" />
                 </div>
-                <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-300 -z-10" />
+                <div>
+                  <h1 className="text-xl lg:text-2xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-200 whitespace-nowrap">
+                    The Bok Choy League
+                  </h1>
+                  <p className="text-xs text-emerald-200 font-medium hidden sm:block">
+                    Fantasy Football
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-200">
-                  The Bok Choy League
-                </h1>
-                <p className="text-xs text-emerald-200 font-medium hidden sm:block">
-                  Fantasy Football
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          {/* If not logged in, show only Sign In */}
-          {!user ? (
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 font-medium"
-            >
-              Sign In
             </Link>
-          ) : (
-            <>
-              {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
-                {/* Main Links */}
-                <Link
-                  href="/champions"
-                  className="group flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
-                >
-                  <Trophy size={18} className="group-hover:text-yellow-300 transition-colors" />
-                  <span>Champions</span>
-                </Link>
+          </div>
 
-                <Link
-                  href="/rules"
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
-                >
-                  <Award size={18} />
-                  <span>Rules</span>
-                </Link>
+          {/* Navigation and user section */}
+          <div className="flex-1 flex items-center justify-end">
+            {/* If not logged in, show only Sign In */}
+            {!user ? (
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 font-medium"
+              >
+                Sign In
+              </Link>
+            ) : (
+              <>
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
+                  {/* Main Links */}
+                  <Link
+                    href="/champions"
+                    className="group flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+                  >
+                    <Trophy size={18} className="group-hover:text-yellow-300 transition-colors" />
+                    <span>Champions</span>
+                  </Link>
 
-                <Link
-                  href="/events"
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
-                >
-                  <Calendar size={18} />
-                  <span>Events</span>
-                </Link>
+                  <Link
+                    href="/rules"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+                  >
+                    <Award size={18} />
+                    <span>Rules</span>
+                  </Link>
 
-                <Link
-                  href="/ices"
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
-                >
-                  <span className="text-lg">🧊</span>
-                  <span>Ices</span>
-                </Link>
+                  <Link
+                    href="/events"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+                  >
+                    <Calendar size={18} />
+                    <span>Events</span>
+                  </Link>
 
-                {/* League Dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium">
-                    <Users size={18} />
-                    <span>League</span>
-                    <ChevronDown size={16} className="group-hover:rotate-180 transition-transform duration-200" />
-                  </button>
+                  <Link
+                    href="/ices"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+                  >
+                    <span className="text-lg">🧊</span>
+                    <span>Ices</span>
+                  </Link>
 
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
-                    <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden backdrop-blur-sm">
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
-                        <p className="text-sm font-semibold text-emerald-800">League</p>
-                      </div>
+                  {/* League Dropdown */}
+                  <div className="relative group">
+                    <button className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium">
+                      <Users size={18} />
+                      <span>League</span>
+                      <ChevronDown size={16} className="group-hover:rotate-180 transition-transform duration-200" />
+                    </button>
 
-                      <div className="py-2">
-                        <Link
-                          href="/standings"
-                          className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                        >
-                          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <Trophy size={16} className="text-yellow-600" />
-                          </div>
-                          <span className="font-medium">Standings</span>
-                        </Link>
+                    {/* Dropdown Menu */}
+                    <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                      <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden backdrop-blur-sm">
+                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
+                          <p className="text-sm font-semibold text-emerald-800">League</p>
+                        </div>
 
-                        <Link
-                          href="/draft"
-                          className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                        >
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <span className="text-purple-600 text-sm font-bold">📋</span>
-                          </div>
-                          <span className="font-medium">Draft Results</span>
-                        </Link>
+                        <div className="py-2">
+                          <Link
+                            href="/standings"
+                            className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                          >
+                            <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                              <Trophy size={16} className="text-yellow-600" />
+                            </div>
+                            <span className="font-medium">Standings</span>
+                          </Link>
 
-                        <Link
-                          href="/keepers"
-                          className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
-                        >
-                          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <span className="text-orange-600 text-sm font-bold">🔒</span>
-                          </div>
-                          <span className="font-medium">Keeper Utility</span>
-                        </Link>
+                          <Link
+                            href="/draft"
+                            className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                          >
+                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                              <span className="text-purple-600 text-sm font-bold">📋</span>
+                            </div>
+                            <span className="font-medium">Draft Results</span>
+                          </Link>
+
+                          <Link
+                            href="/keepers"
+                            className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+                          >
+                            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                              <span className="text-orange-600 text-sm font-bold">🔒</span>
+                            </div>
+                            <span className="font-medium">Keeper Utility</span>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* User Name */}
                 <div
-                  className="ml-6 px-4 py-2 rounded-xl text-white font-semibold relative cursor-pointer transition-all duration-300"
+                  className="ml-6 px-4 py-2 rounded-xl text-white font-semibold relative cursor-pointer transition-all duration-300 hidden md:block"
                   onMouseEnter={() => setIsNameHovered(true)}
                   onMouseLeave={() => setIsNameHovered(false)}
                 >
@@ -182,24 +187,23 @@ export default function Navbar() {
                       : user.email?.split('@')[0]}
                   </span>
                 </div>
-              </div>
-
-              {/* Mobile Hamburger */}
-              <button
-                onClick={toggleMenu}
-                className="md:hidden relative w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all duration-200"
-                aria-label="Toggle Menu"
-              >
-                <div className="relative">
-                  {isOpen ? (
-                    <X size={24} className="text-white" />
-                  ) : (
-                    <Menu size={24} className="text-white" />
-                  )}
-                </div>
-              </button>
-            </>
-          )}
+                {/* Mobile Hamburger */}
+                <button
+                  onClick={toggleMenu}
+                  className="md:hidden relative w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all duration-200"
+                  aria-label="Toggle Menu"
+                >
+                  <div className="relative">
+                    {isOpen ? (
+                      <X size={24} className="text-white" />
+                    ) : (
+                      <Menu size={24} className="text-white" />
+                    )}
+                  </div>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Mobile Menu */}

@@ -2,42 +2,52 @@
     "2025": {
         "Teams": [
             {
+                "Manager": "Mike",
                 "TeamID": "1",
                 "keeper": "Brian Thomas Jr."
             },
             {
+                "Manager": "Hunter",
                 "TeamID": "2",
                 "keeper": ""
             },
             {
+                "Manager": "Brent",
                 "TeamID": "3",
                 "keeper": "Ladd McConkey"
             },
             {
+                "Manager": "Hughes",
                 "TeamID": "4",
                 "keeper": "Jayden Daniels"
             },
             {
+                "Manager": "Johnny",
                 "TeamID": "5",
                 "keeper": "David Montgomery"
             },
             {
+                "Manager": "Harris",
                 "TeamID": "6",
                 "keeper": ""
             },
             {
+                "Manager": "Tanner",
                 "TeamID": "7",
                 "keeper": ""
             },
             {
+                "Manager": "Conner",
                 "TeamID": "8",
                 "keeper": ""
             },
             {
+                "Manager": "Jordan",
                 "TeamID": "9",
                 "keeper": ""
             },
             {
+                "Manager": "Zach",
                 "TeamID": "10",
                 "keeper": "George Kittle"
             }
@@ -46,42 +56,52 @@
     "2024": {
         "Teams": [
             {
+                "Manager": "Mike",
                 "TeamID": "1",
                 "keeper": "Breece Hall"
             },
             {
+                "Manager": "Hunter",
                 "TeamID": "2",
                 "keeper": "Isiah Pacheco"
             },
             {
+                "Manager": "Brent",
                 "TeamID": "3",
                 "keeper": ""
             },
             {
+                "Manager": "Hughes",
                 "TeamID": "4",
                 "keeper": "Mike Evans"
             },
             {
+                "Manager": "Johnny",
                 "TeamID": "5",
                 "keeper": "David Montgomery"
             },
             {
+                "Manager": "Harris",
                 "TeamID": "6",
                 "keeper": "Jalen Hurts"
             },
             {
+                "Manager": "Tanner",
                 "TeamID": "7",
                 "keeper": "Michael Pittman Jr."
             },
             {
+                "Manager": "Conner",
                 "TeamID": "8",
                 "keeper": "CeeDee Lamb"
             },
             {
+                "Manager": "Jordan",
                 "TeamID": "9",
                 "keeper": "Anthony Richardson Sr."
             },
             {
+                "Manager": "Zach",
                 "TeamID": "10",
                 "keeper": "Kenneth Walker III"
             }

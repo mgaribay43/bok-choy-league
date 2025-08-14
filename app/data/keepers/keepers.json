@@ -1,0 +1,90 @@
+{
+    "2025": {
+        "Teams": [
+            {
+                "TeamID": "1",
+                "keeper": "Brian Thomas Jr."
+            },
+            {
+                "TeamID": "2",
+                "keeper": ""
+            },
+            {
+                "TeamID": "3",
+                "keeper": "Ladd McConkey"
+            },
+            {
+                "TeamID": "4",
+                "keeper": "Jayden Daniels"
+            },
+            {
+                "TeamID": "5",
+                "keeper": ""
+            },
+            {
+                "TeamID": "6",
+                "keeper": ""
+            },
+            {
+                "TeamID": "7",
+                "keeper": ""
+            },
+            {
+                "TeamID": "8",
+                "keeper": ""
+            },
+            {
+                "TeamID": "9",
+                "keeper": ""
+            },
+            {
+                "TeamID": "10",
+                "keeper": "George Kittle"
+            }
+        ]
+    },    
+    "2024": {
+        "Teams": [
+            {
+                "TeamID": "1",
+                "keeper": "Breece Hall"
+            },
+            {
+                "TeamID": "2",
+                "keeper": "Isiah Pacheco"
+            },
+            {
+                "TeamID": "3",
+                "keeper": ""
+            },
+            {
+                "TeamID": "4",
+                "keeper": "Mike Evans"
+            },
+            {
+                "TeamID": "5",
+                "keeper": "David Montgomery"
+            },
+            {
+                "TeamID": "6",
+                "keeper": "Jalen Hurts"
+            },
+            {
+                "TeamID": "7",
+                "keeper": "Michael Pittman Jr."
+            },
+            {
+                "TeamID": "8",
+                "keeper": "CeeDee Lamb"
+            },
+            {
+                "TeamID": "9",
+                "keeper": "Anthony Richardson Sr."
+            },
+            {
+                "TeamID": "10",
+                "keeper": "Kenneth Walker III"
+            }
+        ]
+    }
+}

@@ -4,7 +4,7 @@ import Standings from './components/Standings';
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen bg-green-50">
+    <div className="flex flex-col min-h-screen">
       <HeroSection />
       <Standings />
     </div>

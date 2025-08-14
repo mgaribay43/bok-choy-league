@@ -2,6 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import keepersJson from "../data/keepers/keepers.json";
+
+type KeeperYearData = { Teams: { TeamID: string; keeper: string; }[] };
+type KeepersType = { [year: string]: KeeperYearData };
+const keepers: KeepersType = keepersJson as KeepersType;
 
 interface DraftPick {
   pick: number;
@@ -30,11 +35,14 @@ interface Team {
 }
 
 export default function KeepersPage() {
+  const currentYear = String(new Date().getFullYear());
+  const availableYears = ["2024", "2025"];
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const year = (new Date().getFullYear()) - 1;
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchKeepers = async () => {
@@ -42,6 +50,7 @@ export default function KeepersPage() {
       setError(null);
 
       try {
+        const year = Number(selectedYear) - 1;
         const draftRes = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${year}`
         );
@@ -74,137 +83,205 @@ export default function KeepersPage() {
     };
 
     fetchKeepers();
-  }, []);
+  }, [selectedYear]);
+
+  // Map team IDs to keeper names for the selected year
+  const keeperMap: Record<string, string> = {};
+  const keeperTeams = keepers[selectedYear]?.Teams ?? [];
+  keeperTeams.forEach((team: { TeamID: string; keeper: string }) => {
+    if (team.keeper) {
+      keeperMap[team.TeamID] = team.keeper;
+    }
+  });
 
   const visibleTeams = selectedTeamId
     ? teams.filter((team) => team.id === selectedTeamId)
     : teams;
 
-  return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-4xl font-extrabold text-green-800 text-center mb-4">
-        {new Date().getFullYear()} Keepers
-      </h1>
-
-      <p className="mb-8 text-center">
-        Use this tool to help determine the player you wish to keep next season
-      </p>
-
-      {/* Team Selector */}
-      {teams.length > 0 && (
-        <div className="flex justify-center mb-6">
-          <select
-            value={selectedTeamId ?? ""}
-            onChange={(e) => setSelectedTeamId(e.target.value || null)}
-            className="border border-gray-300 rounded-lg px-4 py-2 text-base shadow-sm"
+return (
+  <div className="max-w-7xl mx-auto p-3 sm:p-6">
+    {/* Year Selector - Optimized for mobile */}
+    <div className="flex justify-center mb-4 relative">
+      <div
+        className="inline-block relative"
+        onMouseEnter={() => setDropdownOpen(true)}
+        onMouseLeave={() => setDropdownOpen(false)}
+      >
+        <button
+          className="text-2xl sm:text-4xl font-extrabold text-green-800 text-center mb-4 px-3 sm:px-4 py-2 bg-transparent border-none focus:outline-none flex items-center gap-2"
+          aria-haspopup="listbox"
+          aria-expanded={dropdownOpen}
+          onClick={() => setDropdownOpen((open) => !open)}
+        >
+          {selectedYear} Keepers
+          <svg
+            className={`w-5 h-5 sm:w-7 sm:h-7 text-green-800 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
           >
-            <option value="">Show All Teams</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <ul
+          className={`absolute left-1/2 -translate-x-1/2 mt-0 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 transition-all duration-200
+            ${dropdownOpen ? "block" : "hidden"}`}
+          style={{ top: "100%" }}
+          role="listbox"
+        >
+          {availableYears.map((year) => (
+            <li
+              key={year}
+              className={`px-4 py-2 cursor-pointer hover:bg-green-100 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-green-800" : ""}`}
+              onClick={() => {
+                setSelectedYear(year);
+                setSelectedTeamId(null);
+                setDropdownOpen(false); // close dropdown
+              }}
+              role="option"
+              aria-selected={year === selectedYear}
+            >
+              {year}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
 
-      {/* Key Legend */}
-      <div className="flex flex-wrap justify-center gap-6 text-sm font-medium mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 border rounded bg-white" />
-          <span>Undrafted</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-green-100 border border-green-300" />
-          <span>Keeper Eligible (Draft Round ≥ 2)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-red-100 border border-red-300" />
-          <span>Keeper Ineligible (Draft Round &lt; 2)</span>
+    <p className="mb-6 sm:mb-8 text-center text-sm sm:text-base px-2">
+      Use this tool to help determine the player you wish to keep next season
+    </p>
+
+    {/* Team Selector - Better mobile styling */}
+    {teams.length > 0 && (
+      <div className="flex justify-center mb-6 px-2">
+        <select
+          value={selectedTeamId ?? ""}
+          onChange={(e) => setSelectedTeamId(e.target.value || null)}
+          className="border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base shadow-sm w-full max-w-xs"
+        >
+          <option value="">Show All Teams</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+
+    {/* Key Legend - Mobile optimized grid */}
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium mb-6 sm:mb-8 px-2">
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 sm:w-6 sm:h-6 border rounded bg-white flex-shrink-0" />
+        <span className="leading-tight">Undrafted</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-green-100 border border-green-300 flex-shrink-0" />
+        <span className="leading-tight">Keeper Eligible</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-red-100 border border-red-300 flex-shrink-0" />
+        <span className="leading-tight">Keeper Ineligible</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-yellow-200 border border-yellow-400 flex-shrink-0" />
+        <span className="leading-tight">Selected Keeper</span>
+      </div>
+    </div>
+
+    {/* Loading Spinner */}
+    {loading ? (
+      <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+        <div className="relative">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
         </div>
       </div>
+    ) : error ? (
+      <p className="text-red-600 text-center text-sm sm:text-base px-2">Error: {error}</p>
+    ) : visibleTeams.length === 0 ? (
+      <p className="text-center italic text-gray-600 text-sm sm:text-base px-2">No teams found.</p>
+    ) : (
+      <div className="space-y-6 sm:space-y-8">
+        {visibleTeams.map((team) => {
+          // Get keeper name for this team
+          const teamId = team.id.split(".").pop() ?? team.id;
+          const keeperName = keeperMap[teamId];
 
-      {/* Loading Spinner */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-          </div>
-          <p className="text-slate-600 text-lg mt-6 font-medium">
-            Loading Keepers...
-          </p>
-        </div>
-      ) : error ? (
-        <p className="text-red-600 text-center">Error: {error}</p>
-      ) : visibleTeams.length === 0 ? (
-        <p className="text-center italic text-gray-600">No teams found.</p>
-      ) : (
-        <div
-          className={`grid gap-8 px-2 sm:px-0 ${selectedTeamId ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-            }`}
-        >
-          {visibleTeams.map((team) => (
+          return (
             <div
               key={team.id}
-              className={`border p-6 rounded-md shadow bg-white mx-auto ${selectedTeamId
-                  ? "max-w-4xl w-full"
-                  : "w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl"
-                }`}
+              className="border rounded-lg sm:rounded-md shadow bg-white mx-2 sm:mx-auto p-4 sm:p-6 max-w-4xl"
             >
-              <div className="flex flex-col items-center mb-6 gap-4">
+              {/* Team Header - Mobile optimized */}
+              <div className="flex flex-col items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
                 {team.logo_url && (
                   <Image
                     src={team.logo_url}
                     alt={`${team.name} logo`}
-                    width={80}
-                    height={80}
-                    className="rounded-md"
+                    width={60}
+                    height={60}
+                    className="sm:w-20 sm:h-20 rounded-md"
                   />
                 )}
-                <h2 className="text-2xl font-semibold text-center">{team.name}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-center px-2">{team.name}</h2>
               </div>
 
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {team.players.map((player) => (
-                  <li
-                    key={`${team.id}-${player.player_id || player.name}`}
-                    className={`flex items-center gap-3 border rounded-lg p-3 shadow ${player.draftPick
-                        ? player.draftPick.round >= 2
-                          ? "bg-green-100"
-                          : "bg-red-100"
-                        : "bg-white"
-                      } min-w-0`}
-                  >
-                    <Image
-                      src={player.image_url || "/fallback-avatar.png"}
-                      alt={player.name}
-                      width={48}
-                      height={48}
-                      className="rounded-full object-cover bg-gray-100 flex-shrink-0"
-                      unoptimized={false}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{player.name}</p>
-                      <p className="text-sm text-gray-600 truncate">
-                        {player.position} – {player.team_abbr}
-                      </p>
-                      {player.draftPick ? (
-                        <p className="text-sm text-gray-500">
-                          Drafted: Round {player.draftPick.round}, Pick {player.draftPick.pick}
+              {/* Players List - Single column on mobile, responsive grid */}
+              <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                {team.players.map((player) => {
+                  // Is this player the keeper?
+                  const isKeeper = keeperName && player.name === keeperName;
+                  return (
+                    <li
+                      key={`${team.id}-${player.player_id || player.name}`}
+                      className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm
+                        ${isKeeper
+                          ? "bg-yellow-200 border-yellow-400"
+                          : player.draftPick
+                            ? player.draftPick.round >= 2
+                              ? "bg-green-100 border-green-300"
+                              : "bg-red-100 border-red-300"
+                            : "bg-white border-gray-200"
+                        } min-w-0`}
+                    >
+                      {/* Player Image - Smaller on mobile */}
+                      <Image
+                        src={player.image_url || "/fallback-avatar.png"}
+                        alt={player.name}
+                        width={40}
+                        height={40}
+                        className="sm:w-12 sm:h-12 rounded-full object-cover bg-gray-100 flex-shrink-0"
+                        unoptimized={false}
+                      />
+                      
+                      {/* Player Info - Better mobile text sizing */}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm sm:text-base truncate">{player.name}</p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          {player.position} – {player.team_abbr}
                         </p>
-                      ) : (
-                        <p className="text-sm text-gray-400 italic">Undrafted</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
+                        {player.draftPick ? (
+                          <p className="text-xs sm:text-sm text-gray-500">
+                            <span className="sm:hidden">R{player.draftPick.round}, P{player.draftPick.pick}</span>
+                            <span className="hidden sm:inline">Round {player.draftPick.round}, Pick {player.draftPick.pick}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-gray-400 italic">Undrafted</p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+          );
+        })}
+      </div>
+    )}
+  </div>
+);
 
 }
 

@@ -1,0 +1,46 @@
+{
+    "2025": {
+        "Teams": [
+            {
+                "TeamID": "1",
+                "keeper": "Brian Thomas Jr."
+            },
+            {
+                "TeamID": "2",
+                "keeper": ""
+            },
+            {
+                "TeamID": "3",
+                "keeper": "Ladd McConkey"
+            },
+            {
+                "TeamID": "4",
+                "keeper": "Jayden Daniels"
+            },
+            {
+                "TeamID": "5",
+                "keeper": ""
+            },
+            {
+                "TeamID": "6",
+                "keeper": ""
+            },
+            {
+                "TeamID": "7",
+                "keeper": ""
+            },
+            {
+                "TeamID": "8",
+                "keeper": ""
+            },
+            {
+                "TeamID": "9",
+                "keeper": ""
+            },
+            {
+                "TeamID": "10",
+                "keeper": "George Kittle"
+            }
+        ]
+    }
+}

@@ -113,17 +113,6 @@ const StandingsViewer = () => {
           </div>
         </div>
 
-        {/* Current Season Notice */}
-        {year === "2025" && (
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 max-w-md mx-auto shadow-sm">
-              <div className="text-3xl mb-2">⏳</div>
-              <p className="text-slate-700 font-medium">Season in Progress</p>
-              <p className="text-slate-600 text-sm mt-1">Check back once the season has begun.</p>
-            </div>
-          </div>
-        )}
-
         {/* Error State */}
         {error && (
           <div className="text-center py-12">
@@ -141,13 +130,13 @@ const StandingsViewer = () => {
             <div className="relative">
               <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-slate-600 text-lg mt-6 font-medium">Loading league standings...</p>
           </div>
         )}
 
         {/* Champion Spotlight - only for completed seasons */}
         {!loading && !error && champion && year !== "2025" && (
           <div className="mb-12">
+            {/* Champion Card */}
             <div className="text-center mb-6">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent mb-2">
                 🏆 League Champion
@@ -155,20 +144,8 @@ const StandingsViewer = () => {
               <p className="text-slate-600 font-medium">Congratulations to this season's winner!</p>
             </div>
 
-            <Link href={`/roster?year=${year}&teamId=${champion.id}`} className="group block">
-              <div className="relative bg-gradient-to-br from-yellow-100 via-yellow-50 to-amber-100 border-2 border-yellow-300 rounded-3xl shadow-2xl p-8 max-w-lg mx-auto transform hover:scale-105 transition-all duration-300 overflow-hidden">
-                {/* Sparkle Effects */}
-                <div className="absolute top-4 right-4 text-yellow-500 animate-pulse">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-                <div className="absolute bottom-4 left-4 text-yellow-400 animate-pulse delay-500">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-
+            <div className="relative bg-gradient-to-br from-yellow-100 via-yellow-50 to-amber-100 border-2 border-yellow-300 rounded-3xl shadow-2xl p-8 max-w-lg mx-auto transform hover:scale-105 transition-all duration-300 overflow-hidden">
+              <Link href={`/roster?year=${year}&teamId=${champion.id}`} className="group block">
                 <div className="relative z-10 flex flex-col items-center text-center">
                   {/* Champion Crown */}
                   <div className="relative mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -185,130 +162,292 @@ const StandingsViewer = () => {
                       />
                     </div>
                   </div>
-
                   <h3 className="text-2xl font-bold text-yellow-800 mb-2 group-hover:text-yellow-900 transition-colors">
                     {champion.name}
                   </h3>
                   <p className="text-yellow-700 font-medium">
                     Champion: <span className="font-bold">{champion.manager}</span>
                   </p>
-
-                  {/* Trophy Icon */}
-                  <div className="mt-4 text-yellow-600">
-                    <svg className="w-8 h-8 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 2L7.5 8.5H2l4.5 3.5L5 18.5l5-3.5 5 3.5-1.5-6.5L18 8.5h-5.5L10 2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
+
+            {/* Runner-up & Third Place Cards */}
+            <div className="flex flex-col sm:flex-row justify-center gap-8 mt-8">
+              {/* Runner-up (2nd place) */}
+              {teams[1] && (
+                <div className="relative bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 border-2 border-slate-400 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                  <Link href={`/roster?year=${year}&teamId=${teams[1].id}`} className="group block">
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                      {/* Silver Medal */}
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="text-3xl animate-bounce">🥈</div>
+                      </div>
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 p-2 shadow-xl mb-2">
+                        <Image
+                          src={teams[1].logo}
+                          alt={`${teams[1].name} logo`}
+                          width={80}
+                          height={80}
+                          className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800 mb-1 group-hover:text-slate-900 transition-colors">
+                        {teams[1].name}
+                      </h3>
+                      <p className="text-slate-700 font-medium">
+                        Runner-up: <span className="font-bold">{teams[1].manager}</span>
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              {/* Third Place (3rd place) */}
+              {teams[2] && (
+                <div className="relative bg-gradient-to-br from-amber-100 via-amber-50 to-yellow-100 border-2 border-amber-400 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                  <Link href={`/roster?year=${year}&teamId=${teams[2].id}`} className="group block">
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                      {/* Bronze Medal */}
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="text-3xl animate-bounce">🥉</div>
+                      </div>
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-2 shadow-xl mb-2">
+                        <Image
+                          src={teams[2].logo}
+                          alt={`${teams[2].name} logo`}
+                          width={80}
+                          height={80}
+                          className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                      </div>
+                      <h3 className="text-xl font-bold text-amber-800 mb-1 group-hover:text-amber-900 transition-colors">
+                        {teams[2].name}
+                      </h3>
+                      <p className="text-amber-700 font-medium">
+                        Third Place: <span className="font-bold">{teams[2].manager}</span>
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Teams Grid */}
-        {!loading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {(year === "2025" ? teams : others).map((team, index) => (
-              <Link
-                href={`/roster?year=${year}&teamId=${team.id}`}
-                key={team.id}
-                className="group block"
-              >
-                <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/50 overflow-hidden">
-                  {/* Rank Badge */}
-                  {!isNaN(team.rank) && (
-                    <div className="absolute top-4 left-4 z-10">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg ${team.rank === 2
-                          ? "bg-gradient-to-r from-slate-300 to-slate-500 text-slate-800"
-                          : team.rank === 3
-                            ? "bg-gradient-to-r from-amber-400 to-amber-600 text-amber-900"
-                            : team.rank <= 6
-                              ? "bg-gradient-to-r from-emerald-400 to-emerald-600 text-emerald-900"
-                              : "bg-gradient-to-r from-red-400 to-red-600 text-red-900"
-                        }`}>
-                        #{team.rank}
-                      </div>
-                    </div>
-                  )}
+        {!loading && !error && (() => {
+          // Exclude top 3 for completed seasons
+          const gridTeams = year === "2025" ? teams : teams.slice(3);
+          const playoffs = gridTeams.filter(team => team.rank <= 6);
+          const eliminated = gridTeams.filter(team => team.rank > 6);
 
-                  <div className="relative p-6 text-center">
-                    {/* Team Logo */}
-                    <div className="relative mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-2 shadow-lg">
-                        <Image
-                          src={team.logo}
-                          alt={`${team.name} logo`}
-                          width={80}
-                          height={80}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      </div>
+          return (
+            <>
+              {/* Playoffs Section */}
+              {playoffs.length > 0 && (
+                <div className="mb-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+                    {playoffs.map(team => (
+                      <Link
+                        href={`/roster?year=${year}&teamId=${team.id}`}
+                        key={team.id}
+                        className="group block"
+                      >
+                        <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/50 overflow-hidden">
+                          {/* Rank Badge */}
+                          {!isNaN(team.rank) && (
+                            <div className="absolute top-4 left-4 z-10">
+                              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg ${team.rank === 2
+                                ? "bg-gradient-to-r from-slate-300 to-slate-500 text-slate-800"
+                                : team.rank === 3
+                                  ? "bg-gradient-to-r from-amber-400 to-amber-600 text-amber-900"
+                                  : team.rank <= 6
+                                    ? "bg-gradient-to-r from-emerald-400 to-emerald-600 text-emerald-900"
+                                    : "bg-gradient-to-r from-red-400 to-red-600 text-red-900"
+                                }`}>
+                                #{team.rank}
+                              </div>
+                            </div>
+                          )}
 
-                      {/* Special Badges */}
-                      {team.rank === 2 && (
-                        <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-white text-sm font-bold">🥈</span>
+                          <div className="relative p-6 text-center">
+                            {/* Team Logo */}
+                            <div className="relative mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-2 shadow-lg">
+                                <Image
+                                  src={team.logo}
+                                  alt={`${team.name} logo`}
+                                  width={80}
+                                  height={80}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              </div>
+
+                              {/* Special Badges */}
+                              {team.rank === 2 && (
+                                <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <span className="text-white text-sm font-bold">🥈</span>
+                                </div>
+                              )}
+                              {team.rank === 3 && (
+                                <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <span className="text-white text-sm font-bold">🥉</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Team Info */}
+                            <div className="space-y-3">
+                              <h3 className="text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-200 truncate">
+                                {team.name}
+                              </h3>
+
+                              <p className="text-slate-600 font-medium">
+                                <span className="text-slate-500">Manager:</span>
+                                <span className="ml-1 text-slate-700">{team.manager}</span>
+                              </p>
+
+                              {!isNaN(team.rank) && (
+                                <div className="flex justify-center">
+                                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${team.rank === 2
+                                    ? "bg-slate-100 text-slate-800 border border-slate-200"
+                                    : team.rank === 3
+                                      ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                      : team.rank <= 6
+                                        ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                        : "bg-red-100 text-red-800 border border-red-200"
+                                    }`}>
+                                    {team.rank === 2
+                                      ? "🥈 Runner-up"
+                                      : team.rank === 3
+                                        ? "🥉 Third Place"
+                                        : team.rank <= 6
+                                          ? `Playoffs (#${team.rank})`
+                                          : `Eliminated (#${team.rank})`
+                                    }
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Hover Effect Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                          </div>
+
+                          {/* Bottom Accent */}
+                          <div className={`h-1 bg-gradient-to-r ${team.rank === 2
+                            ? "from-slate-400 to-slate-600"
+                            : team.rank === 3
+                              ? "from-amber-400 to-amber-600"
+                              : team.rank <= 6
+                                ? "from-emerald-400 to-emerald-600"
+                                : "from-red-400 to-red-600"
+                            }`} />
                         </div>
-                      )}
-                      {team.rank === 3 && (
-                        <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-white text-sm font-bold">🥉</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Team Info */}
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-200 truncate">
-                        {team.name}
-                      </h3>
-
-                      <p className="text-slate-600 font-medium">
-                        <span className="text-slate-500">Manager:</span>
-                        <span className="ml-1 text-slate-700">{team.manager}</span>
-                      </p>
-
-                      {!isNaN(team.rank) && (
-                        <div className="flex justify-center">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${team.rank === 2
-                              ? "bg-slate-100 text-slate-800 border border-slate-200"
-                              : team.rank === 3
-                                ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                : team.rank <= 6
-                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                  : "bg-red-100 text-red-800 border border-red-200"
-                            }`}>
-                            {team.rank === 2
-                              ? "🥈 Runner-up"
-                              : team.rank === 3
-                                ? "🥉 Third Place"
-                                : team.rank <= 6
-                                  ? `Playoffs (#${team.rank})`
-                                  : `Eliminated (#${team.rank})`
-                            }
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hover Effect Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                      </Link>
+                    ))}
                   </div>
-
-                  {/* Bottom Accent */}
-                  <div className={`h-1 bg-gradient-to-r ${team.rank === 2
-                      ? "from-slate-400 to-slate-600"
-                      : team.rank === 3
-                        ? "from-amber-400 to-amber-600"
-                        : team.rank <= 6
-                          ? "from-emerald-400 to-emerald-600"
-                          : "from-red-400 to-red-600"
-                    }`} />
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
+              )}
+
+              {/* Eliminated Section */}
+              {eliminated.length > 0 && (
+                <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+                    {eliminated.map(team => (
+                      <Link
+                        href={`/roster?year=${year}&teamId=${team.id}`}
+                        key={team.id}
+                        className="group block"
+                      >
+                        <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/50 overflow-hidden">
+                          {/* Rank Badge */}
+                          {!isNaN(team.rank) && (
+                            <div className="absolute top-4 left-4 z-10">
+                              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg ${team.rank === 2
+                                ? "bg-gradient-to-r from-slate-300 to-slate-500 text-slate-800"
+                                : team.rank === 3
+                                  ? "bg-gradient-to-r from-amber-400 to-amber-600 text-amber-900"
+                                  : team.rank <= 6
+                                    ? "bg-gradient-to-r from-emerald-400 to-emerald-600 text-emerald-900"
+                                    : "bg-gradient-to-r from-red-400 to-red-600 text-red-900"
+                                }`}>
+                                #{team.rank}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="relative p-6 text-center">
+                            {/* Team Logo */}
+                            <div className="relative mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-2 shadow-lg">
+                                <Image
+                                  src={team.logo}
+                                  alt={`${team.name} logo`}
+                                  width={80}
+                                  height={80}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Team Info */}
+                            <div className="space-y-3">
+                              <h3 className="text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-200 truncate">
+                                {team.name}
+                              </h3>
+
+                              <p className="text-slate-600 font-medium">
+                                <span className="text-slate-500">Manager:</span>
+                                <span className="ml-1 text-slate-700">{team.manager}</span>
+                              </p>
+
+                              {!isNaN(team.rank) && (
+                                <div className="flex justify-center">
+                                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${team.rank === 2
+                                    ? "bg-slate-100 text-slate-800 border border-slate-200"
+                                    : team.rank === 3
+                                      ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                      : team.rank <= 6
+                                        ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                        : "bg-red-100 text-red-800 border border-red-200"
+                                    }`}>
+                                    {team.rank === 2
+                                      ? "🥈 Runner-up"
+                                      : team.rank === 3
+                                        ? "🥉 Third Place"
+                                        : team.rank <= 6
+                                          ? `Playoffs (#${team.rank})`
+                                          : `Eliminated (#${team.rank})`
+                                    }
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Hover Effect Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                          </div>
+
+                          {/* Bottom Accent */}
+                          <div className={`h-1 bg-gradient-to-r ${team.rank === 2
+                            ? "from-slate-400 to-slate-600"
+                            : team.rank === 3
+                              ? "from-amber-400 to-amber-600"
+                              : team.rank <= 6
+                                ? "from-emerald-400 to-emerald-600"
+                                : "from-red-400 to-red-600"
+                            }`} />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Empty State */}
         {!loading && !error && (!teams || teams.length === 0) && (!others || others.length === 0) && (
@@ -319,7 +458,7 @@ const StandingsViewer = () => {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

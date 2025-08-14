@@ -97,7 +97,6 @@ export default function DraftBoardPage() {
           <div className="relative">
             <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
           </div>
-          <p className="text-slate-600 text-lg mt-6 font-medium">Loading draft data...</p>
         </div>
       ) : error ? (
         <p className="text-center text-red-500">{error}</p>

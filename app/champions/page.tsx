@@ -18,7 +18,7 @@ const champions = [
 
 export default function ChampionsPage() {
   return (
-    <div className="min-h-screen bg-green-50 py-12 px-6">
+    <div className="min-h-screen py-12 px-6">
   <h1 className="text-4xl font-extrabold text-green-800 text-center mb-10">
     🏆 Bok Choy League Champions
   </h1>

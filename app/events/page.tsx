@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function Events() {
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-green-50 text-green-900 text-center px-6">
+    <div className="min-h-screen flex flex-col justify-center items-center text-green-900 text-center px-6">
       <h1 className="text-5xl font-bold mb-4">🥬 The Bok Choy League</h1>
       <h2 className="text-2xl font-semibold mb-8">Coming Soon</h2>
       <p className="text-lg max-w-md mb-12">

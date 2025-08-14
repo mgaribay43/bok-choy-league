@@ -153,11 +153,8 @@ export default function Navbar() {
           <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-white/20">
               <div className="px-4 py-4 text-white font-bold text-lg border-b border-white/10 bg-emerald-700/80">{userDisplay}</div>
-              <MobileLink href="/champions" icon={<Trophy size={20} className="text-yellow-300" />} text="Hall of Champions" closeMenu={() => setIsOpen(false)} />
-              <MobileLink href="/rules" icon={<Award size={20} />} text="Rules" closeMenu={() => setIsOpen(false)} />
-              <MobileLink href="/events" icon={<Calendar size={20} />} text="Events" closeMenu={() => setIsOpen(false)} />
-              <MobileLink href="/ices" icon={<span className="text-xl">🧊</span>} text="Ices" closeMenu={() => setIsOpen(false)} />
-              {/* League Section */}
+              
+              {/* League Section - moved to top */}
               <div className="border-b border-white/10">
                 <button
                   onClick={() => setIsLeagueOpen(!isLeagueOpen)}
@@ -169,14 +166,48 @@ export default function Navbar() {
                   </div>
                   <ChevronDown size={16} className={`transition-transform duration-200 ${isLeagueOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`transition-all duration-200 ${isLeagueOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
-                  <div className="bg-white/5 py-2">
-                    <MobileLink href="/standings" icon={<Trophy size={12} />} text="Standings" closeMenu={() => setIsOpen(false)} extraIconBg="bg-yellow-500/20" />
-                    <MobileLink href="/draft" icon={<span className="text-xs">📋</span>} text="Draft Results" closeMenu={() => setIsOpen(false)} extraIconBg="bg-purple-500/20" />
-                    <MobileLink href="/keepers" icon={<span className="text-xs">🔒</span>} text="Keeper Utility" closeMenu={() => setIsOpen(false)} extraIconBg="bg-orange-500/20" />
+                <div className={`transition-all duration-200 ${isLeagueOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden py-0`}>
+                  <div className="flex flex-col">
+                    <Link
+                      href="/standings"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-yellow-500/20 rounded">
+                        <Trophy size={16} />
+                      </div>
+                      <span className="font-medium">Standings</span>
+                    </Link>
+                    <Link
+                      href="/draft"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-purple-500/20 rounded">
+                        <span className="text-xs">📋</span>
+                      </div>
+                      <span className="font-medium">Draft Results</span>
+                    </Link>
+                    <Link
+                      href="/keepers"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-orange-500/20 rounded">
+                        <span className="text-xs">🔒</span>
+                      </div>
+                      <span className="font-medium">Keeper Utility</span>
+                    </Link>
                   </div>
                 </div>
               </div>
+
+              {/* Other mobile links */}
+              <MobileLink href="/champions" icon={<Trophy size={20} className="text-yellow-300" />} text="Hall of Champions" closeMenu={() => setIsOpen(false)} />
+              <MobileLink href="/rules" icon={<Award size={20} />} text="Rules" closeMenu={() => setIsOpen(false)} />
+              <MobileLink href="/events" icon={<Calendar size={20} />} text="Events" closeMenu={() => setIsOpen(false)} />
+              <MobileLink href="/ices" icon={<span className="text-xl">🧊</span>} text="Ices" closeMenu={() => setIsOpen(false)} />
+
               {/* Sign Out Button (mobile) */}
               <div className="px-4 py-4">
                 <button
@@ -192,6 +223,36 @@ export default function Navbar() {
             </div>
           </div>
         )}
+
+        {/* Floating mobile menu button */}
+        <button
+          type="button"
+          className={`fixed bottom-6 right-6 z-50 md:hidden bg-emerald-700 hover:bg-emerald-800 text-white rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+          aria-label={isOpen ? "Close Menu" : "Open Menu"}
+          onClick={() => setIsOpen((prev) => !prev)}
+          style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+        >
+          <span className="relative w-6 h-6 flex items-center justify-center">
+            {/* Top bar */}
+            <span
+              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+                ${isOpen ? 'rotate-45 top-2.5' : 'rotate-0 top-1'}
+              `}
+            />
+            {/* Middle bar */}
+            <span
+              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+                ${isOpen ? 'opacity-0' : 'opacity-100 top-3'}
+              `}
+            />
+            {/* Bottom bar */}
+            <span
+              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+                ${isOpen ? '-rotate-45 top-2.5' : 'rotate-0 top-5'}
+              `}
+            />
+          </span>
+        </button>
       </div>
     </nav>
   );

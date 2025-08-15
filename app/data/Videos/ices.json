@@ -1,165 +1,375 @@
 {
-    "Videos": [
+    "2025": [
+
+    ],
+    "2024": [
+        {
+            "id": "ubWLjDI5Fik",
+            "player": "Evan Engram",
+            "manager": "Zach",
+            "date": "09-15-2024",
+            "week": "Week 2"
+        },
+        {
+            "id": "Pk9cnKEUHXU",
+            "player": "Keenan Allen + Kenneth Walker III",
+            "manager": "Zach",
+            "date": "09-15-2024",
+            "week": "Week 2"
+        },
+        {
+            "id": "k7gDsh9L9ZQ",
+            "player": "Rashid Shaheed",
+            "manager": "Hunter",
+            "date": "09-22-2024",
+            "week": "Week 3"
+        },
+        {
+            "id": "bTtCuXNbCdE",
+            "player": "Mark Andrews",
+            "manager": "Zach",
+            "date": "09-22-2024",
+            "week": "Week 3"
+        },
+        {
+            "id": "XdyNPU6OBYY",
+            "player": "Raiders Defense",
+            "manager": "Tanner",
+            "date": "09-22-2024",
+            "week": "Week 3"
+        },
+        {
+            "id": "y8J0yUNBRg4",
+            "player": "Bengals Defense",
+            "manager": "Brent",
+            "date": "09-23-2024",
+            "week": "Week 3"
+        },
+        {
+            "id": "XbyoYzEJ32A",
+            "player": "Rashee Rice",
+            "manager": "Jordan",
+            "date": "09-29-2024",
+            "week": "Week 4"
+        },
+        {
+            "id": "abv6pKkc7vs",
+            "player": "Mark Andrews",
+            "manager": "Zach",
+            "date": "09-29-2024",
+            "week": "Week 4"
+        },
+        {
+            "id": "KXdyUBiIqg4",
+            "player": "Kyle Pitts Sr.",
+            "manager": "Conner",
+            "date": "09-29-2024",
+            "week": "Week 4"
+        },
+        {
+            "id": "0jQGNZuVnbc",
+            "player": "Dallas Goedert",
+            "manager": "Hughes",
+            "date": "10-13-2024",
+            "week": "Week 6"
+        },
+        {
+            "id": "iyVsHAXcb-k",
+            "player": "Marvin Harrison Jr. + Travis Etienne Jr.",
+            "manager": "Zach",
+            "date": "10-13-2024",
+            "week": "Week 6"
+        },
+        {
+            "id": "AosuhNvFvc0",
+            "player": "Chris Olave",
+            "manager": "Jordan",
+            "date": "10-13-2024",
+            "week": "Week 6"
+        },
+        {
+            "id": "H3mnuZQ0kCs",
+            "player": "Jets Defense",
+            "manager": "Hunter",
+            "date": "10-20-2024",
+            "week": "Week 7"
+        },
+        {
+            "id": "jag85X30Mi8",
+            "player": "Deebo Samuel",
+            "manager": "Harris",
+            "date": "10-20-2024",
+            "week": "Week 7"
+        },
+        {
+            "id": "HjmIahVp2j8",
+            "player": "Tank Dell",
+            "manager": "Harris",
+            "date": "10-20-2024",
+            "week": "Week 7"
+        },
+        {
+            "id": "5lVCKntqt-E",
+            "player": "Bengals Defense",
+            "manager": "Zach",
+            "date": "10-27-2024",
+            "week": "Week 8"
+        },
+        {
+            "id": "QZWaJI6KIFw",
+            "player": "Tucker Kraft",
+            "manager": "Mike",
+            "date": "11-17-2024",
+            "week": "Week 11"
+        },
+        {
+            "id": "pQoRMwrLK6w",
+            "player": "Mike Gesecki",
+            "manager": "Zach",
+            "date": "11-17-2024",
+            "week": "Week 11"
+        },
+        {
+            "id": "TmACDfB2-fk",
+            "player": "Raheem Mostert",
+            "manager": "Zach",
+            "date": "11-17-2024",
+            "week": "Week 11"
+        },
+        {
+            "id": "m7RzurapQmM",
+            "player": "Chargers Defense",
+            "manager": "Zach",
+            "date": "11-25-2024",
+            "week": "Week 12"
+        },
+        {
+            "id": "FD7wcnSWFvU",
+            "player": "Tyjae Spears",
+            "manager": "Zach",
+            "date": "11-24-2024",
+            "week": "Week 12"
+        },
+        {
+            "id": "MSeBccjNK68",
+            "player": "Quentin Johnston",
+            "manager": "Tanner",
+            "date": "11-25-2024",
+            "week": "Week 12"
+        },
+        {
+            "id": "1PZd8_DRMc8",
+            "player": "Jayden Reed",
+            "manager": "Hunter",
+            "date": "12-05-2024",
+            "week": "Week 14"
+        },
+        {
+            "id": "S-0YI33aDnc",
+            "player": "Cardinals Defense",
+            "manager": "Johnny",
+            "date": "12-08-2024",
+            "week": "Week 14"
+        },
+        {
+            "id": "8e4ggJgTN8s",
+            "player": "Bills Defense",
+            "manager": "Jordan",
+            "date": "12-08-2024",
+            "week": "Week 14"
+        },
+        {
+            "id": "vCO2K1Ei-LM",
+            "player": "Cooper Kupp",
+            "manager": "Conner",
+            "date": "12-15-2024",
+            "week": "Week 15",
+            "24_hr_penalty": true
+        },
+        {
+            "id": "aCl_ZE6ltdU",
+            "player": "49ers Defense",
+            "manager": "Hunter",
+            "date": "12-22-2024",
+            "week": "Week 16"
+        },
+        {
+            "id": "bhz5nI01Gp8",
+            "player": "Colts Defense",
+            "manager": "Johnny",
+            "date": "12-29-2024",
+            "week": "Week 17"
+        },
+        {
+            "id": "",
+            "player": "Jalen Hurts",
+            "manager": "Harris",
+            "date": "12-29-2024",
+            "week": "Week 17",
+            "24_hr_penalty": true
+        }
+    ],
+    "2023": [
         {
             "id": "3V2HShGR_NY",
             "player": "Zay Jones",
             "manager": "Harris",
-            "date": "2023-09-17",
+            "date": "09-17-2023",
             "week": "Week 2"
         },
         {
             "id": "SW_BbpXJHN4",
             "player": "Broncos Defense",
             "manager": "Johnny",
-            "date": "2023-09-17",
+            "date": "09-17-2023",
             "week": "Week 2"
         },
         {
             "id": "Z23bSMOZdWw",
             "player": "Jets Defense",
             "manager": "Hunter",
-            "date": "2023-09-17",
+            "date": "09-17-2023",
             "week": "Week 2"
         },
         {
             "id": "ioBf0dSy9So ",
             "player": "Dalvin Cook",
             "manager": "Tanner",
-            "date": "2023-09-17",
+            "date": "09-17-2023",
             "week": "Week 2"
         },
         {
             "id": "1NAhoo1FSko ",
             "player": "Giants Defense",
             "manager": "Brent",
-            "date": "2023-09-17",
+            "date": "09-17-2023",
             "week": "Week 2"
         },
         {
             "id": "f04Z7GexyZY ",
             "player": "Jaguars Defense",
             "manager": "Zach",
-            "date": "2023-09-27",
+            "date": "09-27-2023",
             "week": "Week 3"
         },
         {
             "id": "xMAcJk21Ems",
             "player": "Steelers Defense",
             "manager": "Mike",
-            "date": "2023-10-01",
+            "date": "10-01-2023",
             "week": "Week 4"
         },
         {
             "id": "qokAfOYdMKo",
             "player": "Commanders Defense",
             "manager": "Mike",
-            "date": "2023-10-05",
+            "date": "10-05-2023",
             "week": "Week 5"
         },
         {
             "id": "BLnlDj2hgp4",
             "player": "Hunter Henry",
             "manager": "Mike",
-            "date": "2023-10-08",
+            "date": "10-08-2023",
             "week": "Week 5"
         },
         {
             "id": "NlXWsGXt8mY",
             "player": "Cowboys Defense",
             "manager": "Harris",
-            "date": "2023-10-09",
+            "date": "10-09-2023",
             "week": "Week 5"
         },
         {
             "id": "F62p7garCQk",
             "player": "Nico Collins",
             "manager": "Harris",
-            "date": "2023-11-12",
+            "date": "11-12-2023",
             "week": "Week 10"
         },
         {
             "id": "VN73QS_cwlw",
             "player": "Jahan Dotson",
             "manager": "Hunter",
-            "date": "2023-11-23",
+            "date": "11-23-2023",
             "week": "Week 10"
         },
         {
             "id": "Pm4ogvUHZdo",
             "player": "Garret Wilson",
             "manager": "Hughes",
-            "date": "2023-11-19",
+            "date": "11-19-2023",
             "week": "Week 11"
         },
         {
             "id": "QgETHLM-Ei0",
             "player": "Riley Patterson + Lions Defense",
             "manager": "Conner",
-            "date": "2023-11-23",
+            "date": "11-23-2023",
             "week": "Week 12"
         },
         {
             "id": "uenrkJf93_o",
             "player": "Cowboy's Defense",
             "manager": "Harris",
-            "date": "2023-11-30",
-            "week": "Week 13",
-            "24_hr_penalty": true
+            "date": "11-30-2023",
+            "week": "Week 13"
         },
         {
             "id": "9flwCYX_6xc",
             "player": "Cade Otten",
             "manager": "Harris",
-            "date": "2023-12-03",
-            "week": "Week 13"
+            "date": "12-03-2023",
+            "week": "Week 13",
+            "24_hr_penalty": true
         },
         {
             "id": "A6c23G9_JUA",
             "player": "Tank Dell",
             "manager": "Johnny",
-            "date": "2023-12-03",
+            "date": "12-03-2023",
             "week": "Week 13"
         },
         {
             "id": "2gTtpkU8J3A",
             "player": "Marquise Brown + Noah Brown",
             "manager": "Zach",
-            "date": "2023-12-03",
+            "date": "12-03-2023",
             "week": "Week 13"
         },
         {
             "id": "G38Ue11tg2g",
             "player": "Matt Gay",
             "manager": "Johnny",
-            "date": "2023-12-10",
+            "date": "12-10-2023",
             "week": "Week 14"
         },
         {
             "id": "btVaAzx_eD0",
             "player": "Gabe Davis",
             "manager": "Johnny",
-            "date": "2023-12-10",
+            "date": "12-10-2023",
             "week": "Week 14"
         },
         {
             "id": "zWUoqM96phw",
             "player": "Taysom Hill",
             "manager": "Conner",
-            "date": "2023-12-10",
+            "date": "12-10-2023",
             "week": "Week 14"
         },
         {
             "id": "xtcpH5R8fXk",
             "player": "Bengals Defense",
             "manager": "Zach",
-            "date": "2023-12-24",
+            "date": "12-24-2023",
             "week": "Week 16"
         },
         {
             "id": "ho9-98ggrgk",
             "player": "Courtland Sutton",
             "manager": "Jordan",
-            "date": "2023-12-24",
+            "date": "12-24-2023",
             "week": "Week 16"
         }
     ]

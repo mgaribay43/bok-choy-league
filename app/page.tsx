@@ -1,12 +1,12 @@
 import React from 'react';
-import HeroSection from './components/HeroSection';
+import Ices from './components/Ices';
 import Standings from './components/Standings';
 
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <HeroSection />
-      <Standings />
+      <Standings topThree/>
+      <Ices latestOnly />
     </div>
   );
 }

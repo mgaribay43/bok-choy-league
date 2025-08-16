@@ -77,6 +77,7 @@ function useStats(videos: IceVideo[]) {
     bottomManagers: getBottomN(managerIcedCount, 3),
     topPlayers: getTopN(playerIcedCount, 3),
     maxWeekRecords,
+    weekCounts,
   };
 }
 
@@ -117,7 +118,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
               src={`https://www.youtube.com/embed/${videoId}`}
               title={`Ice video: ${video.player}`}
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="rounded-lg w-full"
             ></iframe>
@@ -188,20 +189,29 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
           </div>
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices by a Manager in a Single Week</h3>
-            <ul className="list-disc list-inside text-slate-700 text-center">
-              {stats.maxWeekRecords.map((rec: any, idx: number) => (
-                <li key={rec.manager + rec.week + rec.season + idx}>
-                  <button className="font-semibold text-emerald-700 hover:underline focus:outline-none"
-                    onClick={() => { setSelectedManager(rec.manager); setSelectedSeason(rec.season); setSelectedWeek("All"); }}>
-                    {rec.manager}
-                  </button>{" - "}
-                  <button className="hover:underline focus:outline-none text-emerald-700"
-                    onClick={() => { setSelectedSeason(rec.season); setSelectedWeek(rec.week); setSelectedManager(rec.manager); }}>
-                    {rec.week}, {rec.season}
-                  </button> ({rec.count})
-                </li>
-              ))}
-            </ul>
+            <ol className="list-decimal list-inside text-slate-700 text-center">
+              {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
+                .flatMap(([manager, weeks]) => (
+                  Object.entries(weeks)
+                    .sort(([, countA], [, countB]) => countB - countA)
+                    .slice(0, 3)
+                    .map(([weekSeason, count], idx) => ({ manager, weekSeason, count, idx }))
+                ))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 3)
+                .map(({ manager, weekSeason, count, idx }) => (
+                  <li key={manager + weekSeason + idx}>
+                    <button className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                      onClick={() => { setSelectedManager(manager); setSelectedSeason(weekSeason.split('|')[1]); setSelectedWeek("All"); }}>
+                      {manager}
+                    </button>{" - "}
+                    <button className="hover:underline focus:outline-none text-emerald-700"
+                      onClick={() => { setSelectedSeason(weekSeason.split('|')[1]); setSelectedWeek(weekSeason.split('|')[0]); setSelectedManager(manager); }}>
+                      {weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}
+                    </button> ({count})
+                  </li>
+                ))}
+            </ol>
           </div>
         </div>
       </div>
@@ -460,7 +470,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
       .then((data) => {
         const allVideos: IceVideo[] = [];
         Object.entries(data).forEach(([season, arr]) => {
-          if (Array.isArray(arr)) arr.forEach((video: IceVideo) => allVideos.push({ ...video, season }));
+          if (Array.isArray(arr)) arr.forEach((video: IceVideo) => {
+            if (video.date) {
+              allVideos.push({ ...video, season });
+            }
+          });
         });
         setVideos(allVideos);
       })
@@ -483,9 +497,16 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   };
 
   let filteredVideos = videos.filter(filterVideo);
-  if (latestOnly && videos.length > 0) {
-    filteredVideos = [...videos].filter(v => v.date).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 1);
+  if (latestOnly && filteredVideos.length > 0) {
+    filteredVideos = filteredVideos.sort((a, b) => {
+      const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
+      const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
+      return dateB - dateA;
+    }).slice(0, 1);
   }
+
+  // Ensure consistent rendering for mobile and desktop
+  const renderVideos = latestOnly ? filteredVideos : videos.filter(filterVideo);
 
   // Group videos by season
   const videosBySeason: Record<string, IceVideo[]> = {};
@@ -511,14 +532,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   return (
     <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
       {latestOnly ? (
-        <h2 className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</h2>
+        <button onClick={() => window.location.href = '/ices'} className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</button>
       ) : (
         <div className="w-full bg-white/80 border-b border-emerald-100">
           <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
             <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700 mb-2 text-center">Ices</h1>
-            <p className="text-slate-700 text-center mb-4 text-sm sm:text-base px-2">
-              Shame - The result of starting a player who scores 0 points. (or less)
-            </p>
             <div className="w-full">
               {/* Mobile toggle button */}
               <button className="sm:hidden w-full flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg"
@@ -569,13 +587,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
           </div>
         ) : error ? (
           <p className="text-center text-red-500 text-lg mt-10">{error}</p>
-        ) : filteredVideos.length === 0 ? (
+        ) : renderVideos.length === 0 ? (
           <p className="text-center text-slate-500 text-lg mt-10">No videos found for this filter.</p>
         ) : latestOnly ? (
-          filteredVideos.map((video, idx) => (
-            <div key={video.id?.trim() + idx} className="bg-white rounded-xl shadow-lg border border-emerald-100 flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-300 w-full max-w-2xl">
-              <VideoCard video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
-            </div>
+          renderVideos.map((video, idx) => (
+            <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
           ))
         ) : (
           <div className="w-full">

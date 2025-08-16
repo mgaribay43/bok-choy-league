@@ -146,9 +146,9 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   );
 }
 
-function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelectedManager, setSelectedSeason, setSelectedWeek, statsExpanded }: any) {
+function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelectedPlayer, setSelectedManager, setSelectedSeason, setSelectedWeek, scrollToVideos }: any) {
   return (
-    <div className={`${statsExpanded ? "block" : "hidden"} sm:block w-full mb-6`}>
+    <div className="w-full mb-6">
       <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-100 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
@@ -156,7 +156,10 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
             <ul className="list-decimal list-inside text-slate-700 text-center">
               {stats.topManagers.map(([manager, count]: any) => (
                 <li key={manager}>
-                  <button className="font-semibold text-emerald-700 hover:underline focus:outline-none" onClick={() => handleManagerClick(manager)}>
+                  <button
+                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
+                  >
                     {manager}
                   </button> ({count})
                 </li>
@@ -168,7 +171,10 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
             <ul className="list-decimal list-inside text-slate-700 text-center">
               {stats.bottomManagers.map(([manager, count]: any) => (
                 <li key={manager}>
-                  <button className="font-semibold text-emerald-700 hover:underline focus:outline-none" onClick={() => handleManagerClick(manager)}>
+                  <button
+                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
+                  >
                     {manager}
                   </button> ({count})
                 </li>
@@ -180,7 +186,10 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
             <ul className="list-decimal list-inside text-slate-700 text-center">
               {stats.topPlayers.map(([player, count]: any) => (
                 <li key={player}>
-                  <button className="font-semibold text-emerald-700 hover:underline focus:outline-none" onClick={() => handlePlayerClick(player)}>
+                  <button
+                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    onClick={() => { handlePlayerClick(player); scrollToVideos(); }}
+                  >
                     {player}
                   </button> ({count})
                 </li>
@@ -201,12 +210,27 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
                 .slice(0, 3)
                 .map(({ manager, weekSeason, count, idx }) => (
                   <li key={manager + weekSeason + idx}>
-                    <button className="font-semibold text-emerald-700 hover:underline focus:outline-none"
-                      onClick={() => { setSelectedManager(manager); setSelectedSeason(weekSeason.split('|')[1]); setSelectedWeek("All"); }}>
+                    <button
+                      className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                      onClick={() => {
+                        setSelectedManager(manager);
+                        setSelectedSeason(weekSeason.split('|')[1]);
+                        setSelectedWeek("All");
+                        scrollToVideos();
+                      }}
+                    >
                       {manager}
                     </button>{" - "}
-                    <button className="hover:underline focus:outline-none text-emerald-700"
-                      onClick={() => { setSelectedSeason(weekSeason.split('|')[1]); setSelectedWeek(weekSeason.split('|')[0]); setSelectedManager(manager); }}>
+                    <button
+                      className="hover:underline focus:outline-none text-emerald-700"
+                      onClick={() => {
+                        setSelectedSeason(weekSeason.split('|')[1]);
+                        setSelectedWeek(weekSeason.split('|')[0]);
+                        setSelectedManager(manager);
+                        setSelectedPlayer("All"); // <-- Add this line
+                        scrollToVideos();
+                      }}
+                    >
                       {weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}
                     </button> ({count})
                   </li>
@@ -462,6 +486,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  const videosSectionRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     import('../data/Videos/ices.json')
       .then((data) => {
@@ -525,100 +551,131 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const handleResetFilters = () => {
     setSelectedPlayer("All"); setSelectedManager("All"); setSelectedSeason("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
   };
+  const scrollToVideos = () => {
+    videosSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
-      {latestOnly ? (
-        <button onClick={() => window.location.href = '/ices'} className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</button>
-      ) : (
-        <div className="w-full bg-white/80 border-b border-emerald-100">
-          <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700 mb-2 text-center">Ices</h1>
-            <div className="w-full">
-              {/* Mobile toggle button */}
-              <button className="sm:hidden w-full flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg"
-                onClick={() => setStatsExpanded(prev => !prev)} aria-expanded={statsExpanded}>
-                <span>{statsExpanded ? "Hide Records" : "Show Records"}</span>
-                <span className="ml-2">{statsExpanded ? <ChevronUp /> : <ChevronDown />}</span>
-              </button>
-              <StatsSection
-                stats={stats}
-                handleManagerClick={handleManagerClick}
-                handlePlayerClick={handlePlayerClick}
-                setSelectedManager={setSelectedManager}
-                setSelectedSeason={setSelectedSeason}
-                setSelectedWeek={setSelectedWeek}
-                statsExpanded={statsExpanded}
-              />
-            </div>
-            <FiltersSection
-              filters={filters}
-              selectedManager={selectedManager}
-              setSelectedManager={setSelectedManager}
-              selectedSeason={selectedSeason}
-              setSelectedSeason={setSelectedSeason}
-              selectedPlayer={selectedPlayer}
-              setSelectedPlayer={setSelectedPlayer}
-              selectedWeek={selectedWeek}
-              setSelectedWeek={setSelectedWeek}
-              showPenaltyOnly={showPenaltyOnly}
-              setShowPenaltyOnly={setShowPenaltyOnly}
-              handleResetFilters={handleResetFilters}
-              filtersExpanded={filtersExpanded}
-              videos={videos} // <-- pass videos for dynamic filtering
-            />
-            {/* Mobile filters toggle button */}
-            <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
-              onClick={() => setFiltersExpanded(prev => !prev)} aria-expanded={filtersExpanded}>
-              <span>{filtersExpanded ? "Hide Filters" : "Show Filters"}</span>
-            </button>
-          </div>
-        </div>
-      )}
-      <main className={latestOnly ? "w-full max-w-4xl px-2 sm:px-6 py-4 flex flex-col items-center" : "w-full max-w-4xl px-2 sm:px-6 py-8 flex flex-col items-center"}>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="relative">
-              <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-            </div>
-          </div>
-        ) : error ? (
-          <p className="text-center text-red-500 text-lg mt-10">{error}</p>
-        ) : renderVideos.length === 0 ? (
-          <p className="text-center text-slate-500 text-lg mt-10">No videos found for this filter.</p>
-        ) : latestOnly ? (
-          renderVideos.map((video, idx) => (
-            <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
-          ))
+    <>
+      <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
+        {latestOnly ? (
+          <button onClick={() => window.location.href = '/ices'} className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</button>
         ) : (
-          <div className="w-full">
-            {sortedSeasons.map(season => {
-              const seasonVideos = sortVideosByWeek(videosBySeason[season].filter(filterVideo));
-              if (seasonVideos.length === 0) return null;
-              const isCollapsed = collapsedSeasons[season] ?? false;
-              return (
-                <div key={season} className="mb-8">
-                  <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
-                    onClick={() => setCollapsedSeasons(prev => ({ ...prev, [season]: !prev[season] }))}>
-                    <span>{season}</span>
-                    <span className="ml-2">{isCollapsed ? "▼" : "▲"}</span>
-                  </button>
-                  {!isCollapsed && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                      {seasonVideos.map((video, idx) =>
-                        <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
-                      )}
-                    </div>
-                  )}
+          <div className="w-full bg-white/80 border-b border-emerald-100">
+            <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700 mb-2 text-center">Ices</h1>
+              <div className="w-full">
+                {/* Mobile toggle button */}
+                <button className="sm:hidden w-full flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg"
+                  onClick={() => setStatsExpanded(prev => !prev)} aria-expanded={statsExpanded}>
+                  <span>{statsExpanded ? "Hide Records" : "Show Records"}</span>
+                  <span className="ml-2">{statsExpanded ? <ChevronUp /> : <ChevronDown />}</span>
+                </button>
+                {/* Animated StatsSection */}
+                <div
+                  className={`overflow-hidden transition-all duration-500 ease-in-out w-full
+                  ${statsExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}
+                  sm:max-h-none sm:opacity-100`}
+                  style={{ transitionProperty: "max-height, opacity" }}
+                >
+                  <StatsSection
+                    stats={stats}
+                    handleManagerClick={(manager: string) => { handleManagerClick(manager); scrollToVideos(); }}
+                    handlePlayerClick={(player: string) => { handlePlayerClick(player); scrollToVideos(); }}
+                    setSelectedManager={setSelectedManager}
+                    setSelectedSeason={setSelectedSeason}
+                    setSelectedWeek={setSelectedWeek}
+                    setSelectedPlayer={setSelectedPlayer} // <-- Add this line
+                    scrollToVideos={scrollToVideos}
+                  />
                 </div>
-              );
-            })}
+              </div>
+              <FiltersSection
+                filters={filters}
+                selectedManager={selectedManager}
+                setSelectedManager={setSelectedManager}
+                selectedSeason={selectedSeason}
+                setSelectedSeason={setSelectedSeason}
+                selectedPlayer={selectedPlayer}
+                setSelectedPlayer={setSelectedPlayer}
+                selectedWeek={selectedWeek}
+                setSelectedWeek={setSelectedWeek}
+                showPenaltyOnly={showPenaltyOnly}
+                setShowPenaltyOnly={setShowPenaltyOnly}
+                handleResetFilters={handleResetFilters}
+                filtersExpanded={filtersExpanded}
+                videos={videos} // <-- pass videos for dynamic filtering
+              />
+              {/* Mobile filters toggle button */}
+              <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
+                onClick={() => setFiltersExpanded(prev => !prev)} aria-expanded={filtersExpanded}>
+                <span>{filtersExpanded ? "Hide Filters" : "Show Filters"}</span>
+              </button>
+            </div>
           </div>
         )}
-      </main>
+        <main
+          ref={videosSectionRef}
+          className={latestOnly
+            ? "w-full max-w-4xl px-2 sm:px-6 py-4 flex flex-col items-center"
+            : "w-full max-w-4xl px-2 sm:px-6 py-8 flex flex-col items-center"}
+        >
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative">
+                <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+              </div>
+            </div>
+          ) : error ? (
+            <p className="text-center text-red-500 text-lg mt-10">{error}</p>
+          ) : renderVideos.length === 0 ? (
+            <p className="text-center text-slate-500 text-lg mt-10">No videos found for this filter.</p>
+          ) : latestOnly ? (
+            renderVideos.map((video, idx) => (
+              <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
+            ))
+          ) : (
+            <div className="w-full">
+              {sortedSeasons.map(season => {
+                const seasonVideos = videosBySeason[season].filter(filterVideo);
+                if (seasonVideos.length === 0) return null;
+                const isCollapsed = collapsedSeasons[season] ?? false;
+                return (
+                  <div key={season} className="mb-8">
+                    <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
+                      onClick={() => setCollapsedSeasons(prev => ({ ...prev, [season]: !prev[season] }))}>
+                      <span>{season}</span>
+                      <span className="ml-2">{isCollapsed ? "▼" : "▲"}</span>
+                    </button>
+                    {(
+                      <div
+                        ref={el => {
+                          if (el && !isCollapsed) {
+                            el.style.maxHeight = el.scrollHeight + "px";
+                          } else if (el) {
+                            el.style.maxHeight = "0px";
+                          }
+                        }}
+                        className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!isCollapsed ? "opacity-100" : "opacity-0"}`}
+                        style={{ transitionProperty: "max-height, opacity" }}
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                          {[...seasonVideos].reverse().map((video, idx) =>
+                            <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </div>
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center text-yellow-800 text-sm font-medium">
         All videos are unlisted on YouTube and only viewable to those who possess the link. (i.e. us)
       </div>
-    </div>
+    </>
   );
 }

@@ -317,8 +317,7 @@ function FiltersSection({
         key={option}
         value={option}
         className={({ active }) =>
-          `cursor-pointer select-none px-3 py-2 ${
-            active ? "bg-emerald-100 text-emerald-700" : "text-slate-700"
+          `cursor-pointer select-none px-3 py-2 ${active ? "bg-emerald-100 text-emerald-700" : "text-slate-700"
           }`
         }
       >
@@ -347,9 +346,8 @@ function FiltersSection({
     return (
       <div className="flex flex-col sm:mr-6 items-start mb-2 ml-2 sm:mb-0 sm:w-48">
         <label
-          className={`block text-xs font-semibold mb-1 sm:mb-0 ${
-            grayOut ? "text-gray-400" : "text-emerald-700"
-          }`}
+          className={`block text-xs font-semibold mb-1 sm:mb-0 ${grayOut ? "text-gray-400" : "text-emerald-700"
+            }`}
         >
           {label}
         </label>
@@ -360,9 +358,8 @@ function FiltersSection({
                 <>
                   <Listbox.Button
                     ref={buttonRef}
-                    className={`w-full px-3 py-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 text-left ${
-                      grayOut ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
-                    }`}
+                    className={`w-full px-3 py-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 text-left ${grayOut ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
+                      }`}
                     style={{ minHeight: '40px' }}
                   >
                     {value}
@@ -553,11 +550,6 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 setSelectedWeek={setSelectedWeek}
                 statsExpanded={statsExpanded}
               />
-              {/* Mobile filters toggle button */}
-              <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
-                onClick={() => setFiltersExpanded(prev => !prev)} aria-expanded={filtersExpanded}>
-                <span>{filtersExpanded ? "Hide Filters" : "Show Filters"}</span>
-              </button>
             </div>
             <FiltersSection
               filters={filters}
@@ -575,6 +567,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
               filtersExpanded={filtersExpanded}
               videos={videos} // <-- pass videos for dynamic filtering
             />
+            {/* Mobile filters toggle button */}
+            <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
+              onClick={() => setFiltersExpanded(prev => !prev)} aria-expanded={filtersExpanded}>
+              <span>{filtersExpanded ? "Hide Filters" : "Show Filters"}</span>
+            </button>
           </div>
         </div>
       )}

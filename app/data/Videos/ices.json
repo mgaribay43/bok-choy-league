@@ -22,7 +22,8 @@
             "player": "Rashid Shaheed",
             "manager": "Hunter",
             "date": "09-22-2024",
-            "week": "Week 3"
+            "week": "Week 3",
+            "flavor": "Screwdriver"
         },
         {
             "id": "bTtCuXNbCdE",
@@ -36,7 +37,8 @@
             "player": "Raiders Defense",
             "manager": "Tanner",
             "date": "09-22-2024",
-            "week": "Week 3"
+            "week": "Week 3",
+            "flavor": "Red, White & Berry"
         },
         {
             "id": "y8J0yUNBRg4",
@@ -64,7 +66,8 @@
             "player": "Kyle Pitts Sr.",
             "manager": "Conner",
             "date": "09-29-2024",
-            "week": "Week 4"
+            "week": "Week 4",
+            "flavor": "Red, White & Berry"
         },
         {
             "id": "0jQGNZuVnbc",
@@ -155,7 +158,8 @@
             "player": "Quentin Johnston",
             "manager": "Tanner",
             "date": "11-25-2024",
-            "week": "Week 12"
+            "week": "Week 12",
+            "flavor": "Red, White & Berry"
         },
         {
             "id": "1PZd8_DRMc8",
@@ -229,14 +233,16 @@
             "player": "Jets Defense",
             "manager": "Hunter",
             "date": "09-17-2023",
-            "week": "Week 2"
+            "week": "Week 2",
+            "flavor": "Red, White & Berry"
         },
         {
             "id": "ioBf0dSy9So ",
             "player": "Dalvin Cook",
             "manager": "Tanner",
             "date": "09-17-2023",
-            "week": "Week 2"
+            "week": "Week 2",
+            "flavor": "Red, White & Merry Holiday Punch"
         },
         {
             "id": "1NAhoo1FSko ",
@@ -292,7 +298,8 @@
             "player": "Jahan Dotson",
             "manager": "Hunter",
             "date": "11-23-2023",
-            "week": "Week 10"
+            "week": "Week 10",
+            "flavor": "Red, White & Berry"
         },
         {
             "id": "Pm4ogvUHZdo",

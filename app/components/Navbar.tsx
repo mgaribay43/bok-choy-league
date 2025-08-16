@@ -29,8 +29,8 @@ export default function Navbar() {
     : user?.email?.split('@')[0];
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg transition-all duration-300">
-      <div className="container mx-auto px-4 lg:px-6">
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg transition-all duration-300 w-screen overflow-hidden">
+      <div className="w-full px-2 sm:px-4 lg:px-0">
         <div className="flex justify-between items-center h-16 lg:h-18">
           {/* Logo */}
           <Link href="/" className="group" onClick={() => setIsOpen(false)}>

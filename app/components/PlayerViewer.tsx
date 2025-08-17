@@ -211,9 +211,9 @@ export default function PlayerViewer({
                 }, 250);
             } else {
                 setTranslateY(0);
+                setSwipeAllowed(true); // Reset swipe state to allow new gestures
             }
             touchStartY.current = null;
-            setSwipeAllowed(false);
         }
 
         card.addEventListener("touchstart", handleTouchStart);

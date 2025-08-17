@@ -1,12 +1,17 @@
 'use client';
 
+// =======================
+// Imports
+// =======================
 import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Image from "next/image";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Listbox } from '@headlessui/react';
 
-// --- Types ---
+// =======================
+// Types
+// =======================
 type IceVideo = {
   id: string;
   player: string;
@@ -18,32 +23,39 @@ type IceVideo = {
 };
 type IcesProps = { latestOnly?: boolean; };
 
-// --- Helpers ---
+// =======================
+// Helper Functions
+// =======================
+
+// Extract year from date string
 const getYear = (date: string) => date?.slice(0, 4) ?? "";
+
+// Get unique values from array
 const getUnique = <T,>(arr: T[]) => Array.from(new Set(arr));
+
+// Split player string into array
 const splitPlayers = (player: string) => player?.split("+").map(p => p.trim()).filter(Boolean) ?? [];
+
+// Sort seasons descending
 const sortSeasons = (seasons: string[]) => [...seasons].sort((a, b) => b.localeCompare(a));
-const sortVideosByWeek = (videos: IceVideo[]) => [...videos].sort((a, b) => {
-  if (a.week && b.week) {
-    const weekA = parseInt(a.week.replace(/[^0-9]/g, ""), 10);
-    const weekB = parseInt(b.week.replace(/[^0-9]/g, ""), 10);
-    return weekB - weekA;
-  }
-  if (a.week) return -1;
-  if (b.week) return 1;
-  return b.date?.localeCompare(a.date ?? "") ?? 0;
-});
+
+// Get top N from a count map
 const getTopN = (map: Record<string, number>, n: number) =>
   Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
+
+// Get bottom N from a count map
 const getBottomN = (map: Record<string, number>, n: number) =>
   Object.entries(map).filter(([_, count]) => count > 0).sort((a, b) => a[1] - b[1]).slice(0, n);
 
-// --- Stats Calculation ---
+// =======================
+// Stats Calculation Hook
+// =======================
 function useStats(videos: IceVideo[]) {
   const managerIcedCount: Record<string, number> = {};
   const playerIcedCount: Record<string, number> = {};
   const weekCounts: Record<string, Record<string, number>> = {};
 
+  // Aggregate stats
   videos.forEach(video => {
     const manager = video.manager?.trim();
     const playerNames = splitPlayers(video.player);
@@ -59,6 +71,7 @@ function useStats(videos: IceVideo[]) {
     }
   });
 
+  // Find max week records
   let maxWeekRecords: { manager: string; week: string; season: string; count: number }[] = [];
   let maxCount = 0;
   Object.entries(weekCounts).forEach(([manager, weeks]) => {
@@ -81,7 +94,9 @@ function useStats(videos: IceVideo[]) {
   };
 }
 
-// --- Filters ---
+// =======================
+// Filters Calculation Hook
+// =======================
 function useFilters(videos: IceVideo[]) {
   const managers = getUnique(videos.map(v => v.manager?.trim()).filter(Boolean)).sort();
   const seasons = getUnique(videos.map(v => v.season ?? getYear(v.date)).filter(Boolean)).sort((a, b) => b.localeCompare(a));
@@ -90,7 +105,9 @@ function useFilters(videos: IceVideo[]) {
   return { managers, seasons, players, weeks };
 }
 
-// --- UI Renderers ---
+// =======================
+// Video Card Component
+// =======================
 function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   video: IceVideo, expandedVideo: string | null, setExpandedVideo: (id: string) => void
 }) {
@@ -99,6 +116,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   return (
     <div className="bg-white rounded-xl shadow-lg border border-emerald-100 flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-300">
       <div className="w-full mb-3">
+        {/* Thumbnail or embedded video */}
         {videoId ? (
           !isExpanded ? (
             <Image
@@ -129,6 +147,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
           </div>
         )}
       </div>
+      {/* Player and manager info */}
       <h2 className="text-lg font-bold text-emerald-700 text-center mb-1 w-full">{video.player}</h2>
       <div className="text-sm text-slate-600 text-center mb-1">
         <span className="font-semibold text-emerald-600">Manager:</span> {video.manager}
@@ -139,6 +158,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
         )}
         <span>{video.date}</span>
       </div>
+      {/* Penalty badge */}
       {video["24_hr_penalty"] && (
         <span className="mt-2 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">24 HR PENALTY</span>
       )}
@@ -146,11 +166,25 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   );
 }
 
-function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelectedPlayer, setSelectedManager, setSelectedSeason, setSelectedWeek, scrollToVideos }: any) {
+// =======================
+// Stats Section Component
+// =======================
+function StatsSection({
+  stats,
+  handleManagerClick,
+  handlePlayerClick,
+  setSelectedPlayer,
+  setSelectedManager,
+  setSelectedSeason,
+  setSelectedWeek,
+  scrollToVideos,
+  scrollToSeason
+}: any) {
   return (
     <div className="w-full mb-6">
       <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-100 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Top Managers */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Iced Managers</h3>
             <ul className="list-decimal list-inside text-slate-700 text-center">
@@ -166,6 +200,7 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
               ))}
             </ul>
           </div>
+          {/* Bottom Managers */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Least Iced Managers</h3>
             <ul className="list-decimal list-inside text-slate-700 text-center">
@@ -181,6 +216,7 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
               ))}
             </ul>
           </div>
+          {/* Top Players */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices Per Player</h3>
             <ul className="list-decimal list-inside text-slate-700 text-center">
@@ -196,6 +232,7 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
               ))}
             </ul>
           </div>
+          {/* Most Ices by Manager in a Week */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices by a Manager in a Single Week</h3>
             <ol className="list-decimal list-inside text-slate-700 text-center">
@@ -227,8 +264,8 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
                         setSelectedSeason(weekSeason.split('|')[1]);
                         setSelectedWeek(weekSeason.split('|')[0]);
                         setSelectedManager(manager);
-                        setSelectedPlayer("All"); // <-- Add this line
-                        scrollToVideos();
+                        setSelectedPlayer("All");
+                        scrollToSeason(weekSeason.split('|')[1]);
                       }}
                     >
                       {weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}
@@ -243,6 +280,9 @@ function StatsSection({ stats, handleManagerClick, handlePlayerClick, setSelecte
   );
 }
 
+// =======================
+// Filters Section Component
+// =======================
 function FiltersSection({
   filters,
   selectedManager,
@@ -274,7 +314,7 @@ function FiltersSection({
   filtersExpanded: boolean;
   videos: IceVideo[];
 }) {
-  // Small reset button for mobile, styled to match dropdown height
+  // --- Mobile Reset Button ---
   const ResetBtn = ({ onClick }: { onClick: () => void }) => (
     <button
       type="button"
@@ -306,7 +346,6 @@ function FiltersSection({
   }
 
   // --- Dynamic Player Options ---
-  // Always enabled, but filtered by other selections if set
   let playerOptions: string[] = [];
   let filteredForPlayers = videos;
   if (selectedSeason !== "All") {
@@ -323,7 +362,6 @@ function FiltersSection({
   // --- Dynamic Manager Options ---
   let managerOptions: string[] = [];
   if (selectedPlayer !== "All") {
-    // Only managers who have been iced by the selected player
     managerOptions = getUnique(
       videos
         .filter(v => splitPlayers(v.player).includes(selectedPlayer))
@@ -417,7 +455,7 @@ function FiltersSection({
     );
   };
 
-  // --- Use Dropdowns ---
+  // --- Render Filter Dropdowns ---
   return (
     <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full justify-center mt-0 gap-3
       ${filtersExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}
@@ -450,12 +488,14 @@ function FiltersSection({
         onChange={setSelectedPlayer}
         options={["All", ...playerOptions]}
       />
+      {/* Penalty filter */}
       <div className="w-full sm:w-auto flex justify-center sm:items-end mt-2 sm:mt-0 mb-3">
         <div className="flex flex-row sm:flex-row items-center justify-center">
           <input type="checkbox" id="penalty-filter" checked={showPenaltyOnly} onChange={e => setShowPenaltyOnly(e.target.checked)} className="accent-red-600" />
           <label htmlFor="penalty-filter" className="text-xs font-semibold text-red-700 ml-1">Penalty Ices</label>
         </div>
       </div>
+      {/* Reset filters button */}
       <div className="sm:w-auto flex justify-center sm:items-end mt-2 mb-1.5 sm:mt-0">
         <div className="sm:flex-row items-center justify-center">
           <button
@@ -470,12 +510,16 @@ function FiltersSection({
   );
 }
 
-// --- Main Component ---
+// =======================
+// Main Ices Component
+// =======================
 export default function Ices({ latestOnly = false }: IcesProps) {
+  // --- State ---
   const [videos, setVideos] = useState<IceVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filter states
   const [selectedManager, setSelectedManager] = useState<string>("All");
   const [selectedSeason, setSelectedSeason] = useState<string>("All");
   const [selectedPlayer, setSelectedPlayer] = useState<string>("All");
@@ -486,8 +530,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  // Refs for scrolling
   const videosSectionRef = useRef<HTMLDivElement>(null);
+  const seasonRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // --- Load videos from JSON ---
   useEffect(() => {
     import('../data/Videos/ices.json')
       .then((data) => {
@@ -505,10 +552,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
       .finally(() => setLoading(false));
   }, []);
 
+  // --- Filters and Stats ---
   const filters = useFilters(videos);
   const stats = useStats(videos);
 
-  // Filtering
+  // --- Filtering Logic ---
   const filterVideo = (video: IceVideo) => {
     const managerMatch = selectedManager === "All" || video.manager?.trim() === selectedManager;
     const seasonMatch = selectedSeason === "All" || (video.season ?? getYear(video.date)) === selectedSeason;
@@ -528,10 +576,10 @@ export default function Ices({ latestOnly = false }: IcesProps) {
     }).slice(0, 1);
   }
 
-  // Ensure consistent rendering for mobile and desktop
+  // For rendering
   const renderVideos = latestOnly ? filteredVideos : videos.filter(filterVideo);
 
-  // Group videos by season
+  // --- Group videos by season ---
   const videosBySeason: Record<string, IceVideo[]> = {};
   videos.forEach(video => {
     const season = video.season ?? getYear(video.date);
@@ -541,7 +589,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   });
   const sortedSeasons = sortSeasons(Object.keys(videosBySeason));
 
-  // Handlers
+  // --- Handlers ---
   const handleManagerClick = (manager: string) => {
     setSelectedManager(manager); setSelectedSeason("All"); setSelectedPlayer("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
   };
@@ -551,13 +599,20 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const handleResetFilters = () => {
     setSelectedPlayer("All"); setSelectedManager("All"); setSelectedSeason("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
   };
+  const scrollToSeason = (season: string) => {
+    seasonRefs.current[season]?.scrollIntoView({ behavior: "smooth" });
+  };
   const scrollToVideos = () => {
     videosSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // =======================
+  // Render
+  // =======================
   return (
     <>
       <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
+        {/* Header and Stats */}
         {latestOnly ? (
           <button onClick={() => window.location.href = '/ices'} className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</button>
         ) : (
@@ -565,13 +620,13 @@ export default function Ices({ latestOnly = false }: IcesProps) {
             <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
               <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700 mb-2 text-center">Ices</h1>
               <div className="w-full">
-                {/* Mobile toggle button */}
+                {/* Mobile toggle button for stats */}
                 <button className="sm:hidden w-full flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg"
                   onClick={() => setStatsExpanded(prev => !prev)} aria-expanded={statsExpanded}>
                   <span>{statsExpanded ? "Hide Records" : "Show Records"}</span>
                   <span className="ml-2">{statsExpanded ? <ChevronUp /> : <ChevronDown />}</span>
                 </button>
-                {/* Animated StatsSection */}
+                {/* Stats Section */}
                 <div
                   className={`overflow-hidden transition-all duration-500 ease-in-out w-full
                   ${statsExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}
@@ -580,16 +635,18 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 >
                   <StatsSection
                     stats={stats}
-                    handleManagerClick={(manager: string) => { handleManagerClick(manager); scrollToVideos(); }}
-                    handlePlayerClick={(player: string) => { handlePlayerClick(player); scrollToVideos(); }}
+                    handleManagerClick={handleManagerClick}
+                    handlePlayerClick={handlePlayerClick}
                     setSelectedManager={setSelectedManager}
                     setSelectedSeason={setSelectedSeason}
                     setSelectedWeek={setSelectedWeek}
-                    setSelectedPlayer={setSelectedPlayer} // <-- Add this line
+                    setSelectedPlayer={setSelectedPlayer}
                     scrollToVideos={scrollToVideos}
+                    scrollToSeason={scrollToSeason}
                   />
                 </div>
               </div>
+              {/* Filters Section */}
               <FiltersSection
                 filters={filters}
                 selectedManager={selectedManager}
@@ -604,7 +661,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 setShowPenaltyOnly={setShowPenaltyOnly}
                 handleResetFilters={handleResetFilters}
                 filtersExpanded={filtersExpanded}
-                videos={videos} // <-- pass videos for dynamic filtering
+                videos={videos}
               />
               {/* Mobile filters toggle button */}
               <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
@@ -614,12 +671,14 @@ export default function Ices({ latestOnly = false }: IcesProps) {
             </div>
           </div>
         )}
+        {/* Main Videos Section */}
         <main
           ref={videosSectionRef}
           className={latestOnly
-            ? "w-full max-w-4xl px-2 sm:px-6 py-4 flex flex-col items-center"
-            : "w-full max-w-4xl px-2 sm:px-6 py-8 flex flex-col items-center"}
+            ? "w-full max-w-4xl px-2 sm:px-6 py-4 pb-24 flex flex-col items-center"
+            : "w-full max-w-4xl px-2 sm:px-6 py-8 pb-24 flex flex-col items-center"}
         >
+          {/* Loading/Error/No Results */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="relative">
@@ -636,36 +695,30 @@ export default function Ices({ latestOnly = false }: IcesProps) {
             ))
           ) : (
             <div className="w-full">
+              {/* Render videos grouped by season */}
               {sortedSeasons.map(season => {
                 const seasonVideos = videosBySeason[season].filter(filterVideo);
                 if (seasonVideos.length === 0) return null;
                 const isCollapsed = collapsedSeasons[season] ?? false;
                 return (
-                  <div key={season} className="mb-8">
+                  <div
+                    key={season}
+                    className="mb-8"
+                    ref={el => { seasonRefs.current[season] = el; }}
+                  >
+                    {/* Season header with collapse toggle */}
                     <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
                       onClick={() => setCollapsedSeasons(prev => ({ ...prev, [season]: !prev[season] }))}>
                       <span>{season}</span>
                       <span className="ml-2">{isCollapsed ? "▼" : "▲"}</span>
                     </button>
-                    {(
-                      <div
-                        ref={el => {
-                          if (el && !isCollapsed) {
-                            el.style.maxHeight = el.scrollHeight + "px";
-                          } else if (el) {
-                            el.style.maxHeight = "0px";
-                          }
-                        }}
-                        className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!isCollapsed ? "opacity-100" : "opacity-0"}`}
-                        style={{ transitionProperty: "max-height, opacity" }}
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                          {[...seasonVideos].reverse().map((video, idx) =>
-                            <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    {/* Collapsible season videos */}
+                    <SeasonCollapse
+                      isCollapsed={isCollapsed}
+                      videos={seasonVideos}
+                      expandedVideo={expandedVideo}
+                      setExpandedVideo={setExpandedVideo}
+                    />
                   </div>
                 );
               })}
@@ -673,9 +726,72 @@ export default function Ices({ latestOnly = false }: IcesProps) {
           )}
         </main>
       </div>
+      {/* Footer */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center text-yellow-800 text-sm font-medium">
         All videos are unlisted on YouTube and only viewable to those who possess the link. (i.e. us)
       </div>
     </>
+  );
+}
+
+// =======================
+// Season Collapse Component
+// =======================
+function SeasonCollapse({ isCollapsed, videos, expandedVideo, setExpandedVideo }: {
+  isCollapsed: boolean;
+  videos: IceVideo[];
+  expandedVideo: string | null;
+  setExpandedVideo: (id: string) => void;
+}) {
+  const collapseRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const collapseEl = collapseRef.current;
+    const gridEl = gridRef.current;
+    if (!collapseEl || !gridEl) return;
+
+    // Function to update maxHeight based on grid content
+    const updateHeight = () => {
+      if (!isCollapsed) {
+        collapseEl.style.maxHeight = gridEl.scrollHeight + "px";
+      }
+    };
+
+    // Set initial height
+    if (!isCollapsed) {
+      collapseEl.style.maxHeight = gridEl.scrollHeight + "px";
+    } else {
+      collapseEl.style.maxHeight = "0px";
+    }
+
+    // Observe grid for size changes
+    let resizeObserver: ResizeObserver | null = null;
+    if (!isCollapsed) {
+      resizeObserver = new ResizeObserver(updateHeight);
+      resizeObserver.observe(gridEl);
+    }
+
+    // Cleanup
+    return () => {
+      if (resizeObserver) resizeObserver.disconnect();
+    };
+  }, [isCollapsed, videos.length, expandedVideo]);
+
+  return (
+    <div
+      ref={collapseRef}
+      className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!isCollapsed ? "opacity-100" : "opacity-0"}`}
+      style={{ transitionProperty: "max-height, opacity", marginBottom: "32px", minHeight: "1px" }}
+    >
+      <div
+        ref={gridRef}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
+      >
+        {[...videos].reverse().map((video, idx) =>
+          <VideoCard key={video.id?.trim() + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
+        )}
+      </div>
+    </div>
   );
 }

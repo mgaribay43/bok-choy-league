@@ -218,6 +218,96 @@ export const yahooAPI = functions.https.onRequest(
                     return;
                 }
 
+                case "playerstatsyear": {
+                    if (playerKeys.trim() === "") {
+                        res.status(400).json({ error: "Missing playerKeys parameter for playerstatsyear" });
+                        return;
+                    }
+
+                    // batch player keys in groups of 25 max
+                    const keysArray = playerKeys.split(",");
+                    const batchSize = 25;
+                    const batchedResponses = [];
+
+                    // Fetch stats for weeks 1-17 for each batch
+                    for (let i = 0; i < keysArray.length; i += batchSize) {
+                        const batchKeys = keysArray.slice(i, i + batchSize).join(",");
+                        let combinedWeeks: Record<string, any[]> = {};
+
+                        for (let week = 1; week <= 18; week++) {
+                            const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}/stats;type=week;week=${week}?format=json`;
+
+                            console.log(`Fetching player week stats batch: ${batchKeys} week: ${week}`);
+                            const batchResponse = await fetch(batchEndpoint, {
+                                headers: {
+                                    Authorization: `Bearer ${accessToken}`,
+                                    Accept: "application/json",
+                                },
+                            });
+
+                            const batchText = await batchResponse.text();
+                            const batchJson = JSON.parse(batchText.replace(/^callback\((.*)\)$/, "$1"));
+
+                            // Merge week stats into combinedWeeks
+                            const playersObj = batchJson.fantasy_content?.players || {};
+                            Object.entries(playersObj).forEach(([key, value]) => {
+                                if (key !== "count") {
+                                    if (!combinedWeeks[key]) combinedWeeks[key] = [];
+                                    combinedWeeks[key].push(value);
+                                }
+                            });
+                        }
+
+                        // Build the batch response with stats_by_week array for each player
+                        const batchPlayers: Record<string, any> = {};
+                        Object.entries(combinedWeeks).forEach(([key, weekStatsArr]) => {
+                            batchPlayers[key] = {
+                                player: [
+                                    ...(weekStatsArr[0]?.player?.slice(0, 1) || []), // player_key and id
+                                    {
+                                        player_stats: {
+                                            stats_by_week: weekStatsArr.map((weekObj: any) => {
+                                                const stats = weekObj?.player?.[1]?.player_stats?.stats || [];
+                                                const weekNum = weekObj?.player?.[1]?.player_stats?.["0"]?.week;
+                                                const bye = weekObj?.player?.[1]?.player_stats?.bye || 0;
+                                                return {
+                                                    week: weekNum,
+                                                    bye,
+                                                    stats,
+                                                };
+                                            }),
+                                        },
+                                    },
+                                ],
+                            };
+                        });
+
+                        batchedResponses.push(batchPlayers);
+                    }
+
+                    // Merge all batches into one response
+                    const combinedPlayers: Record<string, any> = {};
+                    for (const batch of batchedResponses) {
+                        Object.entries(batch).forEach(([key, value]) => {
+                            combinedPlayers[key] = value;
+                        });
+                    }
+
+                    const combinedResponse = {
+                        fantasy_content: {
+                            league: [
+                                null,
+                                {
+                                    players: combinedPlayers,
+                                },
+                            ],
+                        },
+                    };
+
+                    res.status(200).json(combinedResponse);
+                    return;
+                }
+
                 case "settings": {
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/settings?format=json`;
                     break;

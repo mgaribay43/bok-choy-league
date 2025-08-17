@@ -74,9 +74,12 @@ export default function PlayerViewer({
     const [statIdMap, setStatIdMap] = useState<Record<string, string>>({});
     const cardRef = useRef<HTMLDivElement>(null);
     const scrollableRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLDivElement>(null);
+    const tabBarRef = useRef<HTMLDivElement>(null); // NEW
     const touchStartY = useRef<number | null>(null);
     const [translateY, setTranslateY] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [swipeAllowed, setSwipeAllowed] = useState(true);
 
     // New state for expanded row
     const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -153,23 +156,53 @@ export default function PlayerViewer({
 
         function handleTouchStart(e: TouchEvent) {
             if (isAnimating) return;
-            // Only allow swipe if scrollable section is at the top
+            const touchY = e.touches[0].clientY;
+            const header = headerRef.current;
+            const tabBar = tabBarRef.current;
             const scrollable = scrollableRef.current;
+
+            // If touch starts in header or tab bar section, always allow swipe
+            let inHeader = false;
+            if (header) {
+                const rect = header.getBoundingClientRect();
+                if (touchY >= rect.top && touchY <= rect.bottom) {
+                    inHeader = true;
+                }
+            }
+            let inTabBar = false;
+            if (tabBar) {
+                const rect = tabBar.getBoundingClientRect();
+                if (touchY >= rect.top && touchY <= rect.bottom) {
+                    inTabBar = true;
+                }
+            }
+            if (inHeader || inTabBar) {
+                setSwipeAllowed(true);
+                touchStartY.current = touchY;
+                return;
+            }
+
+            // Otherwise, only allow swipe if scrollable is at top
             if (scrollable && scrollable.scrollTop > 0) {
+                setSwipeAllowed(false);
                 touchStartY.current = null;
                 return;
             }
-            touchStartY.current = e.touches[0].clientY;
+            setSwipeAllowed(true);
+            touchStartY.current = touchY;
         }
 
         function handleTouchMove(e: TouchEvent) {
-            if (touchStartY.current === null || isAnimating) return;
+            if (touchStartY.current === null || isAnimating || !swipeAllowed) return;
             const deltaY = e.touches[0].clientY - touchStartY.current;
             if (deltaY > 0) setTranslateY(deltaY);
         }
 
         function handleTouchEnd() {
-            if (isAnimating) return;
+            if (isAnimating || !swipeAllowed) {
+                setSwipeAllowed(false);
+                return;
+            }
             if (translateY > 80) {
                 setIsAnimating(true);
                 setTranslateY(1000); // Animate off screen
@@ -180,6 +213,7 @@ export default function PlayerViewer({
                 setTranslateY(0);
             }
             touchStartY.current = null;
+            setSwipeAllowed(false);
         }
 
         card.addEventListener("touchstart", handleTouchStart);
@@ -192,6 +226,15 @@ export default function PlayerViewer({
             card.removeEventListener("touchend", handleTouchEnd);
         };
     }, [translateY, isAnimating, onClose]);
+
+    // Reset scroll and animation when switching tabs
+    useEffect(() => {
+        setTranslateY(0);
+        setIsAnimating(false);
+        if (scrollableRef.current) {
+            scrollableRef.current.scrollLeft = 0;
+        }
+    }, [tab]);
 
     // Helper for summary stats
     function getSummaryStats(row: any, statColumns: { id: string; label: string }[]) {
@@ -230,7 +273,7 @@ export default function PlayerViewer({
                 >
                     &times;
                 </button>
-                <div className="px-6 pt-6 pb-2">
+                <div ref={headerRef} className="px-6 pt-6 pb-2">
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-1">{player.name}</h2>
@@ -260,37 +303,39 @@ export default function PlayerViewer({
                         <div className="flex flex-col items-center"></div>
                     </div>
                 </div>
-                <div className="border-b border-slate-700 px-6">
-                    <div className="flex gap-8 justify-center">
-                        <button
-                            className={`py-3 font-bold text-white ${tab === "gamelog" ? "border-b-2 border-blue-400" : "text-slate-400"}`}
-                            onClick={() => setTab("gamelog")}
-                        >
-                            Game Log
-                        </button>
-                        <button
-                            className={`py-3 font-bold text-white ${tab === "stats" ? "border-b-2 border-blue-400" : "text-slate-400"}`}
-                            onClick={() => setTab("stats")}
-                        >
-                            Stats
-                        </button>
+                <div ref={tabBarRef} className="border-b border-slate-700">
+                    <div>
+                        <div className="flex gap-8 justify-center">
+                            <button
+                                className={`py-3 font-bold text-white ${tab === "gamelog" ? "border-b-2 border-blue-400" : "text-slate-400"}`}
+                                onClick={() => setTab("gamelog")}
+                            >
+                                Game Log
+                            </button>
+                            <button
+                                className={`py-3 font-bold text-white ${tab === "stats" ? "border-b-2 border-blue-400" : "text-slate-400"}`}
+                                onClick={() => setTab("stats")}
+                            >
+                                Stats
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div
                     ref={scrollableRef}
-                    className="flex-1 py-4 overflow-y-auto"
+                    className="flex-1 overflow-y-auto overflow-x-auto relative bg-[#181A20] pt-0 mt-0"
                 >
                     {tab === "gamelog" && (
                         gameLogLoading ? (
-                            <div className="flex flex-col items-center justify-center py-20">
+                            <div className="flex flex-col items-center justify-center">
                                 <div className="relative">
                                     <div className="w-12 h-12 border-4 border-slate-700 border-t-slate-400 rounded-full animate-spin"></div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto w-full px-0">
+                            <div className="w-full px-0 py-0 m-0">
                                 <table className="w-full text-xs text-left text-slate-200">
-                                    <thead>
+                                    <thead className="sticky top-0 bg-[#181A20] z-10">
                                         <tr className="border-b border-slate-700">
                                             <th className="py-2 whitespace-nowrap px-4">Wk</th>
                                             <th className="py-2 whitespace-nowrap px-4 text-center">Fan Pts</th>
@@ -342,7 +387,7 @@ export default function PlayerViewer({
                                                         <td colSpan={2 + statColumns.length} className="bg-slate-800 px-4 py-2 animate-slide-down">
                                                             <div className="flex flex-wrap gap-4">
                                                                 {getSummaryStats(g, statColumns).length === 0 ? (
-                                                                    <span className="text-slate-400">No stats to show.</span>
+                                                                    <span className="text-slate-400">-</span>
                                                                 ) : (
                                                                     getSummaryStats(g, statColumns).map((stat, i) => (
                                                                         <div key={i} className="flex gap-2 items-center">
@@ -372,7 +417,7 @@ export default function PlayerViewer({
                         ) :
                             <div className="overflow-x-auto w-full px-0">
                                 <table className="w-full text-xs text-left text-slate-200">
-                                    <thead>
+                                    <thead className="sticky top-0 bg-[#181A20] z-10">
                                         <tr className="border-b border-slate-700">
                                             <th className="py-2 whitespace-nowrap px-4">Total</th>
                                             <th className="py-2 whitespace-nowrap px-8 text-center">Pts</th>

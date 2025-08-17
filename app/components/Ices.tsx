@@ -19,6 +19,7 @@ type IceVideo = {
   date: string;
   week?: string;
   season?: string;
+  flavor?: string;
   [key: string]: any;
 };
 type IcesProps = { latestOnly?: boolean; };
@@ -162,8 +163,98 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       {video["24_hr_penalty"] && (
         <span className="mt-2 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">24 HR PENALTY</span>
       )}
+      {/* Flavor badge */}
+      {video.flavor && video.flavor !== "Standard" && (
+        <span className="mt-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs">{video.flavor}</span>
+      )}
     </div>
   );
+}
+
+// =======================
+// Unique Ice Flavors Calculation Hook
+// =======================
+function useUniqueFlavors(videos: IceVideo[]) {
+  const uniqueFlavors = getUnique(videos.map(video => video.flavor).filter(Boolean));
+  return uniqueFlavors.length;
+}
+
+// =======================
+// Manager with Most Flavors Calculation Hook
+// =======================
+function useManagerWithMostFlavors(videos: IceVideo[]): { manager: string; flavorCount: number; flavors: string[] }[] {
+  const managerFlavorCount: Record<string, Set<string>> = {};
+
+  videos.forEach(video => {
+    const manager = video.manager?.trim();
+    const flavor = video.flavor?.trim();
+    if (manager && flavor) {
+      if (!managerFlavorCount[manager]) {
+        managerFlavorCount[manager] = new Set();
+      }
+      managerFlavorCount[manager].add(flavor);
+    }
+  });
+
+
+  const maxFlavorCount = Math.max(...Object.values(managerFlavorCount).map(flavors => flavors.size));
+
+  const managersWithMostFlavors = Object.entries(managerFlavorCount)
+    .filter(([, flavors]) => flavors.size === maxFlavorCount)
+    .map(([manager, flavors]) => ({ manager, flavorCount: flavors.size, flavors: Array.from(flavors) }));
+
+  return managersWithMostFlavors;
+}
+
+// =======================
+// Manager with Most Consecutive Weeks Calculation Hook
+// =======================
+function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: string; consecutiveWeeks: number } {
+  const managerWeekCounts: Record<string, Set<string>> = {};
+
+  videos.forEach(video => {
+    const manager = video.manager?.trim();
+    const week = video.week?.trim();
+    const season = video.season ?? getYear(video.date);
+    if (manager && week && season) {
+      const key = `${season}|${week}`;
+      if (!managerWeekCounts[manager]) {
+        managerWeekCounts[manager] = new Set();
+      }
+      managerWeekCounts[manager].add(key);
+    }
+  });
+
+  let maxConsecutiveWeeks = 0;
+  let managerWithMostConsecutiveWeeks = "None";
+
+  Object.entries(managerWeekCounts).forEach(([manager, weeks]) => {
+    const sortedWeeks = Array.from(weeks).sort();
+    let currentStreak = 1;
+    let longestStreak = 1;
+
+    for (let i = 1; i < sortedWeeks.length; i++) {
+      const [prevSeason, prevWeek] = sortedWeeks[i - 1].split("|");
+      const [currentSeason, currentWeek] = sortedWeeks[i].split("|");
+
+      if (
+        currentSeason === prevSeason &&
+        parseInt(currentWeek.replace("Week ", "")) === parseInt(prevWeek.replace("Week ", "")) + 1
+      ) {
+        currentStreak++;
+        longestStreak = Math.max(longestStreak, currentStreak);
+      } else {
+        currentStreak = 1;
+      }
+    }
+
+    if (longestStreak > maxConsecutiveWeeks) {
+      maxConsecutiveWeeks = longestStreak;
+      managerWithMostConsecutiveWeeks = manager;
+    }
+  });
+
+  return { manager: managerWithMostConsecutiveWeeks, consecutiveWeeks: maxConsecutiveWeeks };
 }
 
 // =======================
@@ -178,7 +269,10 @@ function StatsSection({
   setSelectedSeason,
   setSelectedWeek,
   scrollToVideos,
-  scrollToSeason
+  scrollToSeason,
+  uniqueFlavorsCount,
+  managerWithMostFlavors,
+  managerWithMostConsecutiveWeeks
 }: any) {
   return (
     <div className="w-full mb-6">
@@ -218,7 +312,7 @@ function StatsSection({
           </div>
           {/* Top Players */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices Per Player</h3>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices by a Player</h3>
             <ul className="list-decimal list-inside text-slate-700 text-center">
               {stats.topPlayers.map(([player, count]: any) => (
                 <li key={player}>
@@ -232,9 +326,16 @@ function StatsSection({
               ))}
             </ul>
           </div>
+          {/* Manager with Most Consecutive Weeks Iced */}
+          <div>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Consecutive Weeks</h3>
+            <p className="text-center text-slate-700">
+              {managerWithMostConsecutiveWeeks.manager} ({managerWithMostConsecutiveWeeks.consecutiveWeeks} consecutive weeks)
+            </p>
+          </div>
           {/* Most Ices by Manager in a Week */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices by a Manager in a Single Week</h3>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices in a Single Week</h3>
             <ol className="list-decimal list-inside text-slate-700 text-center">
               {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
                 .flatMap(([manager, weeks]) => (
@@ -274,6 +375,23 @@ function StatsSection({
                 ))}
             </ol>
           </div>
+          {/* Unique Ice Flavors */}
+          <div>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Number of Unique Flavors Consumed</h3>
+            <p className="text-center text-slate-700 mb-4">{uniqueFlavorsCount}</p>
+          </div>
+        </div>
+        {/* Manager with Most Flavors - Simplified Grid for Mobile */}
+        <div className="grid grid-cols-1 gap-6 w-full">
+          {/* Manager with Most Flavors */}
+          <div>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Flavors Consumed</h3>
+            {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
+              <p key={manager} className="text-center text-slate-700 mb-4">
+                {manager} ({flavorCount}- {flavors.join(", ")})
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -295,6 +413,8 @@ function FiltersSection({
   setSelectedWeek,
   showPenaltyOnly,
   setShowPenaltyOnly,
+  selectedFlavor,
+  setSelectedFlavor,
   handleResetFilters,
   filtersExpanded,
   videos,
@@ -308,6 +428,8 @@ function FiltersSection({
   setSelectedPlayer: (v: string) => void;
   selectedWeek: string;
   setSelectedWeek: (v: string) => void;
+  selectedFlavor: string;
+  setSelectedFlavor: (v: string) => void;
   showPenaltyOnly: boolean;
   setShowPenaltyOnly: (v: boolean) => void;
   handleResetFilters: () => void;
@@ -371,6 +493,9 @@ function FiltersSection({
   } else {
     managerOptions = filters.managers;
   }
+
+  // --- Dynamic Flavor Options ---
+  const flavorOptions = getUnique(videos.map(v => v.flavor).filter(Boolean)).sort();
 
   // --- Listbox Option Render Helper ---
   const renderOptions = (options: string[]) =>
@@ -488,6 +613,12 @@ function FiltersSection({
         onChange={setSelectedPlayer}
         options={["All", ...playerOptions]}
       />
+      <Dropdown
+        label="Flavor"
+        value={selectedFlavor}
+        onChange={setSelectedFlavor}
+        options={["All", ...flavorOptions.filter((f): f is string => typeof f === "string")]}
+      />
       {/* Penalty filter */}
       <div className="w-full sm:w-auto flex justify-center sm:items-end mt-2 sm:mt-0 mb-3">
         <div className="flex flex-row sm:flex-row items-center justify-center">
@@ -499,7 +630,6 @@ function FiltersSection({
       <div className="sm:w-auto flex justify-center sm:items-end mt-2 mb-1.5 sm:mt-0">
         <div className="sm:flex-row items-center justify-center">
           <button
-            onClick={handleResetFilters}
             className="bg-slate-400 text-black px-3 py-2.5 rounded text-xs hover:bg-slate-600 whitespace-nowrap"
           >
             Reset Filters
@@ -524,6 +654,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const [selectedSeason, setSelectedSeason] = useState<string>("All");
   const [selectedPlayer, setSelectedPlayer] = useState<string>("All");
   const [selectedWeek, setSelectedWeek] = useState<string>("All");
+  const [selectedFlavor, setSelectedFlavor] = useState<string>("All");
   const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
   const [collapsedSeasons, setCollapsedSeasons] = useState<Record<string, boolean>>({});
   const [showPenaltyOnly, setShowPenaltyOnly] = useState(false);
@@ -555,6 +686,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // --- Filters and Stats ---
   const filters = useFilters(videos);
   const stats = useStats(videos);
+  const uniqueFlavorsCount = useUniqueFlavors(videos);
+  const managerWithMostFlavors = useManagerWithMostFlavors(videos);
+  const managerWithMostConsecutiveWeeks = useManagerWithMostConsecutiveWeeks(videos);
 
   // --- Filtering Logic ---
   const filterVideo = (video: IceVideo) => {
@@ -563,8 +697,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
     const playerNames = splitPlayers(video.player);
     const playerMatch = selectedPlayer === "All" || playerNames.includes(selectedPlayer);
     const weekMatch = selectedWeek === "All" || video.week?.trim() === selectedWeek;
+    const flavorMatch = selectedFlavor === "All" || video.flavor?.trim() === selectedFlavor;
     const penaltyMatch = !showPenaltyOnly || !!video["24_hr_penalty"];
-    return managerMatch && seasonMatch && playerMatch && weekMatch && penaltyMatch;
+    return managerMatch && seasonMatch && playerMatch && weekMatch && flavorMatch && penaltyMatch;
   };
 
   let filteredVideos = videos.filter(filterVideo);
@@ -628,10 +763,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 </button>
                 {/* Stats Section */}
                 <div
-                  className={`overflow-hidden transition-all duration-500 ease-in-out w-full
-                  ${statsExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}
-                  sm:max-h-none sm:opacity-100`}
-                  style={{ transitionProperty: "max-height, opacity" }}
+                  className={`transition-all duration-500 ease-in-out w-full overflow-hidden
+                  ${statsExpanded ? "h-auto opacity-100" : "h-0 opacity-0"}`}
+                  style={{ transitionProperty: "height, opacity", marginBottom: statsExpanded ? "20px" : "0" }}
                 >
                   <StatsSection
                     stats={stats}
@@ -643,6 +777,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     setSelectedPlayer={setSelectedPlayer}
                     scrollToVideos={scrollToVideos}
                     scrollToSeason={scrollToSeason}
+                    uniqueFlavorsCount={uniqueFlavorsCount}
+                    managerWithMostFlavors={managerWithMostFlavors}
+                    managerWithMostConsecutiveWeeks={managerWithMostConsecutiveWeeks}
                   />
                 </div>
               </div>
@@ -657,6 +794,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 setSelectedPlayer={setSelectedPlayer}
                 selectedWeek={selectedWeek}
                 setSelectedWeek={setSelectedWeek}
+                selectedFlavor={selectedFlavor}
+                setSelectedFlavor={setSelectedFlavor}
                 showPenaltyOnly={showPenaltyOnly}
                 setShowPenaltyOnly={setShowPenaltyOnly}
                 handleResetFilters={handleResetFilters}

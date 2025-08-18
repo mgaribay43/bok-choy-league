@@ -22,12 +22,35 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Use persistent cache (localStorage)
+  const getCachedStandings = (year: string): TeamEntry[] | null => {
+    try {
+      const cached = localStorage.getItem(`standings_${year}`);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  };
+
+  const setCachedStandings = (year: string, teams: TeamEntry[]) => {
+    try {
+      localStorage.setItem(`standings_${year}`, JSON.stringify(teams));
+    } catch {}
+  };
+
   useEffect(() => {
+    let isMounted = true;
     async function fetchStandings() {
       setError(null);
-      setTeams([]);
       setLoading(true);
 
+      // Show cached data immediately if available
+      const cached = getCachedStandings(year);
+      if (cached) {
+        setTeams(cached);
+        setLoading(false);
+      }
+
+      // Always fetch fresh data in the background
       try {
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
@@ -42,7 +65,6 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
         for (let i = 0; i < teamCount; i++) {
           const teamData = rawTeams[i.toString()].team;
-
           const metadata = teamData[0];
           const standings = teamData[2]?.team_standings;
 
@@ -59,18 +81,24 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
-        setTeams(parsed);
+
+        // Only update if data is different
+        if (isMounted && JSON.stringify(parsed) !== JSON.stringify(cached)) {
+          setCachedStandings(year, parsed);
+          setTeams(parsed);
+        }
       } catch (err: unknown) {
         let message = "An error occurred";
         if (err instanceof Error) message = err.message;
         setError(message);
         console.error("Fetch error:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     fetchStandings();
+    return () => { isMounted = false; };
   }, [year]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

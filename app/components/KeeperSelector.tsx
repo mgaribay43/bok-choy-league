@@ -34,6 +34,21 @@ interface Team {
   players: Player[];
 }
 
+// --- Local Storage Cache Helpers ---
+function getCachedKeepers(year: string): Team[] | null {
+  try {
+    const cached = localStorage.getItem(`keepers_${year}`);
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return null;
+}
+
+function setCachedKeepers(year: string, teams: Team[]) {
+  try {
+    localStorage.setItem(`keepers_${year}`, JSON.stringify(teams));
+  } catch {}
+}
+
 export default function KeepersPage() {
   const currentYear = String(new Date().getFullYear());
   const availableYears = ["2024", "2025"];
@@ -48,6 +63,14 @@ export default function KeepersPage() {
     const fetchKeepers = async () => {
       setLoading(true);
       setError(null);
+
+      // --- Use cache if available ---
+      const cached = getCachedKeepers(selectedYear);
+      if (cached) {
+        setTeams(cached);
+        setLoading(false);
+        return;
+      }
 
       try {
         const year = Number(selectedYear) - 1;
@@ -75,6 +98,7 @@ export default function KeepersPage() {
         }
 
         setTeams(allTeams);
+        setCachedKeepers(selectedYear, allTeams); // --- Save to cache ---
       } catch (err: any) {
         setError(err?.message || "Unknown error");
       } finally {

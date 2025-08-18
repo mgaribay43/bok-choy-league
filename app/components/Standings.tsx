@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import leagueSettings from "../data/league_settings.json";
 
 interface TeamEntry {
   id: string;
@@ -16,17 +17,51 @@ type StandingsProps = {
   topThree?: boolean;
 };
 
+const getCurrentSeason = () => {
+  try {
+    const league = leagueSettings.fantasy_content.league[0];
+    return league.season;
+  } catch {
+    return String(new Date().getFullYear());
+  }
+};
+
 const StandingsViewer = ({ topThree = false }: StandingsProps) => {
   const [year, setYear] = useState<string>("2024");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const currentSeason = getCurrentSeason();
+
+  // Use persistent cache (localStorage)
+  const getCachedStandings = (year: string): TeamEntry[] | null => {
+    try {
+      const cached = localStorage.getItem(`standings_${year}`);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  };
+
+  const setCachedStandings = (year: string, teams: TeamEntry[]) => {
+    try {
+      localStorage.setItem(`standings_${year}`, JSON.stringify(teams));
+    } catch {}
+  };
+
   useEffect(() => {
+    let isMounted = true;
     async function fetchStandings() {
       setError(null);
-      setTeams([]);
       setLoading(true);
+
+      // Show cached data immediately if available
+      const cached = getCachedStandings(year);
+      if (cached && year !== currentSeason) {
+        setTeams(cached);
+        setLoading(false);
+        return; // Only fetch from API if current season
+      }
 
       try {
         const response = await fetch(
@@ -42,7 +77,6 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
         for (let i = 0; i < teamCount; i++) {
           const teamData = rawTeams[i.toString()].team;
-
           const metadata = teamData[0];
           const standings = teamData[2]?.team_standings;
 
@@ -59,19 +93,24 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
-        setTeams(parsed);
+
+        if (isMounted) {
+          setCachedStandings(year, parsed);
+          setTeams(parsed);
+        }
       } catch (err: unknown) {
         let message = "An error occurred";
         if (err instanceof Error) message = err.message;
         setError(message);
         console.error("Fetch error:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     fetchStandings();
-  }, [year]);
+    return () => { isMounted = false; };
+  }, [year, currentSeason]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setYear(e.target.value);

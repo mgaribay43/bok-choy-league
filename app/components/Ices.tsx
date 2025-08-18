@@ -246,7 +246,7 @@ function useManagerWithMostFlavors(videos: IceVideo[]): { manager: string; flavo
 // =======================
 // Manager with Most Consecutive Weeks Calculation Hook
 // =======================
-function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: string; consecutiveWeeks: number } {
+function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: string; consecutiveWeeks: number; weeks: string } {
   const managerWeekCounts: Record<string, Set<string>> = {};
 
   videos.forEach(video => {
@@ -264,34 +264,55 @@ function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: stri
 
   let maxConsecutiveWeeks = 0;
   let managerWithMostConsecutiveWeeks = "None";
+  let streakWeeks = "";
 
-  Object.entries(managerWeekCounts).forEach(([manager, weeks]) => {
-    const sortedWeeks = Array.from(weeks).sort();
+  Object.entries(managerWeekCounts).forEach(([manager, weeksSet]) => {
+    const weeksArr = Array.from(weeksSet)
+      .map(str => {
+        const [season, week] = str.split("|");
+        return { season, weekNum: parseInt(week.replace("Week ", "")), weekStr: week };
+      })
+      .sort((a, b) => a.season.localeCompare(b.season) || a.weekNum - b.weekNum);
+
     let currentStreak = 1;
     let longestStreak = 1;
+    let currentStreakWeeks = [weeksArr[0]];
+    let longestStreakWeeks = [...currentStreakWeeks];
 
-    for (let i = 1; i < sortedWeeks.length; i++) {
-      const [prevSeason, prevWeek] = sortedWeeks[i - 1].split("|");
-      const [currentSeason, currentWeek] = sortedWeeks[i].split("|");
-
+    for (let i = 1; i < weeksArr.length; i++) {
+      const prev = weeksArr[i - 1];
+      const curr = weeksArr[i];
       if (
-        currentSeason === prevSeason &&
-        parseInt(currentWeek.replace("Week ", "")) === parseInt(prevWeek.replace("Week ", "")) + 1
+        curr.season === prev.season &&
+        curr.weekNum === prev.weekNum + 1
       ) {
         currentStreak++;
-        longestStreak = Math.max(longestStreak, currentStreak);
+        currentStreakWeeks.push(curr);
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak;
+          longestStreakWeeks = [...currentStreakWeeks];
+        }
       } else {
         currentStreak = 1;
+        currentStreakWeeks = [curr];
       }
     }
 
     if (longestStreak > maxConsecutiveWeeks) {
       maxConsecutiveWeeks = longestStreak;
       managerWithMostConsecutiveWeeks = manager;
+      if (longestStreakWeeks.length > 1) {
+        const first = longestStreakWeeks[0];
+        const last = longestStreakWeeks[longestStreakWeeks.length - 1];
+        streakWeeks = `Week ${first.weekNum} - Week ${last.weekNum}, ${first.season}`;
+      } else if (longestStreakWeeks.length === 1) {
+        const only = longestStreakWeeks[0];
+        streakWeeks = `Week ${only.weekNum}, ${only.season}`;
+      }
     }
   });
 
-  return { manager: managerWithMostConsecutiveWeeks, consecutiveWeeks: maxConsecutiveWeeks };
+  return { manager: managerWithMostConsecutiveWeeks, consecutiveWeeks: maxConsecutiveWeeks, weeks: streakWeeks };
 }
 
 // =======================
@@ -305,11 +326,13 @@ function StatsSection({
   setSelectedManager,
   setSelectedSeason,
   setSelectedWeek,
+  setSelectedFlavor,
   scrollToVideos,
   scrollToSeason,
   uniqueFlavorsCount,
   managerWithMostFlavors,
-  managerWithMostConsecutiveWeeks
+  managerWithMostConsecutiveWeeks,
+  setCollapsedSeasons,
 }: any) {
   return (
     <div className="w-full mb-6">
@@ -369,8 +392,13 @@ function StatsSection({
             <p className="text-center text-slate-700">
               {managerWithMostConsecutiveWeeks.manager} ({managerWithMostConsecutiveWeeks.consecutiveWeeks} consecutive weeks)
             </p>
+            {managerWithMostConsecutiveWeeks.weeks && (
+              <p className="text-xs text-center text-slate-500 mt-1">
+                {managerWithMostConsecutiveWeeks.weeks}
+              </p>
+            )}
           </div>
-          {/* Most Ices by Manager in a Week */}
+          {/* Most Ices in a Single Week */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices in a Single Week</h3>
             <ol className="list-decimal list-inside text-slate-700 text-center">
@@ -391,7 +419,16 @@ function StatsSection({
                         setSelectedManager(manager);
                         setSelectedSeason(weekSeason.split('|')[1]);
                         setSelectedWeek("All");
+                        setSelectedFlavor("All"); // Reset flavor filter
                         scrollToVideos();
+                        setCollapsedSeasons((prev: Record<string, boolean>) => {
+                          const expanded: Record<string, boolean> = {};
+                          Object.keys(prev).forEach(season => {
+                            expanded[season] = false;
+                          });
+                          return expanded;
+                        });
+                        setTimeout(scrollToVideos, 100); // Ensure scroll after expand
                       }}
                     >
                       {manager}
@@ -403,7 +440,16 @@ function StatsSection({
                         setSelectedWeek(weekSeason.split('|')[0]);
                         setSelectedManager(manager);
                         setSelectedPlayer("All");
+                        setSelectedFlavor("All"); // Reset flavor filter
                         scrollToSeason(weekSeason.split('|')[1]);
+                        setCollapsedSeasons((prev: Record<string, boolean>) => {
+                          const expanded: Record<string, boolean> = {};
+                          Object.keys(prev).forEach(season => {
+                            expanded[season] = false;
+                          });
+                          return expanded;
+                        });
+                        setTimeout(scrollToVideos, 100); // Ensure scroll after expand
                       }}
                     >
                       {weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}
@@ -771,13 +817,25 @@ export default function Ices({ latestOnly = false }: IcesProps) {
 
   // --- Handlers ---
   const handleManagerClick = (manager: string) => {
-    setSelectedManager(manager); setSelectedSeason("All"); setSelectedPlayer("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
+    setSelectedManager(manager);
+    setSelectedSeason("All");
+    setSelectedPlayer("All");
+    setSelectedWeek("All");
+    setSelectedFlavor("All");
+    setShowPenaltyOnly(false);
+    setCollapsedSeasons({});
   };
   const handlePlayerClick = (player: string) => {
-    setSelectedPlayer(player); setSelectedManager("All"); setSelectedSeason("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
+    setSelectedPlayer(player);
+    setSelectedManager("All");
+    setSelectedSeason("All");
+    setSelectedWeek("All");
+    setSelectedFlavor("All");
+    setShowPenaltyOnly(false);
+    setCollapsedSeasons({});
   };
   const handleResetFilters = () => {
-    setSelectedPlayer("All"); setSelectedManager("All"); setSelectedSeason("All"); setSelectedWeek("All"); setShowPenaltyOnly(false);
+    setSelectedPlayer("All"); setSelectedManager("All"); setSelectedSeason("All"); setSelectedWeek("All"); setShowPenaltyOnly(false); setSelectedFlavor("All");
   };
   const scrollToSeason = (season: string) => {
     seasonRefs.current[season]?.scrollIntoView({ behavior: "smooth" });
@@ -812,11 +870,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                   <span>{statsExpanded ? "Hide Records" : "Show Records"}</span>
                   <span className="ml-2">{statsExpanded ? <ChevronUp /> : <ChevronDown />}</span>
                 </button>
-                {/* Stats Section */}
+                {/* Stats Section: always visible on desktop, collapsible on mobile */}
                 <div
                   className={`transition-all duration-500 ease-in-out w-full overflow-hidden
-                  ${statsExpanded ? "h-auto opacity-100" : "h-0 opacity-0"}`}
-                  style={{ transitionProperty: "height, opacity", marginBottom: statsExpanded ? "20px" : "0" }}
+                  ${statsExpanded || typeof window === "undefined" || window.innerWidth >= 640 ? "h-auto opacity-100" : "h-0 opacity-0"} sm:h-auto sm:opacity-100`}
+                  style={{ transitionProperty: "height, opacity", marginBottom: (statsExpanded || typeof window === "undefined" || window.innerWidth >= 640) ? "20px" : "0" }}
                 >
                   <StatsSection
                     stats={stats}
@@ -826,11 +884,13 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     setSelectedSeason={setSelectedSeason}
                     setSelectedWeek={setSelectedWeek}
                     setSelectedPlayer={setSelectedPlayer}
+                    setSelectedFlavor={setSelectedFlavor}
                     scrollToVideos={scrollToVideos}
                     scrollToSeason={scrollToSeason}
                     uniqueFlavorsCount={uniqueFlavorsCount}
                     managerWithMostFlavors={managerWithMostFlavors}
                     managerWithMostConsecutiveWeeks={managerWithMostConsecutiveWeeks}
+                    setCollapsedSeasons={setCollapsedSeasons}
                   />
                 </div>
               </div>
@@ -843,10 +903,10 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 setSelectedSeason={setSelectedSeason}
                 selectedPlayer={selectedPlayer}
                 setSelectedPlayer={setSelectedPlayer}
+                setSelectedFlavor={setSelectedFlavor}
                 selectedWeek={selectedWeek}
                 setSelectedWeek={setSelectedWeek}
                 selectedFlavor={selectedFlavor}
-                setSelectedFlavor={setSelectedFlavor}
                 showPenaltyOnly={showPenaltyOnly}
                 setShowPenaltyOnly={setShowPenaltyOnly}
                 handleResetFilters={handleResetFilters}

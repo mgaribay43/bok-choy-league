@@ -26,6 +26,17 @@ export default function DraftBoardPage() {
     if (!selectedYear) {
       setDraftPicks([]); setPlayers({}); setError(null); setLoading(false); return;
     }
+
+    // Try cache first
+    const cached = getCachedDraft(selectedYear);
+    if (cached) {
+      setDraftPicks(cached.draftPicks);
+      setPlayers(cached.players);
+      setTeamManagers(cached.teamManagers);
+      setLoading(false);
+      return; // <-- Only fetch if not cached
+    }
+
     const safeParse = (raw: string) => JSON.parse(raw.replace(/^callback\((.*)\)$/, "$1"));
     const fetchData = async () => {
       if (!leagueKeysByYear[selectedYear]) {
@@ -37,15 +48,18 @@ export default function DraftBoardPage() {
         const teamsJson = safeParse(await (await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=teams&year=${selectedYear}`
         )).text());
-        setTeamManagers(extractTeamManagerMap(teamsJson));
+        const teamManagers = extractTeamManagerMap(teamsJson);
+        setTeamManagers(teamManagers);
+
         // Draft Results
         const draftJson = safeParse(await (await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=draftresults&year=${selectedYear}`
         )).text());
-        const picks = extractDraftPicks(draftJson);
-        setDraftPicks(picks);
+        const draftPicks = extractDraftPicks(draftJson);
+        setDraftPicks(draftPicks);
+
         // Players
-        const uniquePlayerKeys = [...new Set(picks.map((p: any) => p.player_key))];
+        const uniquePlayerKeys = [...new Set(draftPicks.map((p: any) => p.player_key))];
         const allPlayers: Record<string, any> = {};
         for (let i = 0; i < uniquePlayerKeys.length; i += 25) {
           const batchKeys = uniquePlayerKeys.slice(i, i + 25).join(",");
@@ -55,10 +69,14 @@ export default function DraftBoardPage() {
           Object.assign(allPlayers, extractPlayerMap(pJson));
         }
         setPlayers(allPlayers);
+
+        // Save to cache
+        setCachedDraft(selectedYear, { draftPicks, players: allPlayers, teamManagers });
       } catch (err: any) {
         setError(err?.message || "Failed to load draft data");
       } finally { setLoading(false); }
     };
+
     fetchData();
   }, [selectedYear]);
 
@@ -237,4 +255,19 @@ function extractPlayerMap(playersData: any) {
       if (playerKey) map[playerKey] = { player_key: playerKey, name: fullName, team, position, image_url };
       return map;
     }, {} as Record<string, any>);
+}
+
+function getCachedDraft(year: string) {
+  try {
+    const cached = localStorage.getItem(`draft_${year}`);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedDraft(year: string, data: { draftPicks: any[]; players: Record<string, any>; teamManagers: Record<string, string> }) {
+  try {
+    localStorage.setItem(`draft_${year}`, JSON.stringify(data));
+  } catch {}
 }

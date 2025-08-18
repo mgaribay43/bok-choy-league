@@ -29,15 +29,16 @@ export default function Navbar() {
     : user?.email?.split('@')[0];
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg transition-all duration-300 w-screen overflow-hidden">
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg transition-all duration-300 w-screen">
       <div className="w-full px-2 sm:px-4 lg:px-0">
         <div className="flex justify-between items-center h-16 lg:h-18">
           {/* Logo */}
           <Link href="/" className="group" onClick={() => setIsOpen(false)}>
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="text-3xl group-hover:scale-110 transition-transform duration-200">🥬</div>
-                <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-300 -z-10" />
+                {/* Removed hover effect from emoji */}
+                <div className="text-3xl">🥬</div>
+                {/* Removed the animated background as well */}
               </div>
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-200">

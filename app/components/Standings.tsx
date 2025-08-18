@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import leagueSettings from "../data/league_settings.json";
 
 interface TeamEntry {
   id: string;
@@ -16,11 +17,22 @@ type StandingsProps = {
   topThree?: boolean;
 };
 
+const getCurrentSeason = () => {
+  try {
+    const league = leagueSettings.fantasy_content.league[0];
+    return league.season;
+  } catch {
+    return String(new Date().getFullYear());
+  }
+};
+
 const StandingsViewer = ({ topThree = false }: StandingsProps) => {
   const [year, setYear] = useState<string>("2024");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const currentSeason = getCurrentSeason();
 
   // Use persistent cache (localStorage)
   const getCachedStandings = (year: string): TeamEntry[] | null => {
@@ -45,12 +57,12 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
       // Show cached data immediately if available
       const cached = getCachedStandings(year);
-      if (cached) {
+      if (cached && year !== currentSeason) {
         setTeams(cached);
         setLoading(false);
+        return; // Only fetch from API if current season
       }
 
-      // Always fetch fresh data in the background
       try {
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
@@ -82,8 +94,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
         parsed.sort((a, b) => a.rank - b.rank);
 
-        // Only update if data is different
-        if (isMounted && JSON.stringify(parsed) !== JSON.stringify(cached)) {
+        if (isMounted) {
           setCachedStandings(year, parsed);
           setTeams(parsed);
         }
@@ -99,7 +110,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
     fetchStandings();
     return () => { isMounted = false; };
-  }, [year]);
+  }, [year, currentSeason]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setYear(e.target.value);

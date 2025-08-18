@@ -163,9 +163,46 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       {video["24_hr_penalty"] && (
         <span className="mt-2 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">24 HR PENALTY</span>
       )}
-      {/* Flavor badge */}
+      {/* Flavor badges */}
       {video.flavor && video.flavor !== "Standard" && (
-        <span className="mt-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs">{video.flavor}</span>
+        video.flavor.toLowerCase() === "red, white & berry" ? (
+          <span
+            className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
+            style={{
+              background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
+              color: "#222",
+              border: "1px solid #ddd"
+            }}
+          >
+            {video.flavor}
+          </span>
+        ) : video.flavor.toLowerCase() === "red, white & merry holiday punch" ? (
+          <span
+            className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
+            style={{
+              background: "#ab2308",
+              color: "#222",
+              border: "1px solid #ddd"
+            }}
+          >
+            {video.flavor}
+          </span>
+        ) : video.flavor.toLowerCase() === "screwdriver" ? (
+          <span
+            className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
+            style={{
+              background: "#fdce5b",
+              color: "#222",
+              border: "1px solid #ddd"
+            }}
+          >
+            {video.flavor}
+          </span>
+        ) : (
+          <span className="mt-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs">
+            {video.flavor}
+          </span>
+        )
       )}
     </div>
   );
@@ -411,10 +448,10 @@ function FiltersSection({
   setSelectedPlayer,
   selectedWeek,
   setSelectedWeek,
-  showPenaltyOnly,
-  setShowPenaltyOnly,
   selectedFlavor,
   setSelectedFlavor,
+  showPenaltyOnly,
+  setShowPenaltyOnly,
   handleResetFilters,
   filtersExpanded,
   videos,
@@ -631,6 +668,14 @@ function FiltersSection({
         <div className="sm:flex-row items-center justify-center">
           <button
             className="bg-slate-400 text-black px-3 py-2.5 rounded text-xs hover:bg-slate-600 whitespace-nowrap"
+            onClick={() => handleFullReset(
+              setSelectedManager,
+              setSelectedSeason,
+              setSelectedPlayer,
+              setSelectedWeek,
+              setSelectedFlavor,
+              setShowPenaltyOnly
+            )}
           >
             Reset Filters
           </button>
@@ -749,7 +794,13 @@ export default function Ices({ latestOnly = false }: IcesProps) {
       <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
         {/* Header and Stats */}
         {latestOnly ? (
-          <button onClick={() => window.location.href = '/ices'} className="text-2xl font-bold text-emerald-700 mt-6 mb-4 text-center">Latest Ice</button>
+          <button
+            onClick={() => window.location.href = '/ices'}
+            className="text-5xl font-extrabold text-emerald-700 mt-6 text-center hover:underline transition"
+            style={{ cursor: "pointer" }}
+          >
+            Latest Ice
+          </button>
         ) : (
           <div className="w-full bg-white/80 border-b border-emerald-100">
             <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
@@ -842,11 +893,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 return (
                   <div
                     key={season}
-                    className="mb-8"
+                    className="mb-2"
                     ref={el => { seasonRefs.current[season] = el; }}
                   >
                     {/* Season header with collapse toggle */}
-                    <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
+                    <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-1 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
                       onClick={() => setCollapsedSeasons(prev => ({ ...prev, [season]: !prev[season] }))}>
                       <span>{season}</span>
                       <span className="ml-2">{isCollapsed ? "▼" : "▲"}</span>
@@ -935,4 +986,21 @@ function SeasonCollapse({ isCollapsed, videos, expandedVideo, setExpandedVideo }
       </div>
     </div>
   );
+}
+
+// Add this function above your FiltersSection definition:
+function handleFullReset(
+  setSelectedManager: (v: string) => void,
+  setSelectedSeason: (v: string) => void,
+  setSelectedPlayer: (v: string) => void,
+  setSelectedWeek: (v: string) => void,
+  setSelectedFlavor: (v: string) => void,
+  setShowPenaltyOnly: (v: boolean) => void
+) {
+  setSelectedManager("All");
+  setSelectedSeason("All");
+  setSelectedPlayer("All");
+  setSelectedWeek("All");
+  setSelectedFlavor("All");
+  setShowPenaltyOnly(false);
 }

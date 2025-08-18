@@ -28,9 +28,9 @@ type CollapsibleSectionProps = {
 function CollapsibleSection({ title, count, defaultOpen = false, children }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="mb-8">
+    <section className={`mb-0`}>
       <button
-        className="flex items-center gap-2 mb-4 w-full text-left"
+        className="flex items-center gap-2 mb-2 w-full text-left"
         onClick={() => setOpen((o) => !o)}
       >
         <h2 className="text-2xl font-bold text-emerald-800">{title}</h2>
@@ -218,7 +218,7 @@ export default function RosterPage() {
 
   // Update PlayerGrid to accept onPlayerClick
   const PlayerGrid = ({ players, onPlayerClick }: { players: any[]; onPlayerClick: (p: any) => void }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-10">
+    <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-10">
       {players.map((p) => (
         <div
           key={p.playerKey}

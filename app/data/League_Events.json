@@ -1,0 +1,28 @@
+{
+  "Events": [
+    {
+      "id": 1,
+      "name": "Draft Day",
+      "date": "08-23-2025",
+      "location": "true",
+      "description": "2025 Bok Choy League Fantasy Football Draft Day",
+      "image": "/images/draft_event_image.png"
+    },
+    {
+      "id": 2,
+      "name": "League Begins",
+      "date": "09-04-2025",
+      "location": "N/A",
+      "description": "Official start of the fantasy football season.",
+      "image": "/images/league_start.png"
+    },
+    {
+      "id": 3,
+      "name": "Trade Deadline",
+      "date": "11-22-2025",
+      "location": "N/A",
+      "description": "Last day to make trades for the season.",
+      "image": "/images/Trade_deadline.png"
+    }
+  ]
+}

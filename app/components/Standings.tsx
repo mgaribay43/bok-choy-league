@@ -84,7 +84,11 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
     return (
       <div className="w-full">
         <div className="max-w-3xl mx-auto p-4">
-          <h1 className="text-3xl font-bold text-emerald-700 mb-8 text-center">Leaders</h1>
+          <h1 className="text-5xl font-extrabold text-emerald-700 mb-8 text-center">
+            <Link href={`/standings?year=${year}`} className="hover:underline transition">
+              Leaders
+            </Link>
+          </h1>
           {error && (
             <div className="text-center py-12">
               <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md mx-auto shadow-sm">
@@ -102,52 +106,36 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             </div>
           )}
           {!loading && !error && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 justify-center">
+            <div className="flex flex-row justify-center gap-4">
               {displayTeams.map((team, idx) => (
                 <Link
                   href={`/roster?year=${year}&teamId=${team.id}`}
                   key={team.id}
                   className="group block"
                 >
-                  <div className={`relative rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-slate-200/50 overflow-hidden p-6 text-center flex flex-col items-center justify-center min-h-[260px] sm:min-h-[320px] w-full ${
-                    idx === 0
-                      ? "bg-gradient-to-br from-yellow-300 via-yellow-200 to-yellow-400"
-                      : idx === 1
-                        ? "bg-gradient-to-br from-slate-300 via-slate-200 to-slate-400"
-                        : "bg-gradient-to-br from-amber-300 via-amber-200 to-amber-400"
-                  }`}>
+                  <div className={`flex flex-col items-center bg-white rounded-xl shadow-md border px-4 py-6 min-w-[120px] max-w-[160px] h-[210px] transition-all duration-200 hover:shadow-lg hover:-translate-y-1
+                    ${idx === 0 ? "border-yellow-400" : idx === 1 ? "border-slate-400" : "border-amber-700"}`}>
                     {/* Rank Badge */}
-                    <div className="absolute top-4 left-4 z-10">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg ${
-                        idx === 0
-                          ? "bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900"
-                          : idx === 1
-                            ? "bg-gradient-to-r from-slate-300 to-slate-500 text-slate-800"
-                            : "bg-gradient-to-r from-amber-400 to-amber-600 text-amber-900"
-                      }`}>
-                        #{team.rank}
-                      </div>
+                    <div className={`mb-2 text-lg font-bold
+                      ${idx === 0 ? "text-yellow-600" : idx === 1 ? "text-slate-500" : "text-amber-700"}`}>
+                      {idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉"}
                     </div>
                     {/* Team Logo */}
-                    <div className="relative mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-2 shadow-lg">
-                        <Image
-                          src={team.logo}
-                          alt={`${team.name} logo`}
-                          width={96}
-                          height={96}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      </div>
+                    <div className="mb-2">
+                      <Image
+                        src={team.logo}
+                        alt={`${team.name} logo`}
+                        width={56}
+                        height={56}
+                        className="rounded-full object-cover border border-gray-200"
+                      />
                     </div>
                     {/* Team Info */}
-                    <h3 className="text-lg sm:text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-200 break-words whitespace-normal">
+                    <h3 className={`text-sm font-semibold text-center break-words whitespace-normal
+                      ${idx === 0 ? "text-yellow-700" : idx === 1 ? "text-slate-700" : "text-amber-700"}`}>
                       {team.name}
                     </h3>
-                    <p className="text-slate-600 font-medium mt-2">
-                      <span className="text-slate-500">Manager:</span>
-                      <span className="ml-1 text-slate-700">{team.manager}</span>
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1 text-center break-words whitespace-normal">{team.manager}</p>
                   </div>
                 </Link>
               ))}

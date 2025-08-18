@@ -866,9 +866,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
         </main>
       </div>
       {/* Footer */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center text-yellow-800 text-sm font-medium">
-        All videos are unlisted on YouTube and only viewable to those who possess the link. (i.e. us)
-      </div>
+      {!latestOnly && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center text-yellow-800 text-sm font-medium">
+          All videos are unlisted on YouTube and only viewable to those who possess the link. (i.e. us)
+        </div>
+      )}
     </>
   );
 }

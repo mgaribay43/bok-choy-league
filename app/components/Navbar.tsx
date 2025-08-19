@@ -101,6 +101,13 @@ export default function Navbar() {
                         <DropdownLink href="/standings" icon={<Trophy size={16} className="text-yellow-600" />} text="Standings" bg="bg-yellow-100" />
                         <DropdownLink href="/draft" icon={<span className="text-purple-600 text-sm font-bold">📋</span>} text="Draft Results" bg="bg-purple-100" />
                         <DropdownLink href="/keepers" icon={<span className="text-orange-600 text-sm font-bold">🔒</span>} text="Keeper Utility" bg="bg-orange-100" />
+                        {/* Managers page link */}
+                        <DropdownLink
+                          href="/manager"
+                          icon={<Users size={16} className="text-white" />}
+                          text="Managers"
+                          bg="bg-emerald-100"
+                        />
                       </div>
                     </div>
                   </div>
@@ -198,6 +205,16 @@ export default function Navbar() {
                         <span className="text-xs">🔒</span>
                       </div>
                       <span className="font-medium">Keeper Utility</span>
+                    </Link>
+                    <Link
+                      href="/manager"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-emerald-500/20 rounded">
+                        <Users size={16} className="text-white" />
+                      </div>
+                      <span className="font-medium">Managers</span>
                     </Link>
                   </div>
                 </div>

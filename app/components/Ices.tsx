@@ -8,6 +8,7 @@ import ReactDOM from "react-dom";
 import Image from "next/image";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Listbox } from '@headlessui/react';
+import Link from "next/link";
 
 // =======================
 // Types
@@ -151,7 +152,13 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       {/* Player and manager info */}
       <h2 className="text-lg font-bold text-emerald-700 text-center mb-1 w-full">{video.player}</h2>
       <div className="text-sm text-slate-600 text-center mb-1">
-        <span className="font-semibold text-emerald-600">Manager:</span> {video.manager}
+        <span className="font-semibold text-emerald-600">Manager:</span>{" "}
+        <Link
+          href={`/manager?name=${encodeURIComponent(video.manager)}`}
+          className="underline text-emerald-700 hover:text-emerald-900 transition"
+        >
+          {video.manager}
+        </Link>
       </div>
       <div className="flex justify-center gap-2 text-xs text-slate-500 mb-2">
         {video.week && (

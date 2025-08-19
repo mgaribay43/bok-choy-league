@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import leagueSettings from "../data/league_settings.json";
 
 interface TeamEntry {
   id: string;
@@ -17,12 +16,31 @@ type StandingsProps = {
   topThree?: boolean;
 };
 
-const getCurrentSeason = () => {
+const getCurrentSeason = async (): Promise<string> => {
   try {
-    const league = leagueSettings.fantasy_content.league[0];
+    const response = await fetch(
+      "https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=2025"
+    );
+    if (!response.ok) throw new Error("Failed to fetch league settings");
+    const json = await response.json();
+    const league = json.fantasy_content.league[0];
     return league.season;
   } catch {
     return String(new Date().getFullYear());
+  }
+};
+
+const getDraftTime = async (season: string): Promise<number | null> => {
+  try {
+    const response = await fetch(
+      `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${season}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch league settings");
+    const json = await response.json();
+    const draftTime = json?.fantasy_content?.league?.[1]?.settings?.[0]?.draft_time;
+    return draftTime ? Number(draftTime) * 1000 : null;
+  } catch {
+    return null;
   }
 };
 
@@ -31,14 +49,39 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentSeason, setCurrentSeason] = useState<string>(String(new Date().getFullYear()));
+  const [draftTime2025, setDraftTime2025] = useState<number | null>(null);
+  const [canShow2025, setCanShow2025] = useState<boolean>(false);
 
-  const currentSeason = getCurrentSeason();
+  useEffect(() => {
+    let isMounted = true;
+    getCurrentSeason().then(season => {
+      if (isMounted) setCurrentSeason(season);
+    });
+    getDraftTime("2025").then(time => {
+      if (isMounted) setDraftTime2025(time);
+      if (time && Date.now() >= time) {
+        setCanShow2025(true);
+      } else {
+        setCanShow2025(false);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchStandings() {
       setError(null);
       setLoading(true);
+
+      // Only allow 2025 standings if draft has happened
+      if (year === "2025" && draftTime2025 && Date.now() < draftTime2025) {
+        setTeams([]);
+        setError("Standings will be available after the draft.");
+        setLoading(false);
+        return;
+      }
 
       try {
         const response = await fetch(
@@ -86,7 +129,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
     fetchStandings();
     return () => { isMounted = false; };
-  }, [year, currentSeason]);
+  }, [year, currentSeason, draftTime2025]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setYear(e.target.value);
@@ -197,6 +240,13 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                       {y} Season
                     </option>
                   ))}
+                  <option
+                    value="2025"
+                    className="text-gray-900 bg-white"
+                    disabled={!canShow2025}
+                  >
+                    2025 Season {canShow2025 ? "" : "(after draft)"}
+                  </option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
                   <svg className="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -251,6 +251,8 @@ export default function RosterPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100 flex flex-col items-center">
       <div className="w-full bg-white/80 border-b border-emerald-100">
         <div className="max-w-5xl mx-auto flex flex-col items-center px-8 py-6">
+          {/* Add year above the header */}
+          <div className="text-xl font-bold text-emerald-500 mb-2">{year}</div>
           <div className="flex items-center gap-4 mb-2">
             {teamLogo && (
               <Image src={teamLogo} alt={`${teamName} Logo`} width={72} height={72} className="w-18 h-18 object-contain rounded-full border-4 border-emerald-200 shadow-xl" />

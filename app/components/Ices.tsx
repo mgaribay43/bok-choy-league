@@ -154,7 +154,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       <div className="text-sm text-slate-600 text-center mb-1">
         <span className="font-semibold text-emerald-600">Manager:</span>{" "}
         <Link
-          href={`/manager?name=${encodeURIComponent(video.manager)}`}
+          href={`/manager?name=${encodeURIComponent(getManagerKeyFromDisplayName(video.manager))}`}
           className="underline text-emerald-700 hover:text-emerald-900 transition"
         >
           {video.manager}
@@ -1070,4 +1070,14 @@ function handleFullReset(
   setSelectedWeek("All");
   setSelectedFlavor("All");
   setShowPenaltyOnly(false);
+}
+
+// Add this reverse lookup helper:
+function getManagerKeyFromDisplayName(displayName: string): string {
+    if (displayName === "Harris") return "Jacob";
+    if (displayName === "Hughes") return "jake.hughes275";
+    if (displayName === "Johnny") return "johnny5david";
+    if (displayName === "Zach") return "Zachary";
+    if (displayName === "Mike") return "Michael";
+    return displayName;
 }

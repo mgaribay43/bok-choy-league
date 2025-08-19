@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import PlayerViewer from "./PlayerViewer";
+import Link from "next/link";
 
 const slotColor = (slot: string) =>
   ({
@@ -261,7 +262,13 @@ export default function RosterPage() {
                   <Image src={managerImg} alt={managerName} width={32} height={32} className="w-8 h-8 rounded-full border-2 border-emerald-300 shadow" />
                 )}
                 <span className="font-medium text-slate-700 text-lg">
-                  <span className="text-emerald-600">Manager:</span> {managerName}
+                  <span className="text-emerald-600">Manager:</span>{" "}
+                  <Link
+                    href={`/manager?name=${encodeURIComponent(managerName)}`}
+                    className="underline text-emerald-700 hover:text-emerald-900 transition"
+                  >
+                    {managerName}
+                  </Link>
                 </span>
               </div>
             </div>

@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import leagueSettings from "../data/league_settings.json"; // Adjust path as needed
 
 // Helper to build statId -> statName map from league settings
+async function fetchLeagueSettings(year: string) {
+    try {
+        const response = await fetch(
+            `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${year}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch league settings");
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
 function buildStatIdMap(settingsJson: any) {
     const statCategories = settingsJson?.fantasy_content?.league?.[1]?.settings?.[0]?.stat_categories?.stats || [];
     const statIdMap: Record<string, string> = {};
@@ -14,7 +25,6 @@ function buildStatIdMap(settingsJson: any) {
     return statIdMap;
 }
 
-// Helper to abbreviate stat names for table headers
 function abbreviateStatName(name: string) {
     return name
         .replace(/Passing/gi, "Pass")
@@ -42,7 +52,6 @@ function abbreviateStatName(name: string) {
         .replace(/Recovery/gi, "Rec");
 }
 
-// Helper to total stats across all weeks
 function getTotalStats(weekStats: any[], statColumns: { id: string; label: string }[]) {
     const totals: Record<string, number | string> = {};
     statColumns.forEach(col => {
@@ -81,13 +90,33 @@ export default function PlayerViewer({
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeAllowed, setSwipeAllowed] = useState(true);
 
-    // New state for expanded row
+    // Collapsible logic for expanded row
     const [expandedRow, setExpandedRow] = useState<number | null>(null);
+    const collapseRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-    // Use local league settings JSON instead of API
+    // Animate collapsible expanded row
     useEffect(() => {
-        setStatIdMap(buildStatIdMap(leagueSettings));
-    }, []);
+        const collapseEl = collapseRef.current;
+        const contentEl = contentRef.current;
+        if (!collapseEl || !contentEl) return;
+
+        if (expandedRow !== null) {
+            collapseEl.style.maxHeight = contentEl.scrollHeight + "px";
+        } else {
+            collapseEl.style.maxHeight = "0px";
+        }
+    }, [expandedRow]);
+
+    // Fetch league settings from API instead of local JSON
+    useEffect(() => {
+        async function fetchSettings() {
+            const year = player?.season ?? new Date().getFullYear().toString();
+            const settings = await fetchLeagueSettings(year);
+            setStatIdMap(buildStatIdMap(settings));
+        }
+        fetchSettings();
+    }, [player?.season]);
 
     // Build stat columns from league settings
     const statColumns = Object.entries(statIdMap).map(([id, name]) => ({
@@ -106,7 +135,16 @@ export default function PlayerViewer({
         });
         return modMap;
     }
-    const statModifiers = getStatModifiers(leagueSettings);
+
+    const [statModifiers, setStatModifiers] = useState<Record<string, number>>({});
+    useEffect(() => {
+        async function fetchModifiers() {
+            const year = player?.season ?? new Date().getFullYear().toString();
+            const settings = await fetchLeagueSettings(year);
+            setStatModifiers(getStatModifiers(settings));
+        }
+        fetchModifiers();
+    }, [player?.season]);
 
     // Transform stats prop to a map of stat_id -> value for each week and calculate fantasy points
     const weekStats = stats?.map((week: any) => {
@@ -132,12 +170,12 @@ export default function PlayerViewer({
             fantasyPointsDisplay = "-";
         } else {
             fantasyPointsDisplay = fantasyPoints.toFixed(2);
-            return {
-                week: week.week,
-                bye: week.bye,
-                fantasyPoints: fantasyPointsDisplay,
-                ...statMap,
-            };
+        }
+        return {
+            week: week.week,
+            bye: week.bye,
+            fantasyPoints: fantasyPointsDisplay,
+            ...statMap,
         };
     }) || [];
 
@@ -323,11 +361,11 @@ export default function PlayerViewer({
                 </div>
                 <div
                     ref={scrollableRef}
-                    className="flex-1 overflow-y-auto overflow-x-auto relative bg-[#181A20] pt-0 mt-0"
+                    className="flex-1 overflow-y-auto overflow-x-auto relative bg-[#181A20] pt-0 mt-0 flex flex-col"
                 >
                     {tab === "gamelog" && (
                         gameLogLoading ? (
-                            <div className="flex flex-col items-center justify-center">
+                            <div className="flex-1 flex flex-col items-center justify-center">
                                 <div className="relative">
                                     <div className="w-12 h-12 border-4 border-slate-700 border-t-slate-400 rounded-full animate-spin"></div>
                                 </div>
@@ -382,24 +420,34 @@ export default function PlayerViewer({
                                                             </td>
                                                         ))}
                                                 </tr>
-                                                {expandedRow === idx && (
-                                                    <tr>
-                                                        <td colSpan={2 + statColumns.length} className="bg-slate-800 px-4 py-2 animate-slide-down">
-                                                            <div className="flex flex-wrap gap-4">
-                                                                {getSummaryStats(g, statColumns).length === 0 ? (
-                                                                    <span className="text-slate-400">-</span>
-                                                                ) : (
-                                                                    getSummaryStats(g, statColumns).map((stat, i) => (
-                                                                        <div key={i} className="flex gap-2 items-center">
-                                                                            <span className="font-semibold text-blue-300">{stat.label}:</span>
-                                                                            <span className="text-white">{stat.value}</span>
-                                                                        </div>
-                                                                    ))
+                                                {/* Animated collapsible expanded row */}
+                                                <tr>
+                                                    <td colSpan={2 + statColumns.length} className="bg-slate-800 px-4 py-2">
+                                                        <div
+                                                            ref={expandedRow === idx ? collapseRef : undefined}
+                                                            className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${expandedRow === idx ? "opacity-100" : "opacity-0"}`}
+                                                            style={{
+                                                                transitionProperty: "max-height, opacity",
+                                                                maxHeight: expandedRow === idx ? undefined : "0px",
+                                                            }}
+                                                        >
+                                                            <div ref={expandedRow === idx ? contentRef : undefined} className="flex flex-wrap gap-4">
+                                                                {expandedRow === idx && (
+                                                                    getSummaryStats(g, statColumns).length === 0 ? (
+                                                                        <span className="text-slate-400">-</span>
+                                                                    ) : (
+                                                                        getSummaryStats(g, statColumns).map((stat, i) => (
+                                                                            <div key={i} className="flex gap-2 items-center">
+                                                                                <span className="font-semibold text-blue-300">{stat.label}:</span>
+                                                                                <span className="text-white">{stat.value}</span>
+                                                                            </div>
+                                                                        ))
+                                                                    )
                                                                 )}
                                                             </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             </React.Fragment>
                                         ))}
                                     </tbody>
@@ -409,7 +457,7 @@ export default function PlayerViewer({
                     )}
                     {tab === "stats" && (
                         gameLogLoading ? (
-                            <div className="flex flex-col items-center justify-center py-20">
+                            <div className="flex-1 flex flex-col items-center justify-center">
                                 <div className="relative">
                                     <div className="w-12 h-12 border-4 border-slate-700 border-t-slate-400 rounded-full animate-spin"></div>
                                 </div>

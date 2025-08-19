@@ -20,6 +20,7 @@ export default function DraftBoardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [teamManagers, setTeamManagers] = useState<Record<string, string>>({});
+  const [draftTime2025, setDraftTime2025] = useState<number | null>(null);
   const leagueKeysByYear = leagueKeysByYearJson as Record<string, string>;
 
   useEffect(() => {
@@ -80,6 +81,24 @@ export default function DraftBoardPage() {
     fetchData();
   }, [selectedYear]);
 
+  useEffect(() => {
+    // Fetch draft time for 2025
+    async function fetchDraftTime() {
+      try {
+        const response = await fetch(
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=2025`
+        );
+        if (!response.ok) return;
+        const json = await response.json();
+        const draftTime = json?.fantasy_content?.league?.[1]?.settings?.[0]?.draft_time;
+        if (draftTime) setDraftTime2025(Number(draftTime) * 1000);
+      } catch {
+        setDraftTime2025(null);
+      }
+    }
+    fetchDraftTime();
+  }, []);
+
   // Table data prep
   const groupedByRoundAndTeam: Record<number, Record<string, any>> = {};
   draftPicks.forEach((pick) => {
@@ -104,13 +123,31 @@ export default function DraftBoardPage() {
         >
           <option value="">Select Year</option>
           {Object.keys(leagueKeysByYear).sort((a, b) => Number(b) - Number(a)).map(year => (
-            <option key={year} value={year} disabled={year === "2025"}>
-              {year === "2025" ? "2025 (coming soon)" : year}
+            <option
+              key={year}
+              value={year}
+              disabled={
+                year === "2025" &&
+                (!draftTime2025 || Date.now() < draftTime2025)
+              }
+            >
+              {year === "2025"
+                ? draftTime2025 && Date.now() >= draftTime2025
+                  ? "2025"
+                  : "2025 (after draft)"
+                : year}
             </option>
           ))}
         </select>
       </div>
-      {loading ? (
+      {selectedYear === "2025" && draftTime2025 && Date.now() < draftTime2025 ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          </div>
+          <p className="mt-4 text-center text-slate-500">Draft results will be available after the draft.</p>
+        </div>
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>

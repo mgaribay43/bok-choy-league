@@ -68,18 +68,62 @@ export const yahooAPI = functions.https.onRequest(
 
             switch (type) {
                 // API URL Builders
-                case "teams":
+                case "teams": {
+                    const cacheKey = `teams_${year}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/teams?format=json`;
                     break;
-                case "standings":
+                }
+                case "standings": {
+                    const cacheKey = `standings_${year}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings?format=json`;
                     break;
-                case "scoreboard":
+                }
+                case "scoreboard": {
+                    const cacheKey = `scoreboard_${year}_${weekParam || ""}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard${week}?format=json`;
                     break;
-                case "draftresults":
+                }
+                case "draftresults": {
+                    const cacheKey = `draftresults_${year}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/draftresults?format=json`;
                     break;
+                }
+                case "roster": {
+                    const teamId = (req.query.teamId as string) || "1";
+                    const validTeam = /^[1-9]$|^10$/.test(teamId);
+                    if (!validTeam) {
+                        res.status(400).json({ error: "Invalid teamId (must be 1–10)" });
+                        return;
+                    }
+                    const cacheKey = `roster_${year}_${teamId}_${weekParam || ""}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster${week}?format=json`;
+                    break;
+                }
                 // type can be season, or date;date=2011-07-06
                 // case "stats":
                 //     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/stats;type=season?format=json`;
@@ -152,19 +196,17 @@ export const yahooAPI = functions.https.onRequest(
                         return;
                     }
 
-                case "roster": {
-                    const teamId = (req.query.teamId as string) || "1";
-                    const validTeam = /^[1-9]$|^10$/.test(teamId);
-                    if (!validTeam) {
-                        res.status(400).json({ error: "Invalid teamId (must be 1–10)" });
-                        return;
-                    }
-                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster${week}?format=json`;
-                    break;
-                }
                 case "playerstats": {
                     if (playerKeys.trim() === "") {
                         res.status(400).json({ error: "Missing playerKeys parameter for playerstats" });
+                        return;
+                    }
+
+                    // Compose a cache key based on year, week, and playerKeys
+                    const cacheKey = `playerstats_${year}_${weekParam || ""}_${playerKeys}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
                         return;
                     }
 
@@ -175,10 +217,8 @@ export const yahooAPI = functions.https.onRequest(
 
                     for (let i = 0; i < keysArray.length; i += batchSize) {
                         const batchKeys = keysArray.slice(i, i + batchSize).join(",");
-                        console.log("League Key = " + leagueKey + " year =" + year);
                         const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}/stats;type=week${week}?format=json`;
 
-                        console.log(`Fetching player stats batch: ${batchKeys}`);
                         const batchResponse = await fetch(batchEndpoint, {
                             headers: {
                                 Authorization: `Bearer ${accessToken}`,
@@ -213,6 +253,9 @@ export const yahooAPI = functions.https.onRequest(
                             ],
                         },
                     };
+
+                    // Cache the combined response as a string
+                    await setCache(cacheKey, combinedResponse);
 
                     res.status(200).json(combinedResponse);
                     return;
@@ -309,6 +352,12 @@ export const yahooAPI = functions.https.onRequest(
                 }
 
                 case "settings": {
+                    const cacheKey = `settings_${year}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/settings?format=json`;
                     break;
                 }
@@ -329,6 +378,26 @@ export const yahooAPI = functions.https.onRequest(
             const text = await yahooResponse.text();
             const json = JSON.parse(text.replace(/^callback\((.*)\)$/, "$1")); // Clean Yahoo's callback wrapper
 
+            // Cache after fetch for all supported types:
+            if (
+                ["teams", "standings", "scoreboard", "draftresults", "roster", "settings"].includes(type)
+            ) {
+                let cacheKey = "";
+                switch (type) {
+                    case "teams": cacheKey = `teams_${year}`; break;
+                    case "standings": cacheKey = `standings_${year}`; break;
+                    case "scoreboard": cacheKey = `scoreboard_${year}_${weekParam || ""}`; break;
+                    case "draftresults": cacheKey = `draftresults_${year}`; break;
+                    case "roster": {
+                        const teamId = (req.query.teamId as string) || "1";
+                        cacheKey = `roster_${year}_${teamId}_${weekParam || ""}`;
+                        break;
+                    }
+                    case "settings": cacheKey = `settings_${year}`; break;
+                }
+                await setCache(cacheKey, json);
+            }
+
             res.status(200).json(json);
             return;
         } catch (error) {
@@ -339,4 +408,21 @@ export const yahooAPI = functions.https.onRequest(
     }
 );
 
-export { };
+async function getCache(cacheKey: string) {
+    const doc = await admin.firestore().collection("yahooCache").doc(cacheKey).get();
+    if (!doc.exists) return null;
+    const data = doc.data()?.response;
+    try {
+        return JSON.parse(data);
+    } catch {
+        return null;
+    }
+}
+
+async function setCache(cacheKey: string, response: any) {
+    const jsonString = JSON.stringify(response);
+    await admin.firestore().collection("yahooCache").doc(cacheKey).set({
+        response: jsonString,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+}

@@ -71,6 +71,27 @@ function getFeloTierImage(tier?: string) {
     return undefined;
 }
 
+// Helper to build Yahoo trophy image URL (handles 2017 differently)
+function getTrophyUrl(place: number, season: string) {
+    if (![1, 2, 3].includes(place)) return undefined;
+    if (season === "2017") {
+        return `https://s.yimg.com/cv/ae/default/170508/tr_nfl_${place}_2017.png`;
+    }
+    return `https://s.yimg.com/cv/apiv2/default/170508/tr_nfl_${place}_${season}.png`;
+}
+
+// Helper to get all trophies for a manager
+function getManagerTrophies(managerTeams: TeamEntry[]) {
+    // Only count 1st, 2nd, 3rd place finishes
+    const trophies: { place: number; season: string }[] = [];
+    managerTeams.forEach(team => {
+        if ([1, 2, 3].includes(team.rank)) {
+            trophies.push({ place: team.rank, season: team.season });
+        }
+    });
+    return trophies;
+}
+
 export default function ManagerViewer() {
     const searchParams = useSearchParams();
     const managerName = searchParams.get("name");
@@ -211,14 +232,22 @@ export default function ManagerViewer() {
 
     // If no managerName or managerName is not in managerNames, show default manager list
     if (!managerName || !managerNames.includes(managerName)) {
-        // Get the most recent felo_tier for each manager
+        // Get the most recent felo_tier and felo_score for each manager
         const managerTiers: Record<string, string | undefined> = {};
+        const managerScores: Record<string, number> = {};
         managerNames.forEach(name => {
             const teamsForManager = teams.filter(team => team.manager === name);
             if (teamsForManager.length > 0) {
                 managerTiers[name] = teamsForManager[0].felo_tier;
+                // Parse felo_score as number for sorting
+                managerScores[name] = Number(teamsForManager[0].felo_score ?? 0);
+            } else {
+                managerScores[name] = 0;
             }
         });
+
+        // Sort managers by felo_score descending
+        const sortedManagers = [...managerNames].sort((a, b) => (managerScores[b] ?? 0) - (managerScores[a] ?? 0));
 
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-blue-50 to-yellow-50">
@@ -230,7 +259,7 @@ export default function ManagerViewer() {
                         Select a manager below to view their trophy case, team history, and more!
                     </p>
                     <ul className="grid grid-cols-2 gap-6 items-center justify-center">
-                        {managerNames.map(name => (
+                        {sortedManagers.map(name => (
                             <li key={name} className="flex flex-col items-center">
                                 <Link
                                     href={`/manager?name=${encodeURIComponent(name)}`}
@@ -345,6 +374,9 @@ export default function ManagerViewer() {
             ? managerTeams[0].felo_score
             : undefined;
 
+    // Check if manager has any trophies
+    const hasTrophies = managerTeams.some(team => [1, 2, 3].includes(team.rank));
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center">
             <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4">
@@ -374,26 +406,37 @@ export default function ManagerViewer() {
                     </div>
                 )}
                 {/* Trophy Case Section */}
-                <div className="mb-8">
-                    <h2 className="text-xl font-bold text-amber-700 text-center mb-2">Trophy Case</h2>
-                    <div className="flex justify-center gap-8">
-                        <div className="flex flex-col items-center">
-                            <span className="text-5xl">🥈</span>
-                            <span className="text-lg font-bold text-slate-500 mt-2">{secondPlace}</span>
-                            <span className="text-xs text-slate-500 mt-1">2nd Place</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-8xl">🥇</span>
-                            <span className="text-lg font-bold text-yellow-700 mt-2">{firstPlace}</span>
-                            <span className="text-xs text-slate-500 mt-1">1st Place</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-5xl">🥉</span>
-                            <span className="text-lg font-bold text-amber-700 mt-2">{thirdPlace}</span>
-                            <span className="text-xs text-slate-500 mt-1">3rd Place</span>
+                {hasTrophies && (
+                    <div className="mb-8">
+                        <h2 className="text-xl font-bold text-amber-700 text-center mb-2">Trophy Case</h2>
+                        <div className="flex flex-col items-center gap-8 overflow-x-auto w-full">
+                            {[1, 2, 3].map(place => {
+                                const trophies = managerTeams.filter(team => team.rank === place);
+                                if (trophies.length === 0) return null;
+                                return (
+                                    <div key={place} className="flex flex-col items-center w-full">
+                                        <div className="flex flex-row flex-wrap justify-center gap-x-2 gap-y-2 w-full max-w-full">
+                                            {trophies.map(team => (
+                                                <img
+                                                    key={team.season}
+                                                    src={getTrophyUrl(place, team.season)}
+                                                    alt={`${place} Place Trophy ${team.season}`}
+                                                    className="w-24 h-24 max-w-[96px] object-contain"
+                                                    style={{ flex: "0 0 auto" }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <span className={`text-lg font-bold mt-2 ${place === 1 ? "text-yellow-700" : place === 2 ? "text-slate-500" : "text-amber-700"}`}>
+                                        </span>
+                                        <span className="text-xs text-slate-500 mt-1">
+                                            {place === 1 ? "1st Place" : place === 2 ? "2nd Place" : "3rd Place"}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
-                </div>
+                )}
                 {/* Average Finish & Draft Grade Cards */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
                     <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">

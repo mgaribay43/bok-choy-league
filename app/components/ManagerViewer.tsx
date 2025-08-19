@@ -209,12 +209,11 @@ export default function ManagerViewer() {
         return Date.now() >= draftTime;
     }
 
-    // If no managerName, show default manager list from managerNames array
-    if (!managerName) {
+    // If no managerName or managerName is not in managerNames, show default manager list
+    if (!managerName || !managerNames.includes(managerName)) {
         // Get the most recent felo_tier for each manager
         const managerTiers: Record<string, string | undefined> = {};
         managerNames.forEach(name => {
-            // Find the most recent team for this manager
             const teamsForManager = teams.filter(team => team.manager === name);
             if (teamsForManager.length > 0) {
                 managerTiers[name] = teamsForManager[0].felo_tier;
@@ -236,102 +235,102 @@ export default function ManagerViewer() {
                                 <Link
                                     href={`/manager?name=${encodeURIComponent(name)}`}
                                     className="bg-emerald-100 hover:bg-emerald-200 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-700 hover:text-emerald-900 shadow flex flex-col items-center w-full"
-                            >
-                                {loading ? (
-                                    <span className="mb-2 flex items-center justify-center w-16 h-16">
-                                        <span className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></span>
-                                    </span>
-                                ) : managerTiers[name] ? (
-                                    <img
-                                        src={getFeloTierImage(managerTiers[name])}
-                                        alt={managerTiers[name] + " tier"}
-                                        className="w-16 h-16 mb-2"
-                                        style={{ objectFit: "contain" }}
-                                    />
-                                ) : (
-                                    <span className="text-3xl mb-2">👤</span>
-                                )}
-                                {getDisplayManagerName(name)}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
+                                >
+                                    {loading ? (
+                                        <span className="mb-2 flex items-center justify-center w-16 h-16">
+                                            <span className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></span>
+                                        </span>
+                                    ) : managerTiers[name] ? (
+                                        <img
+                                            src={getFeloTierImage(managerTiers[name])}
+                                            alt={managerTiers[name] + " tier"}
+                                            className="w-16 h-16 mb-2"
+                                            style={{ objectFit: "contain" }}
+                                        />
+                                    ) : (
+                                        <span className="text-3xl mb-2">👤</span>
+                                    )}
+                                    {getDisplayManagerName(name)}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
-// Filter teams for the selected manager
-const managerTeams = teams.filter(team => team.manager === managerName);
+    // Filter teams for the selected manager
+    const managerTeams = teams.filter(team => team.manager === managerName);
 
-// Calculate average finish, excluding current year
-const teamsForAverage = managerTeams.filter(team => team.season !== currentYear);
-const averageFinish =
-    teamsForAverage.length > 0
-        ? (
-            teamsForAverage.reduce((sum, team) => sum + team.rank, 0) / teamsForAverage.length
-        ).toFixed(2)
-        : "N/A";
+    // Calculate average finish, excluding current year
+    const teamsForAverage = managerTeams.filter(team => team.season !== currentYear);
+    const averageFinish =
+        teamsForAverage.length > 0
+            ? (
+                teamsForAverage.reduce((sum, team) => sum + team.rank, 0) / teamsForAverage.length
+            ).toFixed(2)
+            : "N/A";
 
-// Calculate average draft grade, excluding current year
-const draftGradeMap: Record<string, number> = {
-    "A+": 1, "A": 2, "A-": 3,
-    "B+": 4, "B": 5, "B-": 6,
-    "C+": 7, "C": 8, "C-": 9,
-    "D+": 10, "D": 11, "D-": 12,
-    "F": 13
-};
-const draftGrades = teamsForAverage
-    .map(team => draftGradeMap[team.draftGrade ?? ""] ?? null)
-    .filter(val => val !== null) as number[];
-const avgDraftGradeNum =
-    draftGrades.length > 0
-        ? (draftGrades.reduce((sum, val) => sum + val, 0) / draftGrades.length)
-        : null;
+    // Calculate average draft grade, excluding current year
+    const draftGradeMap: Record<string, number> = {
+        "A+": 1, "A": 2, "A-": 3,
+        "B+": 4, "B": 5, "B-": 6,
+        "C+": 7, "C": 8, "C-": 9,
+        "D+": 10, "D": 11, "D-": 12,
+        "F": 13
+    };
+    const draftGrades = teamsForAverage
+        .map(team => draftGradeMap[team.draftGrade ?? ""] ?? null)
+        .filter(val => val !== null) as number[];
+    const avgDraftGradeNum =
+        draftGrades.length > 0
+            ? (draftGrades.reduce((sum, val) => sum + val, 0) / draftGrades.length)
+            : null;
 
-const avgDraftGrade =
-    avgDraftGradeNum !== null
-        ? Object.entries(draftGradeMap)
-            .reduce((best, [grade, num]) =>
-                Math.abs(num - avgDraftGradeNum) < Math.abs(draftGradeMap[best] - avgDraftGradeNum)
-                    ? grade
-                    : best,
-                "A+"
-            )
-        : "N/A";
+    const avgDraftGrade =
+        avgDraftGradeNum !== null
+            ? Object.entries(draftGradeMap)
+                .reduce((best, [grade, num]) =>
+                    Math.abs(num - avgDraftGradeNum) < Math.abs(draftGradeMap[best] - avgDraftGradeNum)
+                        ? grade
+                        : best,
+                    "A+"
+                )
+            : "N/A";
 
-const earliestYear =
-    managerTeams.length > 0
-        ? managerTeams.reduce((min, team) => (parseInt(team.season) < parseInt(min) ? team.season : min), managerTeams[0].season)
-        : null;
+    const earliestYear =
+        managerTeams.length > 0
+            ? managerTeams.reduce((min, team) => (parseInt(team.season) < parseInt(min) ? team.season : min), managerTeams[0].season)
+            : null;
 
-// Trophy counts
-const firstPlace = managerTeams.filter(team => team.rank === 1).length;
-const secondPlace = managerTeams.filter(team => team.rank === 2).length;
-const thirdPlace = managerTeams.filter(team => team.rank === 3).length;
+    // Trophy counts
+    const firstPlace = managerTeams.filter(team => team.rank === 1).length;
+    const secondPlace = managerTeams.filter(team => team.rank === 2).length;
+    const thirdPlace = managerTeams.filter(team => team.rank === 3).length;
 
-// Only one spinner for the whole page
-if (loading) {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center">
-            <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full">
-                <h1 className="text-3xl font-bold text-emerald-700 mb-4 text-center">
-                    Manager: {managerName}
-                </h1>
-                {earliestYear && (
-                    <div className="text-base text-slate-600 text-center mb-4">
-                        Member since {earliestYear}
-                    </div>
-                )}
-                <div className="flex flex-col items-center justify-center py-20">
-                    <div className="relative">
-                        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+    // Only one spinner for the whole page
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full">
+                    <h1 className="text-3xl font-bold text-emerald-700 mb-4 text-center">
+                        Manager: {getDisplayManagerName(managerName)}
+                    </h1>
+                    {earliestYear && (
+                        <div className="text-base text-slate-600 text-center mb-4">
+                            Member since {earliestYear}
+                        </div>
+                    )}
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="relative">
+                            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
     // Get manager felo_tier and felo_score from the most recent team for this manager
     const managerFeloTier =
@@ -346,175 +345,175 @@ if (loading) {
             ? managerTeams[0].felo_score
             : undefined;
 
-return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4">
-            <div className="flex flex-col items-center mb-4">
-                {managerFeloTierImg && (
-                    <>
-                        <img
-                            src={managerFeloTierImg}
-                            alt={managerFeloTier + " tier"}
-                            className="w-16 h-16"
-                            style={{ objectFit: "contain" }}
-                        />
-                        {managerFeloScore && (
-                            <span className="text-xs text-slate-500 mb-2">
-                                Rating: {managerFeloScore}
-                            </span>
-                        )}
-                    </>
-                )}
-                <h1 className="text-3xl font-bold text-emerald-700 text-center">
-                    Manager: {getDisplayManagerName(managerName)}
-                </h1>
-            </div>
-            {earliestYear && (
-                <div className="text-base text-slate-600 text-center mb-4">
-                    Member since {earliestYear}
-                </div>
-            )}
-            {/* Trophy Case Section */}
-            <div className="mb-8">
-                <h2 className="text-xl font-bold text-amber-700 text-center mb-2">Trophy Case</h2>
-                <div className="flex justify-center gap-8">
-                    <div className="flex flex-col items-center">
-                        <span className="text-5xl">🥈</span>
-                        <span className="text-lg font-bold text-slate-500 mt-2">{secondPlace}</span>
-                        <span className="text-xs text-slate-500 mt-1">2nd Place</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-8xl">🥇</span>
-                        <span className="text-lg font-bold text-yellow-700 mt-2">{firstPlace}</span>
-                        <span className="text-xs text-slate-500 mt-1">1st Place</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-5xl">🥉</span>
-                        <span className="text-lg font-bold text-amber-700 mt-2">{thirdPlace}</span>
-                        <span className="text-xs text-slate-500 mt-1">3rd Place</span>
-                    </div>
-                </div>
-            </div>
-            {/* Average Finish & Draft Grade Cards */}
-            <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
-                <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                    <div className="text-lg font-semibold text-emerald-700 mb-1">Average Finish</div>
-                    <div className="text-3xl font-bold text-emerald-900">{averageFinish}</div>
-                </div>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                    <div className="text-lg font-semibold text-emerald-700 mb-1">Average Draft Grade</div>
-                    <div className="text-3xl font-bold text-emerald-900">{avgDraftGrade}</div>
-                </div>
-                <div className="bg-blue-100 border border-blue-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                    <div className="text-lg font-semibold text-blue-700 mb-1">Number of Ices</div>
-                    <div className="text-3xl font-bold text-blue-900">{icesCount}</div>
-                </div>
-            </div>
-            {managerTeams.length === 0 ? (
-                <p className="text-center text-slate-500">No teams found for this manager.</p>
-            ) : (
-                <div className="mt-4">
-                    {/* Show 2025 team (current year) above collapsible if present */}
-                    {managerTeams.some(team => team.season === "2025") && (
-                        <div className="mb-6">
-                            {managerTeams
-                                .filter(team => team.season === "2025")
-                                .map(team => {
-                                    const drafted = isDraftCompleted(team.season);
-                                    return drafted ? (
-                                        <Link
-                                            key={team.season + team.id}
-                                            href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                            className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
-                                        >
-                                            <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                            <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                            <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                            <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                            <div className="text-xs text-emerald-700 text-center mt-1">
-                                                Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
-                                            </div>
-                                        </Link>
-                                    ) : (
-                                        <div
-                                            key={team.season + team.id}
-                                            className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
-                                            title="Team will be viewable after the draft."
-                                        >
-                                            <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                            <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                            <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                            <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                            <div className="text-xs text-emerald-700 text-center mt-1">
-                                                Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
-                                            </div>
-                                            <div className="text-xs text-red-500 mt-2">Draft not completed</div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4">
+                <div className="flex flex-col items-center mb-4">
+                    {managerFeloTierImg && (
+                        <>
+                            <img
+                                src={managerFeloTierImg}
+                                alt={managerFeloTier + " tier"}
+                                className="w-16 h-16"
+                                style={{ objectFit: "contain" }}
+                            />
+                            {managerFeloScore && (
+                                <span className="text-xs text-slate-500 mb-2">
+                                    Rating: {managerFeloScore}
+                                </span>
+                            )}
+                        </>
                     )}
-                    <button
-                        className="w-full flex items-center justify-between px-4 py-3 bg-emerald-200 rounded-lg shadow font-semibold text-emerald-800 mb-6 focus:outline-none"
-                        onClick={() => setCollapsed(!collapsed)}
-                        aria-expanded={!collapsed}
-                    >
-                        <span>Previous Teams</span>
-                        <span className={`transform transition-transform ${collapsed ? "rotate-0" : "rotate-180"}`}>
-                            ▼
-                        </span>
-                    </button>
-                    <div
-                        ref={collapseRef}
-                        className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!collapsed ? "opacity-100" : "opacity-0"}`}
-                        style={{
-                            transitionProperty: "max-height, opacity",
-                            marginBottom: "32px",
-                            minHeight: "1px",
-                            maxHeight: collapsed ? "0px" : undefined
-                        }}
-                    >
-                        <div ref={contentRef} className="flex flex-col gap-6 mt-2">
-                            {managerTeams
-                                .filter(team => team.season !== "2025")
-                                .map(team => {
-                                    const drafted = isDraftCompleted(team.season);
-                                    return drafted ? (
-                                        <Link
-                                            key={team.season + team.id}
-                                            href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                            className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
-                                        >
-                                            <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                            <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                            <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                            <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                            <div className="text-xs text-emerald-700 text-center mt-1">
-                                                Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
-                                            </div>
-                                        </Link>
-                                    ) : (
-                                        <div
-                                            key={team.season + team.id}
-                                            className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
-                                            title="Team will be viewable after the draft."
-                                        >
-                                            <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                            <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                            <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                            <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                            <div className="text-xs text-emerald-700 text-center mt-1">
-                                                Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
-                                            </div>
-                                            <div className="text-xs text-red-500 mt-2">Draft not completed</div>
-                                        </div>
-                                    );
-                                })}
+                    <h1 className="text-3xl font-bold text-emerald-700 text-center">
+                        Manager: {getDisplayManagerName(managerName)}
+                    </h1>
+                </div>
+                {earliestYear && (
+                    <div className="text-base text-slate-600 text-center mb-4">
+                        Member since {earliestYear}
+                    </div>
+                )}
+                {/* Trophy Case Section */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-bold text-amber-700 text-center mb-2">Trophy Case</h2>
+                    <div className="flex justify-center gap-8">
+                        <div className="flex flex-col items-center">
+                            <span className="text-5xl">🥈</span>
+                            <span className="text-lg font-bold text-slate-500 mt-2">{secondPlace}</span>
+                            <span className="text-xs text-slate-500 mt-1">2nd Place</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-8xl">🥇</span>
+                            <span className="text-lg font-bold text-yellow-700 mt-2">{firstPlace}</span>
+                            <span className="text-xs text-slate-500 mt-1">1st Place</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-5xl">🥉</span>
+                            <span className="text-lg font-bold text-amber-700 mt-2">{thirdPlace}</span>
+                            <span className="text-xs text-slate-500 mt-1">3rd Place</span>
                         </div>
                     </div>
                 </div>
-            )}
+                {/* Average Finish & Draft Grade Cards */}
+                <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
+                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-emerald-700 mb-1">Average Finish</div>
+                        <div className="text-3xl font-bold text-emerald-900">{averageFinish}</div>
+                    </div>
+                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-emerald-700 mb-1">Average Draft Grade</div>
+                        <div className="text-3xl font-bold text-emerald-900">{avgDraftGrade}</div>
+                    </div>
+                    <div className="bg-blue-100 border border-blue-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-blue-700 mb-1">Number of Ices</div>
+                        <div className="text-3xl font-bold text-blue-900">{icesCount}</div>
+                    </div>
+                </div>
+                {managerTeams.length === 0 ? (
+                    <p className="text-center text-slate-500">No teams found for this manager.</p>
+                ) : (
+                    <div className="mt-4">
+                        {/* Show 2025 team (current year) above collapsible if present */}
+                        {managerTeams.some(team => team.season === "2025") && (
+                            <div className="mb-6">
+                                {managerTeams
+                                    .filter(team => team.season === "2025")
+                                    .map(team => {
+                                        const drafted = isDraftCompleted(team.season);
+                                        return drafted ? (
+                                            <Link
+                                                key={team.season + team.id}
+                                                href={`/roster?year=${team.season}&teamId=${team.id}`}
+                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
+                                            >
+                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
+                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                    Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div
+                                                key={team.season + team.id}
+                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
+                                                title="Team will be viewable after the draft."
+                                            >
+                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
+                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                    Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
+                                                </div>
+                                                <div className="text-xs text-red-500 mt-2">Draft not completed</div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        )}
+                        <button
+                            className="w-full flex items-center justify-between px-4 py-3 bg-emerald-200 rounded-lg shadow font-semibold text-emerald-800 mb-6 focus:outline-none"
+                            onClick={() => setCollapsed(!collapsed)}
+                            aria-expanded={!collapsed}
+                        >
+                            <span>Previous Teams</span>
+                            <span className={`transform transition-transform ${collapsed ? "rotate-0" : "rotate-180"}`}>
+                                ▼
+                            </span>
+                        </button>
+                        <div
+                            ref={collapseRef}
+                            className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!collapsed ? "opacity-100" : "opacity-0"}`}
+                            style={{
+                                transitionProperty: "max-height, opacity",
+                                marginBottom: "32px",
+                                minHeight: "1px",
+                                maxHeight: collapsed ? "0px" : undefined
+                            }}
+                        >
+                            <div ref={contentRef} className="flex flex-col gap-6 mt-2">
+                                {managerTeams
+                                    .filter(team => team.season !== "2025")
+                                    .map(team => {
+                                        const drafted = isDraftCompleted(team.season);
+                                        return drafted ? (
+                                            <Link
+                                                key={team.season + team.id}
+                                                href={`/roster?year=${team.season}&teamId=${team.id}`}
+                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
+                                            >
+                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
+                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                    Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div
+                                                key={team.season + team.id}
+                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
+                                                title="Team will be viewable after the draft."
+                                            >
+                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
+                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                    Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
+                                                </div>
+                                                <div className="text-xs text-red-500 mt-2">Draft not completed</div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
 }

@@ -1,0 +1,54 @@
+/* Styling for Rules Component */
+
+/* General container styling */
+.p-4 {
+  padding: 1rem;
+}
+
+/* Header styling */
+.text-2xl {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Input styling */
+.border {
+  border: 1px solid #ccc;
+}
+.p-2 {
+  padding: 0.5rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.w-full {
+  width: 100%;
+}
+
+/* Button styling */
+.text-lg {
+  font-size: 1.125rem;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.text-blue-500 {
+  color: #3b82f6;
+}
+.hover\:underline:hover {
+  text-decoration: underline;
+}
+
+/* Collapsible content styling */
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+.border {
+  border: 1px solid #ccc;
+}
+.p-2 {
+  padding: 0.5rem;
+}

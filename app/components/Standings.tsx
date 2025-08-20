@@ -8,6 +8,7 @@ interface TeamEntry {
   id: string;
   name: string;
   manager: string;
+  realManager: string; // Store real manager name
   rank: number;
   logo: string;
 }
@@ -109,7 +110,15 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             metadata.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ??
             "https://via.placeholder.com/100";
 
-          parsed.push({ id, name, manager, rank, logo });
+          // Update parsing logic to include both real and display manager names
+          parsed.push({
+            id,
+            name,
+            manager: getDisplayManagerName(manager),
+            realManager: manager,
+            rank,
+            logo
+          });
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
@@ -196,7 +205,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                     <p className="text-xs text-slate-500 mt-1 text-center break-words whitespace-normal">
                       <span
                         className="underline text-emerald-700 hover:text-emerald-900 transition cursor-pointer"
-                        onClick={() => window.location.href = `/manager?name=${encodeURIComponent(team.manager)}`}
+                        onClick={() => window.location.href = `/manager?name=${encodeURIComponent(team.realManager)}`}
                       >
                         {team.manager}
                       </span>
@@ -308,7 +317,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                 <p className="text-yellow-700 font-medium">
                   Champion:{" "}
                   <Link
-                    href={`/manager?name=${encodeURIComponent(champion.manager)}`}
+                    href={`/manager?name=${encodeURIComponent(champion.realManager)}`}
                     className="font-bold text-yellow-900 underline hover:text-emerald-700 transition"
                   >
                     {champion.manager}
@@ -344,7 +353,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                     <p className="text-slate-700 font-medium">
                       Runner-up:{" "}
                       <Link
-                        href={`/manager?name=${encodeURIComponent(teams[1].manager)}`}
+                        href={`/manager?name=${encodeURIComponent(teams[1].realManager)}`}
                         className="font-bold underline text-slate-900 hover:text-emerald-700 transition"
                       >
                         {teams[1].manager}
@@ -379,7 +388,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                     <p className="text-amber-700 font-medium">
                       Third Place:{" "}
                       <Link
-                        href={`/manager?name=${encodeURIComponent(teams[2].manager)}`}
+                        href={`/manager?name=${encodeURIComponent(teams[2].realManager)}`}
                         className="font-bold underline text-amber-900 hover:text-emerald-700 transition"
                       >
                         {teams[2].manager}
@@ -446,7 +455,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         <p className="text-slate-600 font-medium mb-2">
                           <span className="text-slate-500">Manager:</span>{" "}
                           <Link
-                            href={`/manager?name=${encodeURIComponent(team.manager)}`}
+                            href={`/manager?name=${encodeURIComponent(team.realManager)}`}
                             className="underline text-emerald-700 hover:text-emerald-900 transition"
                           >
                             {team.manager}
@@ -512,7 +521,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         <p className="text-slate-600 font-medium mb-2">
                           <span className="text-slate-500">Manager:</span>{" "}
                           <Link
-                            href={`/manager?name=${encodeURIComponent(team.manager)}`}
+                            href={`/manager?name=${encodeURIComponent(team.realManager)}`}
                             className="underline text-emerald-700 hover:text-emerald-900 transition"
                           >
                             {team.manager}
@@ -543,5 +552,14 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
     </div >
   );
 };
+
+function getDisplayManagerName(name: string) {
+  if (name === "Jacob") return "Harris";
+  if (name === "jake.hughes275") return "Hughes";
+  if (name === "johnny5david") return "Johnny";
+  if (name === "Zachary") return "Zach";
+  if (name === "Michael") return "Mike";
+  return name;
+}
 
 export default StandingsViewer;

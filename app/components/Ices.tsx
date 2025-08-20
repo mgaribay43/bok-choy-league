@@ -863,8 +863,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
         {latestOnly ? (
           <button
             onClick={() => window.location.href = '/ices'}
-            className="text-5xl font-extrabold text-emerald-700 mt-6 text-center hover:underline transition"
-            style={{ cursor: "pointer" }}
+            className="text-5xl font-extrabold mt-6 text-center hover:underline transition"
+            style={{ cursor: "pointer", color: "#a7f3d0" }}
           >
             Latest Ice
           </button>

@@ -39,6 +39,7 @@ function getDisplayManagerName(name: string) {
     if (name === "johnny5david") return "Johnny";
     if (name === "Zachary") return "Zach";
     if (name === "Michael") return "Mike";
+    if (name === "tanner") return "Tanner";
     return name;
 }
 
@@ -80,16 +81,11 @@ function getTrophyUrl(place: number, season: string) {
     return `https://s.yimg.com/cv/apiv2/default/170508/tr_nfl_${place}_${season}.png`;
 }
 
-// Helper to get all trophies for a manager
-function getManagerTrophies(managerTeams: TeamEntry[]) {
-    // Only count 1st, 2nd, 3rd place finishes
-    const trophies: { place: number; season: string }[] = [];
-    managerTeams.forEach(team => {
-        if ([1, 2, 3].includes(team.rank)) {
-            trophies.push({ place: team.rank, season: team.season });
-        }
-    });
-    return trophies;
+// Helper to get year badge image URL
+function getYearBadgeUrl(year: string | null) {
+    if (!year) return undefined;
+    if (["2017", "2018", "2020"].includes(year)) return `/images/yearBadges/${year}.png`;
+    return undefined;
 }
 
 export default function ManagerViewer() {
@@ -236,11 +232,16 @@ export default function ManagerViewer() {
         const managerTiers: Record<string, string | undefined> = {};
         const managerScores: Record<string, number> = {};
         managerNames.forEach(name => {
-            const teamsForManager = teams.filter(team => team.manager === name);
+            const teamsForManager = teams.filter(
+                team => team.manager?.toLowerCase() === name.toLowerCase()
+            );
             if (teamsForManager.length > 0) {
-                managerTiers[name] = teamsForManager[0].felo_tier;
-                // Parse felo_score as number for sorting
-                managerScores[name] = Number(teamsForManager[0].felo_score ?? 0);
+                // Sort by season descending and use the most recent team
+                const mostRecentTeam = teamsForManager.sort(
+                    (a, b) => parseInt(b.season) - parseInt(a.season)
+                )[0];
+                managerTiers[name] = mostRecentTeam.felo_tier;
+                managerScores[name] = Number(mostRecentTeam.felo_score ?? 0);
             } else {
                 managerScores[name] = 0;
             }
@@ -250,7 +251,7 @@ export default function ManagerViewer() {
         const sortedManagers = [...managerNames].sort((a, b) => (managerScores[b] ?? 0) - (managerScores[a] ?? 0));
 
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-blue-50 to-yellow-50">
+            <div className="min-h-screen flex flex-col items-center justify-center">
                 <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-xl w-full border border-emerald-100">
                     <h1 className="text-4xl font-extrabold text-emerald-700 mb-6 text-center tracking-tight drop-shadow">
                         League Managers
@@ -289,8 +290,10 @@ export default function ManagerViewer() {
         );
     }
 
-    // Filter teams for the selected manager
-    const managerTeams = teams.filter(team => team.manager === managerName);
+    // Filter teams for the selected manager (case-insensitive)
+    const managerTeams = teams.filter(
+        team => team.manager?.toLowerCase() === managerName?.toLowerCase()
+    );
 
     // Calculate average finish, excluding current year
     const teamsForAverage = managerTeams.filter(team => team.season !== currentYear);
@@ -344,13 +347,8 @@ export default function ManagerViewer() {
             <div className="min-h-screen flex flex-col items-center justify-center">
                 <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full">
                     <h1 className="text-3xl font-bold text-emerald-700 mb-4 text-center">
-                        Manager: {getDisplayManagerName(managerName)}
+                        {getDisplayManagerName(managerName)}
                     </h1>
-                    {earliestYear && (
-                        <div className="text-base text-slate-600 text-center mb-4">
-                            Member since {earliestYear}
-                        </div>
-                    )}
                     <div className="flex flex-col items-center justify-center py-20">
                         <div className="relative">
                             <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
@@ -379,7 +377,16 @@ export default function ManagerViewer() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center">
-            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4 relative">
+                {/* Member Since Badge - top left */}
+                {earliestYear && getYearBadgeUrl(earliestYear) && (
+                    <img
+                        src={getYearBadgeUrl(earliestYear)}
+                        alt={`Member since ${earliestYear}`}
+                        className="absolute top-4 left-4 w-20 h-20 z-10"
+                        style={{ objectFit: "contain" }}
+                    />
+                )}
                 <div className="flex flex-col items-center mb-4">
                     {managerFeloTierImg && (
                         <>
@@ -397,14 +404,9 @@ export default function ManagerViewer() {
                         </>
                     )}
                     <h1 className="text-3xl font-bold text-emerald-700 text-center">
-                        Manager: {getDisplayManagerName(managerName)}
+                        {getDisplayManagerName(managerName)}
                     </h1>
                 </div>
-                {earliestYear && (
-                    <div className="text-base text-slate-600 text-center mb-4">
-                        Member since {earliestYear}
-                    </div>
-                )}
                 {/* Trophy Case Section */}
                 {hasTrophies && (
                     <div className="mb-8">
@@ -440,15 +442,15 @@ export default function ManagerViewer() {
                 {/* Average Finish & Draft Grade Cards */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
                     <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-emerald-700 mb-1">Average Finish</div>
+                        <div className="text-lg font-semibold text-emerald-700 mb-1">Avg. Finish</div>
                         <div className="text-3xl font-bold text-emerald-900">{averageFinish}</div>
                     </div>
                     <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-emerald-700 mb-1">Average Draft Grade</div>
+                        <div className="text-lg font-semibold text-emerald-700 mb-1">Avg. Draft Grade</div>
                         <div className="text-3xl font-bold text-emerald-900">{avgDraftGrade}</div>
                     </div>
                     <div className="bg-blue-100 border border-blue-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-blue-700 mb-1">Number of Ices</div>
+                        <div className="text-lg font-semibold text-blue-700 mb-1">Ices</div>
                         <div className="text-3xl font-bold text-blue-900">{icesCount}</div>
                     </div>
                 </div>
@@ -458,7 +460,7 @@ export default function ManagerViewer() {
                     <div className="mt-4">
                         {/* Show 2025 team (current year) above collapsible if present */}
                         {managerTeams.some(team => team.season === "2025") && (
-                            <div className="mb-6">
+                            <div className="mb-4">
                                 {managerTeams
                                     .filter(team => team.season === "2025")
                                     .map(team => {

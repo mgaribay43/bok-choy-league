@@ -5,6 +5,13 @@ import React, { useEffect, useState } from "react";
 import leagueKeys from "../data/League_Keys/league_keys.json";
 import Link from "next/link";
 import icesData from "../data/Videos/ices.json";
+import ReactModal from "react-modal";
+import { Line } from "react-chartjs-2";
+import { Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend } from "chart.js";
+
+if (typeof window !== "undefined") {
+    ReactModal.setAppElement(document.body);
+}
 
 type TeamEntry = {
     id: string;
@@ -16,7 +23,7 @@ type TeamEntry = {
     draftGrade?: string;
     image_url?: string;
     felo_tier?: string;
-    felo_score?: string; // Add felo_score field
+    felo_score?: string;
 };
 
 const managerNames = [
@@ -32,7 +39,44 @@ const managerNames = [
     "Zachary"
 ];
 
-// Add this helper at the top (or reuse if present)
+// ===== Scroll lock hook (iOS-safe) =====
+function useBodyScrollLock(isLocked: boolean) {
+    React.useEffect(() => {
+        if (!isLocked) return;
+
+        const scrollY = window.scrollY;
+        const prev = {
+            position: document.body.style.position,
+            top: document.body.style.top,
+            width: document.body.style.width,
+            overflow: document.body.style.overflow,
+            htmlOverscroll: document.documentElement.style.overscrollBehavior,
+            htmlTouch: document.documentElement.style.touchAction,
+        };
+
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = "100%";
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overscrollBehavior = "none";
+        document.documentElement.style.touchAction = "none";
+
+        return () => {
+            const topVal = document.body.style.top;
+            document.body.style.position = prev.position;
+            document.body.style.top = prev.top;
+            document.body.style.width = prev.width;
+            document.body.style.overflow = prev.overflow;
+            document.documentElement.style.overscrollBehavior = prev.htmlOverscroll;
+            document.documentElement.style.touchAction = prev.htmlTouch;
+
+            const y = Math.abs(parseInt(topVal || "0", 10)) || scrollY;
+            window.scrollTo(0, y);
+        };
+    }, [isLocked]);
+}
+
+// ===== Helpers =====
 function getDisplayManagerName(name: string) {
     if (name === "Jacob") return "Harris";
     if (name === "jake.hughes275") return "Hughes";
@@ -43,7 +87,6 @@ function getDisplayManagerName(name: string) {
     return name;
 }
 
-// Helper to count ices for a manager using local JSON and display name
 function getIcesCount(managerName: string): number {
     const displayName = getDisplayManagerName(managerName);
     let count = 0;
@@ -51,7 +94,6 @@ function getIcesCount(managerName: string): number {
         if (Array.isArray(seasonArr)) {
             seasonArr.forEach((ice: any) => {
                 if (ice.manager === displayName && typeof ice.player === "string") {
-                    // Count 1 for the first player, plus 1 for each "+"
                     count += 1 + (ice.player.split("+").length - 1);
                 }
             });
@@ -60,7 +102,6 @@ function getIcesCount(managerName: string): number {
     return count;
 }
 
-// Helper to get felo tier image URL
 function getFeloTierImage(tier?: string) {
     if (!tier) return undefined;
     const t = tier.trim().toLowerCase();
@@ -72,7 +113,6 @@ function getFeloTierImage(tier?: string) {
     return undefined;
 }
 
-// Helper to build Yahoo trophy image URL (handles 2017 differently)
 function getTrophyUrl(place: number, season: string) {
     if (![1, 2, 3].includes(place)) return undefined;
     if (season === "2017") {
@@ -81,12 +121,13 @@ function getTrophyUrl(place: number, season: string) {
     return `https://s.yimg.com/cv/apiv2/default/170508/tr_nfl_${place}_${season}.png`;
 }
 
-// Helper to get year badge image URL
 function getYearBadgeUrl(year: string | null) {
     if (!year) return undefined;
     if (["2017", "2018", "2020"].includes(year)) return `/images/yearBadges/${year}.png`;
     return undefined;
 }
+
+Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend);
 
 export default function ManagerViewer() {
     const searchParams = useSearchParams();
@@ -100,11 +141,13 @@ export default function ManagerViewer() {
     const [icesCount, setIcesCount] = useState<number>(0);
     const [draftTimes, setDraftTimes] = useState<Record<string, number>>({});
     const [cachedManagerData, setCachedManagerData] = useState<Record<string, { tier?: string; score?: number }>>({});
+    const [showFeloModal, setShowFeloModal] = useState(false);
 
-    // Get current year as string
+    // Lock background scroll when modal is open
+    useBodyScrollLock(showFeloModal);
+
     const currentYear = String(new Date().getFullYear());
 
-    // Always fetch all teams, regardless of managerName
     useEffect(() => {
         async function fetchAllTeams() {
             setLoading(true);
@@ -137,8 +180,7 @@ export default function ManagerViewer() {
                         const draftGradeObj = metadata.find((item: any) => item.has_draft_grade !== undefined);
                         const draftGrade = draftGradeObj?.draft_grade ?? "N/A";
                         const image_url =
-                            metadata.find((item: any) => item.managers)?.managers?.[0]?.manager?.image_url ??
-                            undefined;
+                            metadata.find((item: any) => item.managers)?.managers?.[0]?.manager?.image_url ?? undefined;
                         const felo_tier =
                             metadata.find((item: any) => item.managers)?.managers?.[0]?.manager?.felo_tier ?? undefined;
                         const felo_score =
@@ -164,7 +206,6 @@ export default function ManagerViewer() {
         }
     }, [managerName]);
 
-    // Fetch draft times from the league settings API
     useEffect(() => {
         async function fetchDraftTimes() {
             const times: Record<string, number> = {};
@@ -176,7 +217,6 @@ export default function ManagerViewer() {
                     );
                     if (!response.ok) continue;
                     const json = await response.json();
-                    // Yahoo API draft_time is in seconds, convert to ms
                     const draftTime =
                         json?.fantasy_content?.league?.[1]?.settings?.[0]?.draft_time;
                     if (draftTime) {
@@ -191,7 +231,6 @@ export default function ManagerViewer() {
         fetchDraftTimes();
     }, []);
 
-    // Load cached manager data on mount
     useEffect(() => {
         const cached = localStorage.getItem("managerRanks");
         if (cached) {
@@ -199,7 +238,6 @@ export default function ManagerViewer() {
         }
     }, []);
 
-    // After teams are fetched, update cache if changed
     useEffect(() => {
         if (teams.length > 0) {
             const managerTiers: Record<string, string | undefined> = {};
@@ -219,7 +257,6 @@ export default function ManagerViewer() {
                 }
             });
 
-            // Compare with cached data
             const newCache: Record<string, { tier?: string; score?: number }> = {};
             managerNames.forEach(name => {
                 newCache[name] = {
@@ -233,7 +270,6 @@ export default function ManagerViewer() {
         }
     }, [teams.length]);
 
-    // Animate collapsible header like Ices.tsx
     React.useEffect(() => {
         const collapseEl = collapseRef.current;
         const contentEl = contentRef.current;
@@ -262,16 +298,13 @@ export default function ManagerViewer() {
         };
     }, [collapsed, teams.length]);
 
-    // Helper to check if draft is completed for a season
     function isDraftCompleted(season: string) {
         const draftTime = draftTimes[season];
         if (!draftTime) return false;
         return Date.now() >= draftTime;
     }
 
-    // If no managerName or managerName is not in managerNames, show default manager list
     if (!managerName || !managerNames.includes(managerName)) {
-        // Use cached data if loading, otherwise use fetched data
         const managerTiers: Record<string, string | undefined> = {};
         const managerScores: Record<string, number> = {};
 
@@ -295,7 +328,6 @@ export default function ManagerViewer() {
             }
         });
 
-        // Sort managers by felo_score descending
         const sortedManagers = [...managerNames].sort((a, b) => (managerScores[b] ?? 0) - (managerScores[a] ?? 0));
 
         return (
@@ -334,12 +366,10 @@ export default function ManagerViewer() {
         );
     }
 
-    // Filter teams for the selected manager (case-insensitive)
     const managerTeams = teams.filter(
         team => team.manager?.toLowerCase() === managerName?.toLowerCase()
     );
 
-    // Calculate average finish, excluding current year
     const teamsForAverage = managerTeams.filter(team => team.season !== currentYear);
     const averageFinish =
         teamsForAverage.length > 0
@@ -348,7 +378,6 @@ export default function ManagerViewer() {
             ).toFixed(2)
             : "N/A";
 
-    // Calculate average draft grade, excluding current year
     const draftGradeMap: Record<string, number> = {
         "A+": 1, "A": 2, "A-": 3,
         "B+": 4, "B": 5, "B-": 6,
@@ -380,18 +409,16 @@ export default function ManagerViewer() {
             ? managerTeams.reduce((min, team) => (parseInt(team.season) < parseInt(min) ? team.season : min), managerTeams[0].season)
             : null;
 
-    // Trophy counts
     const firstPlace = managerTeams.filter(team => team.rank === 1).length;
     const secondPlace = managerTeams.filter(team => team.rank === 2).length;
     const thirdPlace = managerTeams.filter(team => team.rank === 3).length;
 
-    // Only one spinner for the whole page
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
                 <div className="bg-[#232323] rounded-xl shadow-lg p-8 max-w-2xl w-full border border-[#333]">
                     <h1 className="text-3xl font-bold text-emerald-200 mb-4 text-center">
-                        {getDisplayManagerName(managerName)}
+                        {getDisplayManagerName(managerName!)}
                     </h1>
                     <div className="flex flex-col items-center justify-center py-20">
                         <div className="relative">
@@ -403,7 +430,6 @@ export default function ManagerViewer() {
         );
     }
 
-    // Get manager felo_tier and felo_score from the most recent team for this manager
     const managerFeloTier =
         managerTeams.length > 0
             ? managerTeams[0].felo_tier
@@ -416,8 +442,15 @@ export default function ManagerViewer() {
             ? managerTeams[0].felo_score
             : undefined;
 
-    // Check if manager has any trophies
     const hasTrophies = managerTeams.some(team => [1, 2, 3].includes(team.rank));
+
+    const feloHistory = managerTeams
+        .filter(team => team.felo_score)
+        .sort((a, b) => parseInt(a.season) - parseInt(b.season))
+        .map(team => ({
+            year: team.season,
+            score: Number(team.felo_score)
+        }));
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
@@ -434,12 +467,19 @@ export default function ManagerViewer() {
                 <div className="flex flex-col items-center mb-4">
                     {managerFeloTierImg && (
                         <>
-                            <img
-                                src={managerFeloTierImg}
-                                alt={managerFeloTier + " tier"}
-                                className="w-16 h-16"
-                                style={{ objectFit: "contain" }}
-                            />
+                            <button
+                                onClick={() => setShowFeloModal(true)}
+                                className="focus:outline-none"
+                                title="View rating history"
+                                style={{ background: "none", border: "none", padding: 0, margin: 0 }}
+                            >
+                                <img
+                                    src={managerFeloTierImg}
+                                    alt={managerFeloTier + " tier"}
+                                    className="w-16 h-16 cursor-pointer"
+                                    style={{ objectFit: "contain" }}
+                                />
+                            </button>
                             {managerFeloScore && (
                                 <span className="text-xs text-emerald-400 mb-2">
                                     Rating: {managerFeloScore}
@@ -448,9 +488,10 @@ export default function ManagerViewer() {
                         </>
                     )}
                     <h1 className="text-3xl font-bold text-emerald-200 text-center">
-                        {getDisplayManagerName(managerName)}
+                        {getDisplayManagerName(managerName!)}
                     </h1>
                 </div>
+
                 {/* Trophy Case Section */}
                 {hasTrophies && (
                     <div className="mb-8">
@@ -483,6 +524,7 @@ export default function ManagerViewer() {
                         </div>
                     </div>
                 )}
+
                 {/* Average Finish & Draft Grade Cards */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
                     <div className="bg-[#181818] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
@@ -498,6 +540,7 @@ export default function ManagerViewer() {
                         <div className="text-3xl font-bold text-blue-100">{icesCount}</div>
                     </div>
                 </div>
+
                 {managerTeams.length === 0 ? (
                     <p className="text-center text-emerald-400">No teams found for this manager.</p>
                 ) : (
@@ -542,6 +585,7 @@ export default function ManagerViewer() {
                                     })}
                             </div>
                         )}
+
                         <button
                             className="w-full flex items-center justify-between px-4 py-3 bg-[#232323] border border-[#333] rounded-lg shadow font-semibold text-emerald-200 mb-6 focus:outline-none"
                             onClick={() => setCollapsed(!collapsed)}
@@ -552,6 +596,7 @@ export default function ManagerViewer() {
                                 ▼
                             </span>
                         </button>
+
                         <div
                             ref={collapseRef}
                             className={`transition-all duration-500 ease-in-out w-full ${!collapsed ? "overflow-visible opacity-100" : "overflow-hidden opacity-0"}`}
@@ -604,6 +649,136 @@ export default function ManagerViewer() {
                     </div>
                 )}
             </div>
+
+            {/* ===== Modal (overlay blocks touch/scroll; background locked via hook) ===== */}
+            <ReactModal
+                isOpen={showFeloModal}
+                onRequestClose={() => setShowFeloModal(false)}
+                className="bg-[#232323] rounded-2xl shadow-2xl p-8 max-w-lg mx-auto mt-24 outline-none border border-[#333]"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overflow-hidden"
+                ariaHideApp={false}
+                shouldCloseOnOverlayClick={true}
+            >
+                <h2 className="text-2xl font-bold text-emerald-200 mb-4 text-center">Felo Rating History</h2>
+                <div
+                    style={{
+                        width: "100%",
+                        minHeight: "350px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}
+                    className="felo-chart-container"
+                >
+                    <Line
+                        data={{
+                            labels: managerTeams
+                                .filter(t => t.felo_score)
+                                .sort((a, b) => parseInt(a.season) - parseInt(b.season))
+                                .map(t => t.season),
+                            datasets: [
+                                {
+                                    label: "",
+                                    data: managerTeams
+                                        .filter(t => t.felo_score)
+                                        .sort((a, b) => parseInt(a.season) - parseInt(b.season))
+                                        .map(t => Number(t.felo_score)),
+                                    borderColor: managerFeloTier === "diamond"
+                                        ? "#f3e743"
+                                        : managerFeloTier === "platinum"
+                                            ? "#aee6f9"
+                                            : managerFeloTier === "gold"
+                                                ? "#ffd700"
+                                                : managerFeloTier === "silver"
+                                                    ? "#e5e7eb"
+                                                    : managerFeloTier === "bronze"
+                                                        ? "#c68642"
+                                                        : "#34d399",
+                                    backgroundColor: "rgba(200,200,200,0.2)",
+                                    pointBackgroundColor: managerFeloTier === "diamond"
+                                        ? "#f3e743"
+                                        : managerFeloTier === "platinum"
+                                            ? "#aee6f9"
+                                            : managerFeloTier === "gold"
+                                                ? "#ffd700"
+                                                : managerFeloTier === "silver"
+                                                    ? "#e5e7eb"
+                                                    : managerFeloTier === "bronze"
+                                                        ? "#c68642"
+                                                        : "#34d399",
+                                    pointBorderColor: "#232323",
+                                    pointRadius: 8,
+                                    pointHoverRadius: 12,
+                                    tension: 0, // Make the line straight
+                                    fill: true,
+                                }
+                            ]
+                        }}
+                        options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                title: { display: false },
+                                tooltip: {
+                                    enabled: true,
+                                    mode: 'nearest',
+                                    intersect: false,
+                                    callbacks: {
+                                        label: function (context: any) {
+                                            return `Year: ${context.label}, Rating: ${context.parsed.y}`;
+                                        }
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            },
+                            layout: {
+                                padding: { top: 0, bottom: 0, left: 0, right: 0 }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: "#cccccc", font: { size: 14 } },
+                                    grid: { color: "#444" }
+                                },
+                                y: {
+                                    min: Math.min(...managerTeams.filter(t => t.felo_score).map(t => Number(t.felo_score))) - 20,
+                                    max: Math.max(...managerTeams.filter(t => t.felo_score).map(t => Number(t.felo_score))) + 20,
+                                    ticks: {
+                                        color: "#cccccc",
+                                        font: { size: 14 },
+                                        stepSize: 25,
+                                        callback: function (value: any) {
+                                            // Always show ranks
+                                            let label = value;
+                                            if (value === 500) label = "Bronze";
+                                            if (value === 600) label = "Silver";
+                                            if (value === 700) label = "Gold";
+                                            if (value === 800) label = "Platinum";
+                                            if (value === 900) label = "Diamond";
+                                            return label;
+                                        },
+                                        autoSkip: false,
+                                        maxTicksLimit: 0
+                                    },
+                                    grid: { color: "#444" }
+                                }
+                            }
+                        }}
+                        height={350}
+                        width={400}
+                    />
+                </div>
+                <button
+                    onClick={() => setShowFeloModal(false)}
+                    className="mt-6 px-6 py-2 rounded-xl bg-emerald-700 text-emerald-100 font-bold hover:bg-emerald-800 transition w-full"
+                >
+                    Close
+                </button>
+            </ReactModal>
         </div>
     );
 }

@@ -15,6 +15,7 @@
     "22": "^0.0.0",
     "@headlessui/react": "^2.2.7",
     "axios": "^1.11.0",
+    "chart.js": "^4.5.0",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.4.0",
@@ -22,8 +23,10 @@
     "next": "^15.3.4",
     "node-fetch": "^3.3.2",
     "react": "^19.1.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-fast-marquee": "^1.6.5",
+    "react-modal": "^3.16.3",
     "react-responsive-carousel": "^3.2.23"
   },
   "devDependencies": {
@@ -31,6 +34,7 @@
     "@types/node": "^20",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19",
+    "@types/react-modal": "^3.16.3",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",

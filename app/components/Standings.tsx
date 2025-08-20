@@ -176,9 +176,9 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             <div className="flex flex-row justify-center gap-4">
               {displayTeams.map((team, idx) => (
                 <div key={team.id} className="group block">
-                  <div className={`flex flex-col items-center bg-[#232323] rounded-xl shadow-md border px-4 py-6 min-w-[120px] max-w-[160px] h-[210px] transition-all duration-200 hover:shadow-lg hover:-translate-y-1
+                  <div className={`flex flex-col items-center bg-[#232323] rounded-xl shadow-md border px-4 py-6 min-w-[120px] max-w-[160px] h-auto min-h-[250px] transition-all duration-200 hover:shadow-lg hover:-translate-y-1
                     ${idx === 0 ? "border-yellow-400" : idx === 1 ? "border-slate-400" : "border-amber-700"}`}>
-                    {/* Trophy Image instead of emoji */}
+                    {/* Trophy Image */}
                     <div className="mb-2">
                       <Image
                         src={getTrophyUrl(idx + 1, year) ?? ""}
@@ -200,14 +200,26 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         />
                       </Link>
                     </div>
-                    {/* Team Info */}
+                    {/* Team Name */}
                     <h3 className={`text-sm font-semibold text-center break-words whitespace-normal
-                      ${idx === 0 ? "text-yellow-300" : idx === 1 ? "text-emerald-200" : "text-amber-300"}`}>
+                      ${idx === 0 ? "text-yellow-300" : idx === 1 ? "text-emerald-200" : "text-amber-300"} mb-1`}
+                      style={{
+                        wordBreak: "break-word",
+                        whiteSpace: "normal"
+                      }}
+                    >
                       <Link href={`/roster?year=${year}&teamId=${team.id}`}>
                         {team.name}
                       </Link>
                     </h3>
-                    <p className="text-xs text-emerald-400 mt-1 text-center break-words whitespace-normal">
+                    {/* Manager Name */}
+                    <p
+                      className="text-xs text-emerald-400 text-center break-words whitespace-normal w-full"
+                      style={{
+                        wordBreak: "break-word",
+                        whiteSpace: "normal"
+                      }}
+                    >
                       <span
                         className="underline text-emerald-300 hover:text-emerald-400 transition cursor-pointer"
                         onClick={() => window.location.href = `/manager?name=${encodeURIComponent(team.realManager)}`}

@@ -100,7 +100,7 @@ export default function KeepersPage() {
     : teams;
 
   return (
-    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-[#181818] min-h-screen">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-[#0f0f0f] min-h-screen">
       {/* Year Selector - Optimized for mobile */}
       <div className="flex justify-center mb-4 relative">
         <div
@@ -134,7 +134,7 @@ export default function KeepersPage() {
             {availableYears.map((year) => (
               <li
                 key={year}
-                className={`px-4 py-2 cursor-pointer hover:bg-emerald-900 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-emerald-200 bg-[#181818]" : "text-emerald-100"}`}
+                className={`px-4 py-2 cursor-pointer hover:bg-emerald-900 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-emerald-200 bg-[#0f0f0f]" : "text-emerald-100"}`}
                 onClick={() => {
                   setSelectedYear(year);
                   setSelectedTeamId(null);

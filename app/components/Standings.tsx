@@ -149,7 +149,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
   if (topThree) {
     return (
-      <div className="w-full bg-[#181818]">
+      <div className="w-full bg-[#0f0f0f]">
         <div className="max-w-3xl mx-auto p-4">
           <h1 className="text-5xl font-extrabold text-emerald-200 mb-8 text-center">
             <Link href={`/standings?year=${year}`} className="hover:underline transition">
@@ -241,7 +241,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
   const others = teams.slice(1);
 
   return (
-    <div className="min-h-screen bg-[#181818]">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-900 to-teal-900 rounded-2xl shadow-xl mb-8 p-6 sm:p-8">

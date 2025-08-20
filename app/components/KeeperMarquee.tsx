@@ -21,14 +21,14 @@ const KeeperMarquee = () => {
   const keepers = (keepersData as KeepersData)[currentYear]?.Teams.filter((team: Team) => team.keeper);
 
   return (
-    <div style={{ background: "#181818", padding: "8px" }}>
+    <div style={{ background: "#0f0f0f", padding: "8px" }}>
       <Marquee autoFill={true} pauseOnHover={true} gradient={false} speed={60}>
         {keepers?.map((team: Team, index: number) => (
           <div
             key={index}
             style={{
               display: 'inline-block',
-              background: 'linear-gradient(90deg, #232323 60%, #333 100%)',
+              background: 'linear-gradient(90deg, #0f0f0f 60%, #333 100%)',
               borderRadius: '10px',
               padding: '10px 20px',
               margin: '5px 20px',

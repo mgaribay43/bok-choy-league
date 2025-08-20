@@ -636,7 +636,7 @@ function FiltersSection({
                 <>
                   <Listbox.Button
                     ref={buttonRef}
-                    className={`w-full px-3 py-2 rounded-lg border border-[#333] bg-[#181818] text-emerald-400 text-left ${
+                    className={`w-full px-3 py-2 rounded-lg border border-[#333] bg-[#0f0f0f] text-emerald-400 text-left ${
                       grayOut ? "bg-gray-800 text-emerald-300 cursor-not-allowed" : ""
                     }`}
                     style={{ minHeight: '40px' }}
@@ -646,7 +646,7 @@ function FiltersSection({
                   {open &&
                     ReactDOM.createPortal(
                       <Listbox.Options
-                        className="absolute w-48 bg-[#181818] border border-[#333] rounded-lg shadow-lg z-[99999] max-h-60 overflow-y-auto"
+                        className="absolute w-48 bg-[#0f0f0f] border border-[#333] rounded-lg shadow-lg z-[99999] max-h-60 overflow-y-auto"
                         style={{
                           left: buttonRef.current
                             ? buttonRef.current.getBoundingClientRect().left
@@ -858,7 +858,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // =======================
   return (
     <>
-      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#181818]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
+      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#0f0f0f]" : "min-h-screen flex flex-col items-center bg-[#0f0f0f]"}>
         {/* Header and Stats */}
         {latestOnly ? (
           <button

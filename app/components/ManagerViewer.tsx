@@ -99,6 +99,7 @@ export default function ManagerViewer() {
     const contentRef = React.useRef<HTMLDivElement>(null);
     const [icesCount, setIcesCount] = useState<number>(0);
     const [draftTimes, setDraftTimes] = useState<Record<string, number>>({});
+    const [cachedManagerData, setCachedManagerData] = useState<Record<string, { tier?: string; score?: number }>>({});
 
     // Get current year as string
     const currentYear = String(new Date().getFullYear());
@@ -190,6 +191,48 @@ export default function ManagerViewer() {
         fetchDraftTimes();
     }, []);
 
+    // Load cached manager data on mount
+    useEffect(() => {
+        const cached = localStorage.getItem("managerRanks");
+        if (cached) {
+            setCachedManagerData(JSON.parse(cached));
+        }
+    }, []);
+
+    // After teams are fetched, update cache if changed
+    useEffect(() => {
+        if (teams.length > 0) {
+            const managerTiers: Record<string, string | undefined> = {};
+            const managerScores: Record<string, number> = {};
+            managerNames.forEach(name => {
+                const teamsForManager = teams.filter(
+                    team => team.manager?.toLowerCase() === name.toLowerCase()
+                );
+                if (teamsForManager.length > 0) {
+                    const mostRecentTeam = teamsForManager.sort(
+                        (a, b) => parseInt(b.season) - parseInt(a.season)
+                    )[0];
+                    managerTiers[name] = mostRecentTeam.felo_tier;
+                    managerScores[name] = Number(mostRecentTeam.felo_score ?? 0);
+                } else {
+                    managerScores[name] = 0;
+                }
+            });
+
+            // Compare with cached data
+            const newCache: Record<string, { tier?: string; score?: number }> = {};
+            managerNames.forEach(name => {
+                newCache[name] = {
+                    tier: managerTiers[name],
+                    score: managerScores[name]
+                };
+            });
+
+            localStorage.setItem("managerRanks", JSON.stringify(newCache));
+            setCachedManagerData(newCache);
+        }
+    }, [teams.length]);
+
     // Animate collapsible header like Ices.tsx
     React.useEffect(() => {
         const collapseEl = collapseRef.current;
@@ -228,22 +271,27 @@ export default function ManagerViewer() {
 
     // If no managerName or managerName is not in managerNames, show default manager list
     if (!managerName || !managerNames.includes(managerName)) {
-        // Get the most recent felo_tier and felo_score for each manager
+        // Use cached data if loading, otherwise use fetched data
         const managerTiers: Record<string, string | undefined> = {};
         const managerScores: Record<string, number> = {};
+
         managerNames.forEach(name => {
-            const teamsForManager = teams.filter(
-                team => team.manager?.toLowerCase() === name.toLowerCase()
-            );
-            if (teamsForManager.length > 0) {
-                // Sort by season descending and use the most recent team
-                const mostRecentTeam = teamsForManager.sort(
-                    (a, b) => parseInt(b.season) - parseInt(a.season)
-                )[0];
-                managerTiers[name] = mostRecentTeam.felo_tier;
-                managerScores[name] = Number(mostRecentTeam.felo_score ?? 0);
+            if (loading && cachedManagerData[name]) {
+                managerTiers[name] = cachedManagerData[name].tier;
+                managerScores[name] = cachedManagerData[name].score ?? 0;
             } else {
-                managerScores[name] = 0;
+                const teamsForManager = teams.filter(
+                    team => team.manager?.toLowerCase() === name.toLowerCase()
+                );
+                if (teamsForManager.length > 0) {
+                    const mostRecentTeam = teamsForManager.sort(
+                        (a, b) => parseInt(b.season) - parseInt(a.season)
+                    )[0];
+                    managerTiers[name] = mostRecentTeam.felo_tier;
+                    managerScores[name] = Number(mostRecentTeam.felo_score ?? 0);
+                } else {
+                    managerScores[name] = 0;
+                }
             }
         });
 
@@ -266,11 +314,7 @@ export default function ManagerViewer() {
                                     href={`/manager?name=${encodeURIComponent(name)}`}
                                     className="bg-emerald-100 hover:bg-emerald-200 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-700 hover:text-emerald-900 shadow flex flex-col items-center w-full"
                                 >
-                                    {loading ? (
-                                        <span className="mb-2 flex items-center justify-center w-16 h-16">
-                                            <span className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></span>
-                                        </span>
-                                    ) : managerTiers[name] ? (
+                                    {managerTiers[name] ? (
                                         <img
                                             src={getFeloTierImage(managerTiers[name])}
                                             alt={managerTiers[name] + " tier"}
@@ -457,7 +501,7 @@ export default function ManagerViewer() {
                 {managerTeams.length === 0 ? (
                     <p className="text-center text-slate-500">No teams found for this manager.</p>
                 ) : (
-                    <div className="mt-4">
+                    <div className="mt-4"> {/* Removed pb-12 */}
                         {/* Show 2025 team (current year) above collapsible if present */}
                         {managerTeams.some(team => team.season === "2025") && (
                             <div className="mb-4">
@@ -513,9 +557,10 @@ export default function ManagerViewer() {
                             className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!collapsed ? "opacity-100" : "opacity-0"}`}
                             style={{
                                 transitionProperty: "max-height, opacity",
-                                marginBottom: "32px",
+                                marginBottom: "16px", // Reduced from 48px
                                 minHeight: "1px",
-                                maxHeight: collapsed ? "0px" : undefined
+                                maxHeight: collapsed ? "0px" : undefined,
+                                paddingBottom: !collapsed ? "16px" : "0px" // Reduced from 24px
                             }}
                         >
                             <div ref={contentRef} className="flex flex-col gap-6 mt-2">

@@ -467,19 +467,19 @@ function StatsSection({
           </div>
           {/* Unique Ice Flavors */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Number of Unique Flavors Consumed</h3>
-            <p className="text-center text-slate-700 mb-4">{uniqueFlavorsCount}</p>
+            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Total Unique Flavors Consumed</h3>
+            <p className="text-center text-slate-700 mb-2 text-lg font-semibold">{uniqueFlavorsCount}</p>
           </div>
-        </div>
-        {/* Manager with Most Flavors - Simplified Grid for Mobile */}
-        <div className="grid grid-cols-1 gap-6 w-full">
-          {/* Manager with Most Flavors */}
+          {/* Most Flavors Consumed */}
           <div>
             <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Flavors Consumed</h3>
             {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
-              <p key={manager} className="text-center text-slate-700 mb-4">
-                {manager} ({flavorCount}- {flavors.join(", ")})
-              </p>
+              <div key={manager} className="text-center text-slate-700 mb-2 font-medium">
+                <span className="font-semibold">{manager}</span> <span className="text-slate-500">({flavorCount})</span>
+                <div className="mt-1 text-xs text-slate-600">
+                  {flavors.join(', ')}
+                </div>
+              </div>
             ))}
           </div>
         </div>

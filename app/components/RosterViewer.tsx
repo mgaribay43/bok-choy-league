@@ -8,16 +8,16 @@ import Link from "next/link";
 
 const slotColor = (slot: string) =>
   ({
-    QB: "bg-gradient-to-br from-orange-300 to-orange-500",
-    RB: "bg-gradient-to-br from-green-300 to-green-500",
-    WR: "bg-gradient-to-br from-blue-300 to-blue-500",
-    TE: "bg-gradient-to-br from-purple-300 to-purple-500",
-    K: "bg-gradient-to-br from-yellow-200 to-yellow-400",
-    DEF: "bg-gradient-to-br from-gray-300 to-gray-500",
-    "W/R": "bg-gradient-to-br from-pink-200 to-pink-400",
-    BN: "bg-gradient-to-br from-slate-200 to-slate-400",
-    IR: "bg-gradient-to-br from-red-200 to-red-400",
-  }[slot] || "bg-gradient-to-br from-slate-100 to-slate-300");
+    QB: "bg-gradient-to-br from-orange-800 to-orange-900",
+    RB: "bg-gradient-to-br from-green-800 to-green-900",
+    WR: "bg-gradient-to-br from-blue-800 to-blue-900",
+    TE: "bg-gradient-to-br from-purple-800 to-purple-900",
+    K: "bg-gradient-to-br from-yellow-800 to-yellow-900",
+    DEF: "bg-gradient-to-br from-gray-800 to-gray-900",
+    "W/R": "bg-gradient-to-br from-pink-800 to-pink-900",
+    BN: "bg-gradient-to-br from-slate-800 to-slate-900",
+    IR: "bg-gradient-to-br from-red-800 to-red-900",
+  }[slot] || "bg-gradient-to-br from-slate-800 to-slate-900");
 
 type CollapsibleSectionProps = {
   title: string;
@@ -34,9 +34,9 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }: Col
         className="flex items-center gap-2 mb-2 w-full text-left"
         onClick={() => setOpen((o) => !o)}
       >
-        <h2 className="text-2xl font-bold text-emerald-800">{title}</h2>
-        <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-semibold text-sm">{count}</span>
-        <span className="ml-auto text-emerald-600">{open ? "▲" : "▼"}</span>
+        <h2 className="text-2xl font-bold text-emerald-200">{title}</h2>
+        <span className="bg-emerald-900 text-emerald-200 px-3 py-1 rounded-full font-semibold text-sm">{count}</span>
+        <span className="ml-auto text-emerald-400">{open ? "▲" : "▼"}</span>
       </button>
       {open && children}
     </section>
@@ -223,24 +223,24 @@ export default function RosterPage() {
       {players.map((p) => (
         <div
           key={p.playerKey}
-          className="relative rounded-2xl shadow-xl border border-slate-200 bg-white/80 backdrop-blur-lg p-2 sm:p-5 flex flex-col items-center transition-transform hover:-translate-y-1 hover:shadow-emerald-300 cursor-pointer"
+          className="relative rounded-2xl shadow-xl border border-[#222] bg-[#232323] p-2 sm:p-5 flex flex-col items-center transition-transform hover:-translate-y-1 hover:shadow-emerald-900 cursor-pointer"
           onClick={() => onPlayerClick(p)}
         >
           <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 sm:px-4 sm:py-1 rounded-full text-xs sm:text-sm text-white font-bold shadow-lg ${slotColor(p.selectedPosition || p.position)}`}>
             {p.selectedPosition || p.position}
           </div>
           {p.headshotUrl ? (
-            <Image src={p.headshotUrl} alt={p.name} width={48} height={48} className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-emerald-100 shadow" />
+            <Image src={p.headshotUrl} alt={p.name} width={48} height={48} className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-emerald-900 shadow" />
           ) : (
-            <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-xl sm:text-3xl font-bold text-slate-600 border-2 sm:border-4 border-emerald-100 shadow">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-xl sm:text-3xl font-bold text-emerald-700 border-2 sm:border-4 border-emerald-900 shadow">
               {p.name.charAt(0)}
             </div>
           )}
-          <div className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-slate-800 text-center truncate w-full">{p.name}</div>
-          <div className="text-xs sm:text-sm text-slate-500 mb-1 sm:mb-2">{p.team} &middot; {p.position}</div>
+          <div className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-emerald-100 text-center truncate w-full">{p.name}</div>
+          <div className="text-xs sm:text-sm text-emerald-400 mb-1 sm:mb-2">{p.team} &middot; {p.position}</div>
           <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2">
-            <span className="text-emerald-600 font-bold text-base sm:text-xl">{p.stats?.fanPts != null ? p.stats.fanPts.toFixed(1) : "-"}</span>
-            <span className="text-xs text-slate-400">pts</span>
+            <span className="text-emerald-300 font-bold text-base sm:text-xl">{p.stats?.fanPts != null ? p.stats.fanPts.toFixed(1) : "-"}</span>
+            <span className="text-xs text-emerald-700">pts</span>
           </div>
         </div>
       ))}
@@ -248,26 +248,25 @@ export default function RosterPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100 flex flex-col items-center">
-      <div className="w-full bg-white/80 border-b border-emerald-100">
+    <div className="min-h-screen bg-[#181818] flex flex-col items-center">
+      <div className="w-full bg-[#232323] border-b border-[#222]">
         <div className="max-w-5xl mx-auto flex flex-col items-center px-8 py-6">
-          {/* Add year above the header */}
-          <div className="text-xl font-bold text-emerald-500 mb-2">{year}</div>
+          <div className="text-xl font-bold text-emerald-400 mb-2">{year}</div>
           <div className="flex items-center gap-4 mb-2">
             {teamLogo && (
-              <Image src={teamLogo} alt={`${teamName} Logo`} width={72} height={72} className="w-18 h-18 object-contain rounded-full border-4 border-emerald-200 shadow-xl" />
+              <Image src={teamLogo} alt={`${teamName} Logo`} width={72} height={72} className="w-18 h-18 object-contain rounded-full border-4 border-emerald-900 shadow-xl" />
             )}
             <div>
-              <h1 className="text-3xl font-extrabold text-emerald-700 mb-1">{teamName}</h1>
+              <h1 className="text-3xl font-extrabold text-emerald-200 mb-1">{teamName}</h1>
               <div className="flex items-center gap-2">
                 {managerImg && (
-                  <Image src={managerImg} alt={managerName} width={32} height={32} className="w-8 h-8 rounded-full border-2 border-emerald-300 shadow" />
+                  <Image src={managerImg} alt={managerName} width={32} height={32} className="w-8 h-8 rounded-full border-2 border-emerald-700 shadow" />
                 )}
-                <span className="font-medium text-slate-700 text-lg">
-                  <span className="text-emerald-600">Manager:</span>{" "}
+                <span className="font-medium text-emerald-400 text-lg">
+                  <span className="text-emerald-300">Manager:</span>{" "}
                   <Link
                     href={`/manager?name=${encodeURIComponent(managerName)}`}
-                    className="underline text-emerald-700 hover:text-emerald-900 transition"
+                    className="underline text-emerald-200 hover:text-emerald-400 transition"
                   >
                     {managerName}
                   </Link>
@@ -282,7 +281,7 @@ export default function RosterPage() {
                   key={w}
                   data-week={w}
                   className={`px-4 py-2 rounded-full font-semibold text-sm transition-all whitespace-nowrap ${
-                    week === w ? "bg-emerald-500 text-white shadow-lg" : "bg-white/80 text-emerald-700 hover:bg-emerald-100"
+                    week === w ? "bg-emerald-600 text-white shadow-lg" : "bg-[#232323] text-emerald-200 hover:bg-emerald-900"
                   }`}
                   onClick={() => setWeek(w)}
                 >
@@ -297,11 +296,11 @@ export default function RosterPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
-              <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+              <div className="w-16 h-16 border-4 border-emerald-300 border-t-emerald-600 rounded-full animate-spin"></div>
             </div>
           </div>
         )}
-        {error && <p className="text-center text-red-500 text-lg mt-10">{error}</p>}
+        {error && <p className="text-center text-red-400 text-lg mt-10">{error}</p>}
         {!loading && !error && (
           <>
             <CollapsibleSection title="Starters" count={starters.length} defaultOpen={true}>

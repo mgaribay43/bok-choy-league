@@ -100,7 +100,7 @@ export default function KeepersPage() {
     : teams;
 
   return (
-    <div className="max-w-7xl mx-auto p-3 sm:p-6">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-[#181818] min-h-screen">
       {/* Year Selector - Optimized for mobile */}
       <div className="flex justify-center mb-4 relative">
         <div
@@ -109,14 +109,14 @@ export default function KeepersPage() {
           onMouseLeave={() => setDropdownOpen(false)}
         >
           <button
-            className="text-2xl sm:text-4xl font-extrabold text-green-800 text-center mb-4 px-3 sm:px-4 py-2 bg-transparent border-none focus:outline-none flex items-center gap-2"
+            className="text-2xl sm:text-4xl font-extrabold text-emerald-200 text-center mb-4 px-3 sm:px-4 py-2 bg-[#232323] border border-[#333] rounded-lg focus:outline-none flex items-center gap-2"
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
             onClick={() => setDropdownOpen((open) => !open)}
           >
             {selectedYear} Keepers
             <svg
-              className={`w-5 h-5 sm:w-7 sm:h-7 text-green-800 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+              className={`w-5 h-5 sm:w-7 sm:h-7 text-emerald-200 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -126,7 +126,7 @@ export default function KeepersPage() {
             </svg>
           </button>
           <ul
-            className={`absolute left-1/2 -translate-x-1/2 mt-0 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 transition-all duration-200
+            className={`absolute left-1/2 -translate-x-1/2 mt-0 w-32 bg-[#232323] border border-[#333] rounded-lg shadow-lg z-10 transition-all duration-200
               ${dropdownOpen ? "block" : "hidden"}`}
             style={{ top: "100%" }}
             role="listbox"
@@ -134,7 +134,7 @@ export default function KeepersPage() {
             {availableYears.map((year) => (
               <li
                 key={year}
-                className={`px-4 py-2 cursor-pointer hover:bg-green-100 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-green-800" : ""}`}
+                className={`px-4 py-2 cursor-pointer hover:bg-emerald-900 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-emerald-200 bg-[#181818]" : "text-emerald-100"}`}
                 onClick={() => {
                   setSelectedYear(year);
                   setSelectedTeamId(null);
@@ -150,7 +150,7 @@ export default function KeepersPage() {
         </div>
       </div>
 
-      <p className="mb-6 sm:mb-8 text-center text-sm sm:text-base px-2">
+      <p className="mb-6 sm:mb-8 text-center text-sm sm:text-base px-2 text-emerald-300">
         Use this tool to help determine the player you wish to keep next season
       </p>
 
@@ -160,11 +160,11 @@ export default function KeepersPage() {
           <select
             value={selectedTeamId ?? ""}
             onChange={(e) => setSelectedTeamId(e.target.value || null)}
-            className="border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base shadow-sm w-full max-w-xs"
+            className="border border-[#333] rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base shadow-sm w-full max-w-xs bg-[#232323] text-emerald-100"
           >
-            <option value="">Show All Teams</option>
+            <option value="" className="bg-[#232323] text-emerald-100">Show All Teams</option>
             {teams.map((team) => (
-              <option key={team.id} value={team.id}>
+              <option key={team.id} value={team.id} className="bg-[#232323] text-emerald-100">
                 {team.name}
               </option>
             ))}
@@ -175,20 +175,20 @@ export default function KeepersPage() {
       {/* Key Legend - Mobile optimized grid */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium mb-6 sm:mb-8 px-2">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 sm:w-6 sm:h-6 border rounded bg-white flex-shrink-0" />
-          <span className="leading-tight">Undrafted</span>
+          <div className="w-4 h-4 sm:w-6 sm:h-6 border border-[#333] rounded bg-[#232323] flex-shrink-0" />
+          <span className="leading-tight text-emerald-100">Undrafted</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-green-100 border border-green-300 flex-shrink-0" />
-          <span className="leading-tight">Keeper Eligible</span>
+          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-emerald-900 border border-emerald-700 flex-shrink-0" />
+          <span className="leading-tight text-emerald-100">Keeper Eligible</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-red-100 border border-red-300 flex-shrink-0" />
-          <span className="leading-tight">Keeper Ineligible</span>
+          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-red-900 border border-red-700 flex-shrink-0" />
+          <span className="leading-tight text-emerald-100">Keeper Ineligible</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-yellow-200 border border-yellow-400 flex-shrink-0" />
-          <span className="leading-tight">Selected Keeper</span>
+          <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-yellow-700 border border-yellow-600 flex-shrink-0" />
+          <span className="leading-tight text-emerald-100">Selected Keeper</span>
         </div>
       </div>
 
@@ -200,9 +200,9 @@ export default function KeepersPage() {
           </div>
         </div>
       ) : error ? (
-        <p className="text-red-600 text-center text-sm sm:text-base px-2">Error: {error}</p>
+        <p className="text-red-400 text-center text-sm sm:text-base px-2">Error: {error}</p>
       ) : visibleTeams.length === 0 ? (
-        <p className="text-center italic text-gray-600 text-sm sm:text-base px-2">No teams found.</p>
+        <p className="text-center italic text-emerald-400 text-sm sm:text-base px-2">No teams found.</p>
       ) : (
         visibleTeams.length === 1 ? (
           <div className="flex justify-center">
@@ -213,7 +213,7 @@ export default function KeepersPage() {
               return (
                 <div
                   key={team.id}
-                  className="flex flex-col w-full max-w-xl border rounded-lg sm:rounded-md shadow bg-white p-4 sm:p-6"
+                  className="flex flex-col w-full max-w-xl border border-[#333] rounded-lg sm:rounded-md shadow bg-[#232323] p-4 sm:p-6"
                 >
                   {/* Team Header - Mobile optimized */}
                   <div className="flex flex-col items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
@@ -226,7 +226,7 @@ export default function KeepersPage() {
                         className="sm:w-20 sm:h-20 rounded-md"
                       />
                     )}
-                    <h2 className="text-xl sm:text-2xl font-semibold text-center px-2">{team.name}</h2>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-center px-2 text-emerald-200">{team.name}</h2>
                   </div>
 
                   {/* Players List - Single column on mobile, responsive grid */}
@@ -237,15 +237,15 @@ export default function KeepersPage() {
                       return (
                         <li
                           key={`${team.id}-${player.player_id || player.name}`}
-                          className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm
+                          className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm min-w-0
                             ${isKeeper
-                              ? "bg-yellow-200 border-yellow-400"
+                              ? "bg-yellow-700 border-yellow-600"
                               : player.draftPick
                                 ? player.draftPick.round >= 2
-                                  ? "bg-green-100 border-green-300"
-                                  : "bg-red-100 border-red-300"
-                                : "bg-white border-gray-200"
-                            } min-w-0`}
+                                  ? "bg-emerald-900 border-emerald-700"
+                                  : "bg-red-900 border-red-700"
+                                : "bg-[#232323] border-[#333]"
+                            }`}
                         >
                           {/* Player Image - Smaller on mobile */}
                           <Image
@@ -253,23 +253,23 @@ export default function KeepersPage() {
                             alt={player.name}
                             width={40}
                             height={40}
-                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-gray-100 flex-shrink-0"
+                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
                             unoptimized={false}
                           />
                           
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm sm:text-base truncate">{player.name}</p>
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">
+                            <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>
+                            <p className="text-xs sm:text-sm text-emerald-400 truncate">
                               {player.position} – {player.team_abbr}
                             </p>
                             {player.draftPick ? (
-                              <p className="text-xs sm:text-sm text-gray-500">
+                              <p className="text-xs sm:text-sm text-emerald-300">
                                 <span className="sm:hidden">R{player.draftPick.round}, P{player.draftPick.pick}</span>
                                 <span className="hidden sm:inline">Round {player.draftPick.round}, Pick {player.draftPick.pick}</span>
                               </p>
                             ) : (
-                              <p className="text-xs sm:text-sm text-gray-400 italic">Undrafted</p>
+                              <p className="text-xs sm:text-sm text-emerald-700 italic">Undrafted</p>
                             )}
                           </div>
                         </li>
@@ -289,7 +289,7 @@ export default function KeepersPage() {
               return (
                 <div
                   key={team.id}
-                  className="flex flex-col w-full h-full border rounded-lg sm:rounded-md shadow bg-white p-4 sm:p-6"
+                  className="flex flex-col w-full h-full border border-[#333] rounded-lg sm:rounded-md shadow bg-[#232323] p-4 sm:p-6"
                 >
                   {/* Team Header - Mobile optimized */}
                   <div className="flex flex-col items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
@@ -302,7 +302,7 @@ export default function KeepersPage() {
                         className="sm:w-20 sm:h-20 rounded-md"
                       />
                     )}
-                    <h2 className="text-xl sm:text-2xl font-semibold text-center px-2">{team.name}</h2>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-center px-2 text-emerald-200">{team.name}</h2>
                   </div>
 
                   {/* Players List - Single column on mobile, responsive grid */}
@@ -313,15 +313,15 @@ export default function KeepersPage() {
                       return (
                         <li
                           key={`${team.id}-${player.player_id || player.name}`}
-                          className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm
+                          className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm min-w-0
                             ${isKeeper
-                              ? "bg-yellow-200 border-yellow-400"
+                              ? "bg-yellow-700 border-yellow-600"
                               : player.draftPick
                                 ? player.draftPick.round >= 2
-                                  ? "bg-green-100 border-green-300"
-                                  : "bg-red-100 border-red-300"
-                                : "bg-white border-gray-200"
-                            } min-w-0`}
+                                  ? "bg-emerald-900 border-emerald-700"
+                                  : "bg-red-900 border-red-700"
+                                : "bg-[#232323] border-[#333]"
+                            }`}
                         >
                           {/* Player Image - Smaller on mobile */}
                           <Image
@@ -329,23 +329,23 @@ export default function KeepersPage() {
                             alt={player.name}
                             width={40}
                             height={40}
-                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-gray-100 flex-shrink-0"
+                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
                             unoptimized={false}
                           />
                           
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm sm:text-base truncate">{player.name}</p>
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">
+                            <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>
+                            <p className="text-xs sm:text-sm text-emerald-400 truncate">
                               {player.position} – {player.team_abbr}
                             </p>
                             {player.draftPick ? (
-                              <p className="text-xs sm:text-sm text-gray-500">
+                              <p className="text-xs sm:text-sm text-emerald-300">
                                 <span className="sm:hidden">R{player.draftPick.round}, P{player.draftPick.pick}</span>
                                 <span className="hidden sm:inline">Round {player.draftPick.round}, Pick {player.draftPick.pick}</span>
                               </p>
                             ) : (
-                              <p className="text-xs sm:text-sm text-gray-400 italic">Undrafted</p>
+                              <p className="text-xs sm:text-sm text-emerald-700 italic">Undrafted</p>
                             )}
                           </div>
                         </li>

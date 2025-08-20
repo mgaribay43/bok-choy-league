@@ -89,19 +89,15 @@ function EventsSlideshow({ events }: { events: Event[] }) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 pt-0">
-      {/* Larger header for home page slideshow */}
       <header className="text-center mb-6 mt-2">
-        <a
-          href="/events"
-          className="inline-block"
-        >
-          <h1 className="text-5xl font-extrabold text-green-800 tracking-tight hover:underline transition">
+        <a href="/events" className="inline-block">
+          <h1 className="text-5xl font-extrabold text-emerald-200 tracking-tight hover:underline transition">
             Upcoming Events
           </h1>
         </a>
       </header>
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-2xl bg-white shadow-lg border border-gray-200 rounded-none mb-8 overflow-hidden">
+        <div className="w-full max-w-2xl bg-[#232323] shadow-lg border border-[#333] rounded-xl mb-8 overflow-hidden">
           <div
             className="relative h-[400px]"
             onTouchStart={handleTouchStart}
@@ -115,18 +111,18 @@ function EventsSlideshow({ events }: { events: Event[] }) {
               className={`object-cover block absolute top-0 left-0 transition-opacity duration-700 ${isFading ? "opacity-0" : "opacity-100"}`}
               sizes="100vw"
             />
-            <div className={`absolute bottom-0 left-0 w-full bg-black bg-opacity-70 text-white px-6 py-4 transition-opacity duration-700 ${isFading ? "opacity-0" : "opacity-100"}`}>
-              <h2 className="text-2xl font-bold mb-1">{event.name}</h2>
+            <div className={`absolute bottom-0 left-0 w-full bg-[#181818]/80 text-emerald-100 px-6 py-4 transition-opacity duration-700 ${isFading ? "opacity-0" : "opacity-100"}`}>
+              <h2 className="text-2xl font-bold mb-1 text-emerald-200">{event.name}</h2>
               <p className="text-base mb-1">
-                <strong>Date:</strong> {event.date}
+                <strong>Date:</strong> <span className="text-emerald-300">{event.date}</span>
               </p>
               <EventLocation location={event.location} eventId={event.id} />
-              <p className="text-sm mt-2">{event.description}</p>
+              <p className="text-sm mt-2 text-emerald-400">{event.description}</p>
             </div>
             <a
               href={`/calendar/${event.name.replace(/\s+/g, "_")}.ics`}
               download={`${event.name.replace(/\s+/g, "_")}.ics`}
-              className="absolute top-4 right-4 md:hidden bg-black text-white rounded-full p-2 shadow-lg hover:bg-green-800 transition"
+              className="absolute top-4 right-4 md:hidden bg-emerald-900 text-emerald-100 rounded-full p-2 shadow-lg hover:bg-emerald-700 transition"
               aria-label="Add to Apple Calendar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -138,13 +134,12 @@ function EventsSlideshow({ events }: { events: Event[] }) {
             </a>
           </div>
         </div>
-        {/* Centered slideshow dots below the card */}
         <div className="flex justify-center mt-[-18px] mb-4">
           <div className="flex gap-1">
             {events.map((_, idx) => (
               <button
                 key={idx}
-                className={`w-2 h-2 rounded-full ${idx === current ? "bg-green-600" : "bg-gray-400"}`}
+                className={`w-2 h-2 rounded-full ${idx === current ? "bg-emerald-600" : "bg-emerald-900"}`}
                 onClick={() => {
                   setIsFading(true);
                   setTimeout(() => {
@@ -199,7 +194,7 @@ function EventLocation({ location, eventId }: { location: string; eventId: numbe
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline text-green-200 hover:text-green-400"
+          className="underline text-emerald-300 hover:text-emerald-400"
         >
           {address}
         </a>
@@ -208,18 +203,15 @@ function EventLocation({ location, eventId }: { location: string; eventId: numbe
   }
   return (
     <p className="text-sm mb-1">
-      <strong>Location:</strong> {location}
+      <strong>Location:</strong> <span className="text-emerald-300">{location}</span>
     </p>
   );
 }
 
 export default function Events({ soonestOnly = false, eventsSlideshow = false }: EventsProps) {
   const events: Event[] = eventsData.Events;
-
-  // Filter out events with dates in the past
   const today = new Date();
   const upcomingEvents = events.filter(event => {
-    // Assumes MM-DD-YYYY format
     const [month, day, year] = event.date.split("-");
     const eventDate = new Date(`${year}-${month}-${day}T00:00:00`);
     return eventDate >= today;
@@ -237,13 +229,12 @@ export default function Events({ soonestOnly = false, eventsSlideshow = false }:
 
   return (
     <div className="max-w-3xl mx-auto px-4 pt-0">
-      {/* Header */}
       <header className="text-center mb-8 mt-8">
-        <h1 className="text-4xl font-extrabold text-green-800 mb-2 tracking-tight">
+        <h1 className="text-4xl font-extrabold text-emerald-200 mb-2 tracking-tight">
           Upcoming Events
         </h1>
         {!soonestOnly && (
-          <p className="text-base text-gray-600">
+          <p className="text-base text-emerald-400">
             Stay up to date with all upcoming league activities and deadlines.
           </p>
         )}
@@ -252,7 +243,7 @@ export default function Events({ soonestOnly = false, eventsSlideshow = false }:
         {eventsToRender.map((event) => (
           <div
             key={event.id}
-            className="w-full max-w-2xl bg-white shadow-lg border border-gray-200 rounded-none mb-2 overflow-hidden"
+            className="w-full max-w-2xl bg-[#232323] shadow-lg border border-[#333] rounded-xl mb-2 overflow-hidden"
           >
             <div className="relative h-[400px]">
               <Image
@@ -262,18 +253,18 @@ export default function Events({ soonestOnly = false, eventsSlideshow = false }:
                 className="object-cover block"
                 sizes="100vw"
               />
-              <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-70 text-white px-6 py-4">
-                <h2 className="text-2xl font-bold mb-1">{event.name}</h2>
+              <div className="absolute bottom-0 left-0 w-full bg-[#181818]/80 text-emerald-100 px-6 py-4">
+                <h2 className="text-2xl font-bold mb-1 text-emerald-200">{event.name}</h2>
                 <p className="text-base mb-1">
-                  <strong>Date:</strong> {event.date}
+                  <strong>Date:</strong> <span className="text-emerald-300">{event.date}</span>
                 </p>
                 <EventLocation location={event.location} eventId={event.id} />
-                <p className="text-sm mt-2">{event.description}</p>
+                <p className="text-sm mt-2 text-emerald-400">{event.description}</p>
               </div>
               <a
                 href={`/calendar/${event.name.replace(/\s+/g, "_")}.ics`}
                 download={`${event.name.replace(/\s+/g, "_")}.ics`}
-                className="absolute top-4 right-4 md:hidden bg-black text-white rounded-full p-2 shadow-lg hover:bg-green-800 transition"
+                className="absolute top-4 right-4 md:hidden bg-emerald-900 text-emerald-100 rounded-full p-2 shadow-lg hover:bg-emerald-700 transition"
                 aria-label="Add to Apple Calendar"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">

@@ -29,22 +29,20 @@ export default function Navbar() {
     : user?.email?.split('@')[0];
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-700 to-teal-700 shadow-lg transition-all duration-300 w-screen">
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-[#181818] to-[#232323] shadow-lg transition-all duration-300 w-screen">
       <div className="w-full px-2 sm:px-4 lg:px-0">
         <div className="flex justify-between items-center h-16 lg:h-18">
           {/* Logo */}
           <Link href="/" className="group" onClick={() => setIsOpen(false)}>
             <div className="flex items-center space-x-3">
               <div className="relative">
-                {/* Removed hover effect from emoji */}
                 <div className="text-3xl">🥬</div>
-                {/* Removed the animated background as well */}
               </div>
               <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-200">
+                <h1 className="text-xl lg:text-2xl font-bold text-emerald-100 group-hover:text-white transition-colors duration-200">
                   The Bok Choy League
                 </h1>
-                <p className="text-xs text-emerald-200 font-medium hidden sm:block">Fantasy Football</p>
+                <p className="text-xs text-emerald-400 font-medium hidden sm:block">Fantasy Football</p>
               </div>
             </div>
           </Link>
@@ -52,7 +50,7 @@ export default function Navbar() {
           {!user ? (
             <Link
               href="/login"
-              className="px-4 py-2 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 font-medium"
+              className="px-4 py-2 rounded-xl text-emerald-100 bg-emerald-700 hover:bg-emerald-800 transition-all duration-200 font-medium"
             >
               Sign In
             </Link>
@@ -77,7 +75,7 @@ export default function Navbar() {
                   }}
                 >
                   <button
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-emerald-100 hover:bg-[#232323] hover:text-emerald-200 transition-all duration-200 font-medium"
                     tabIndex={0}
                     aria-haspopup="true"
                     aria-expanded={isLeagueOpen}
@@ -87,27 +85,54 @@ export default function Navbar() {
                     <ChevronUp size={16} className={`${isLeagueOpen ? 'rotate-180' : ''} transition-transform duration-200`} />
                   </button>
                   <div
-                    className={`absolute right-0 top-full mt-2 w-56 transition-all duration-200 transform ${
+                    className={`absolute right-0 top-full mt-2 w-72 transition-all duration-200 transform ${
                       isLeagueOpen
                         ? 'opacity-100 visible translate-y-0 pointer-events-auto'
                         : 'opacity-0 invisible translate-y-2 pointer-events-none'
                     }`}
                   >
-                    <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden backdrop-blur-sm">
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
-                        <p className="text-sm font-semibold text-emerald-800">League</p>
+                    <div className="bg-[#232323] rounded-2xl shadow-2xl border border-[#333] overflow-hidden backdrop-blur-sm">
+                      <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80 flex items-center gap-2">
+                        <Users size={20} />
+                        League
                       </div>
-                      <div className="py-2">
-                        <DropdownLink href="/standings" icon={<Trophy size={16} className="text-yellow-600" />} text="Standings" bg="bg-yellow-100" />
-                        <DropdownLink href="/draft" icon={<span className="text-purple-600 text-sm font-bold">📋</span>} text="Draft Results" bg="bg-purple-100" />
-                        <DropdownLink href="/keepers" icon={<span className="text-orange-600 text-sm font-bold">🔒</span>} text="Keeper Utility" bg="bg-orange-100" />
-                        {/* Managers page link */}
-                        <DropdownLink
+                      <div className="flex flex-col">
+                        <Link
+                          href="/standings"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-yellow-900 rounded">
+                            <Trophy size={16} />
+                          </div>
+                          <span className="font-medium">Standings</span>
+                        </Link>
+                        <Link
+                          href="/draft"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-purple-900 rounded">
+                            <span className="text-xs">📋</span>
+                          </div>
+                          <span className="font-medium">Draft Results</span>
+                        </Link>
+                        <Link
+                          href="/keepers"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-orange-900 rounded">
+                            <span className="text-xs">🔒</span>
+                          </div>
+                          <span className="font-medium">Keeper Utility</span>
+                        </Link>
+                        <Link
                           href="/manager"
-                          icon={<Users size={16} className="text-white" />}
-                          text="Managers"
-                          bg="bg-emerald-100"
-                        />
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-emerald-900 rounded">
+                            <Users size={16} className="text-emerald-100" />
+                          </div>
+                          <span className="font-medium">Managers</span>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -115,7 +140,7 @@ export default function Navbar() {
 
                 {/* User Name */}
                 <div
-                  className="ml-6 px-4 py-2 rounded-xl text-white font-semibold relative cursor-pointer transition-all duration-300"
+                  className="ml-6 px-4 py-2 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
                   onMouseEnter={() => setIsNameHovered(true)}
                   onMouseLeave={() => setIsNameHovered(false)}
                 >
@@ -147,9 +172,9 @@ export default function Navbar() {
                 aria-label="Toggle Menu"
               >
                 <div className="relative w-6 h-6">
-                  <span className={`block absolute left-0 w-6 h-0.5 bg-white rounded transition-transform transition-opacity duration-300 ${isOpen ? 'rotate-45 translate-y-3' : 'rotate-0 translate-y-1'}`} />
-                  <span className={`block absolute left-0 w-6 h-0.5 bg-white rounded transition-opacity transition-transform duration-300 ${isOpen ? 'opacity-0' : 'opacity-100 translate-y-3'}`} />
-                  <span className={`block absolute left-0 w-6 h-0.5 bg-white rounded transition-transform transition-opacity duration-300 ${isOpen ? '-rotate-45 translate-y-3' : 'rotate-0 translate-y-5'}`} />
+                  <span className={`block absolute left-0 w-6 h-0.5 bg-emerald-100 rounded transition-transform transition-opacity duration-300 ${isOpen ? 'rotate-45 translate-y-3' : 'rotate-0 translate-y-1'}`} />
+                  <span className={`block absolute left-0 w-6 h-0.5 bg-emerald-100 rounded transition-opacity transition-transform duration-300 ${isOpen ? 'opacity-0' : 'opacity-100 translate-y-3'}`} />
+                  <span className={`block absolute left-0 w-6 h-0.5 bg-emerald-100 rounded transition-transform transition-opacity duration-300 ${isOpen ? '-rotate-45 translate-y-3' : 'rotate-0 translate-y-5'}`} />
                 </div>
               </button>
             </>
@@ -159,14 +184,14 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {user && (
           <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-white/20">
-              <div className="px-4 py-4 text-white font-bold text-lg border-b border-white/10 bg-emerald-700/80">{userDisplay}</div>
+            <div className="bg-[#232323] backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-[#333]">
+              <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80">{userDisplay}</div>
               
               {/* League Section - moved to top */}
-              <div className="border-b border-white/10">
+              <div className="border-b border-[#333]">
                 <button
                   onClick={() => setIsLeagueOpen(!isLeagueOpen)}
-                  className="flex items-center justify-between w-full px-4 py-4 text-white hover:bg-white/20 transition-colors"
+                  className="flex items-center justify-between w-full px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <Users size={20} />
@@ -179,9 +204,9 @@ export default function Navbar() {
                     <Link
                       href="/standings"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center bg-yellow-500/20 rounded">
+                      <div className="w-6 h-6 flex items-center justify-center bg-yellow-900 rounded">
                         <Trophy size={16} />
                       </div>
                       <span className="font-medium">Standings</span>
@@ -189,9 +214,9 @@ export default function Navbar() {
                     <Link
                       href="/draft"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center bg-purple-500/20 rounded">
+                      <div className="w-6 h-6 flex items-center justify-center bg-purple-900 rounded">
                         <span className="text-xs">📋</span>
                       </div>
                       <span className="font-medium">Draft Results</span>
@@ -199,9 +224,9 @@ export default function Navbar() {
                     <Link
                       href="/keepers"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center bg-orange-500/20 rounded">
+                      <div className="w-6 h-6 flex items-center justify-center bg-orange-900 rounded">
                         <span className="text-xs">🔒</span>
                       </div>
                       <span className="font-medium">Keeper Utility</span>
@@ -209,10 +234,10 @@ export default function Navbar() {
                     <Link
                       href="/manager"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center bg-emerald-500/20 rounded">
-                        <Users size={16} className="text-white" />
+                      <div className="w-6 h-6 flex items-center justify-center bg-emerald-900 rounded">
+                        <Users size={16} className="text-emerald-100" />
                       </div>
                       <span className="font-medium">Managers</span>
                     </Link>
@@ -245,7 +270,7 @@ export default function Navbar() {
         {/* Floating mobile menu button */}
         <button
           type="button"
-          className={`fixed bottom-6 right-6 z-50 md:hidden bg-emerald-700 hover:bg-emerald-800 text-white rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+          className={`fixed bottom-6 right-6 z-50 md:hidden bg-emerald-900 hover:bg-emerald-800 text-emerald-100 rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
           aria-label={isOpen ? "Close Menu" : "Open Menu"}
           onClick={() => setIsOpen((prev) => !prev)}
           style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
@@ -253,19 +278,19 @@ export default function Navbar() {
           <span className="relative w-6 h-6 flex items-center justify-center">
             {/* Top bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
                 ${isOpen ? 'rotate-45 top-2.5' : 'rotate-0 top-1'}
               `}
             />
             {/* Middle bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
                 ${isOpen ? 'opacity-0' : 'opacity-100 top-3'}
               `}
             />
             {/* Bottom bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-white rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
                 ${isOpen ? '-rotate-45 top-2.5' : 'rotate-0 top-5'}
               `}
             />
@@ -281,7 +306,7 @@ function NavLink({ href, icon, text }: { href: string; icon: React.ReactNode; te
   return (
     <Link
       href={href}
-      className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white hover:bg-white/20 hover:text-emerald-100 transition-all duration-200 font-medium"
+      className="flex items-center space-x-2 px-4 py-2 rounded-xl text-emerald-100 hover:bg-[#232323] hover:text-emerald-200 transition-all duration-200 font-medium"
     >
       {icon}
       <span>{text}</span>
@@ -294,7 +319,7 @@ function DropdownLink({ href, icon, text, bg }: { href: string; icon: React.Reac
   return (
     <Link
       href={href}
-      className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors duration-150"
+      className={`flex items-center space-x-3 px-4 py-3 text-emerald-100 hover:bg-emerald-900 hover:text-emerald-200 transition-colors duration-150 ${bg} rounded-lg`}
     >
       <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center`}>{icon}</div>
       <span className="font-medium">{text}</span>
@@ -320,7 +345,7 @@ function MobileLink({
     <Link
       href={href}
       onClick={closeMenu}
-      className="flex items-center space-x-3 px-4 py-4 text-white hover:bg-white/20 transition-colors border-b border-white/10"
+      className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
     >
       <div className={`w-6 h-6 rounded flex items-center justify-center ${extraIconBg ?? ''}`}>{icon}</div>
       <span className="font-medium">{text}</span>

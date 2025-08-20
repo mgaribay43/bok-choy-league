@@ -116,7 +116,9 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   const videoId = video.id?.trim() ?? "";
   const isExpanded = expandedVideo === videoId;
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-emerald-100 flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-300">
+    <div className="rounded-xl shadow-lg border border-[#444] flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-900"
+      style={{ backgroundColor: "#272828" }}
+    >
       <div className="w-full mb-3">
         {/* Thumbnail or embedded video */}
         {videoId ? (
@@ -144,25 +146,25 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
             ></iframe>
           )
         ) : (
-          <div className="w-full h-[175px] flex items-center justify-center bg-slate-100 rounded-lg text-slate-400 font-bold text-xl">
+          <div className="w-full h-[175px] flex items-center justify-center bg-[#232323] rounded-lg text-emerald-400 font-bold text-xl">
             No Video
           </div>
         )}
       </div>
       {/* Player and manager info */}
-      <h2 className="text-lg font-bold text-emerald-700 text-center mb-1 w-full">{video.player}</h2>
-      <div className="text-sm text-slate-600 text-center mb-1">
-        <span className="font-semibold text-emerald-600">Manager:</span>{" "}
+      <h2 className="text-lg font-bold text-emerald-100 text-center mb-1 w-full">{video.player}</h2>
+      <div className="text-sm text-emerald-300 text-center mb-1">
+        <span className="font-semibold text-emerald-200">Manager:</span>{" "}
         <Link
           href={`/manager?name=${encodeURIComponent(getManagerKeyFromDisplayName(video.manager))}`}
-          className="underline text-emerald-700 hover:text-emerald-900 transition"
+          className="underline text-emerald-200 hover:text-emerald-400 transition"
         >
           {video.manager}
         </Link>
       </div>
-      <div className="flex justify-center gap-2 text-xs text-slate-500 mb-2">
+      <div className="flex justify-center gap-2 text-xs text-emerald-400 mb-2">
         {video.week && (
-          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">{video.week}</span>
+          <span className="bg-emerald-900 text-emerald-100 px-2 py-0.5 rounded-full font-semibold">{video.week}</span>
         )}
         <span>{video.date}</span>
       </div>
@@ -177,8 +179,8 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
             className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
             style={{
               background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
-              color: "#222",
-              border: "1px solid #ddd"
+              color: "#353535ff",
+              border: "1px solid #141414ff"
             }}
           >
             {video.flavor}
@@ -188,7 +190,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
             className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
             style={{
               background: "#ab2308",
-              color: "#222",
+              color: "#ffffffff",
               border: "1px solid #ddd"
             }}
           >
@@ -198,8 +200,8 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
           <span
             className="mt-2 px-3 py-1 rounded-full font-bold text-xs"
             style={{
-              background: "#fdce5b",
-              color: "#222",
+              background: "#ffbc13ff",
+              color: "#ffffffff",
               border: "1px solid #ddd"
             }}
           >
@@ -343,32 +345,32 @@ function StatsSection({
 }: any) {
   return (
     <div className="w-full mb-6">
-      <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-100 w-full">
+      <div className="bg-[#232323] rounded-lg p-6 border border-[#333] w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Top Managers */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Iced Managers</h3>
-            <ul className="list-decimal list-inside text-slate-700 text-center">
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Iced Managers</h3>
+            <ul className="list-decimal list-inside text-emerald-200 text-center">
               {stats.topManagers.map(([manager, count]: any) => (
                 <li key={manager}>
                   <button
-                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
                     onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
                   >
                     {manager}
-                  </button> ({count})
+                  </button> <span className="text-emerald-200">({count})</span>
                 </li>
               ))}
             </ul>
           </div>
           {/* Bottom Managers */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Least Iced Managers</h3>
-            <ul className="list-decimal list-inside text-slate-700 text-center">
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Least Iced Managers</h3>
+            <ul className="list-decimal list-inside text-emerald-200 text-center">
               {stats.bottomManagers.map(([manager, count]: any) => (
                 <li key={manager}>
                   <button
-                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
                     onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
                   >
                     {manager}
@@ -379,12 +381,12 @@ function StatsSection({
           </div>
           {/* Top Players */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices by a Player</h3>
-            <ul className="list-decimal list-inside text-slate-700 text-center">
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Ices by a Player</h3>
+            <ul className="list-decimal list-inside text-emerald-200 text-center">
               {stats.topPlayers.map(([player, count]: any) => (
                 <li key={player}>
                   <button
-                    className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
                     onClick={() => { handlePlayerClick(player); scrollToVideos(); }}
                   >
                     {player}
@@ -395,20 +397,20 @@ function StatsSection({
           </div>
           {/* Manager with Most Consecutive Weeks Iced */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Consecutive Weeks</h3>
-            <p className="text-center text-slate-700">
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Consecutive Weeks</h3>
+            <p className="text-center text-emerald-400">
               {managerWithMostConsecutiveWeeks.manager} ({managerWithMostConsecutiveWeeks.consecutiveWeeks} consecutive weeks)
             </p>
             {managerWithMostConsecutiveWeeks.weeks && (
-              <p className="text-xs text-center text-slate-500 mt-1">
+              <p className="text-xs text-center text-emerald-200 mt-1">
                 {managerWithMostConsecutiveWeeks.weeks}
               </p>
             )}
           </div>
           {/* Most Ices in a Single Week */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Ices in a Single Week</h3>
-            <ol className="list-decimal list-inside text-slate-700 text-center">
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Ices in a Single Week</h3>
+            <ol className="list-decimal list-inside text-emerald-200 text-center">
               {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
                 .flatMap(([manager, weeks]) => (
                   Object.entries(weeks)
@@ -421,7 +423,7 @@ function StatsSection({
                 .map(({ manager, weekSeason, count, idx }) => (
                   <li key={manager + weekSeason + idx}>
                     <button
-                      className="font-semibold text-emerald-700 hover:underline focus:outline-none"
+                      className="font-semibold text-emerald-400 hover:underline focus:outline-none"
                       onClick={() => {
                         setSelectedManager(manager);
                         setSelectedSeason(weekSeason.split('|')[1]);
@@ -441,7 +443,7 @@ function StatsSection({
                       {manager}
                     </button>{" - "}
                     <button
-                      className="hover:underline focus:outline-none text-emerald-700"
+                      className="hover:underline focus:outline-none text-emerald-400"
                       onClick={() => {
                         setSelectedSeason(weekSeason.split('|')[1]);
                         setSelectedWeek(weekSeason.split('|')[0]);
@@ -467,16 +469,16 @@ function StatsSection({
           </div>
           {/* Unique Ice Flavors */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Total Unique Flavors Consumed</h3>
-            <p className="text-center text-slate-700 mb-2 text-lg font-semibold">{uniqueFlavorsCount}</p>
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Total Unique Flavors Consumed</h3>
+            <p className="text-center text-emerald-400 mb-2 text-lg font-semibold">{uniqueFlavorsCount}</p>
           </div>
           {/* Most Flavors Consumed */}
           <div>
-            <h3 className="text-emerald-700 font-semibold mb-2 text-center text-base">Most Flavors Consumed</h3>
+            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Flavors Consumed</h3>
             {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
-              <div key={manager} className="text-center text-slate-700 mb-2 font-medium">
-                <span className="font-semibold">{manager}</span> <span className="text-slate-500">({flavorCount})</span>
-                <div className="mt-1 text-xs text-slate-600">
+              <div key={manager} className="text-center text-emerald-400 mb-2 font-medium">
+                <span className="font-semibold">{manager}</span> <span className="text-emerald-200">({flavorCount})</span>
+                <div className="mt-1 text-xs text-emerald-200">
                   {flavors.join(', ')}
                 </div>
               </div>
@@ -530,7 +532,7 @@ function FiltersSection({
   const ResetBtn = ({ onClick }: { onClick: () => void }) => (
     <button
       type="button"
-      className="sm:hidden ml-2 mt-0 px-3 py-1 rounded-lg text-xs bg-slate-200 text-slate-700 hover:bg-slate-400 border border-slate-300 flex items-center"
+      className="sm:hidden ml-2 mt-0 px-3 py-1 rounded-lg text-xs bg-[#333] text-emerald-200 hover:bg-[#444] border border-[#333] flex items-center"
       onClick={onClick}
       aria-label="Reset"
       title="Reset"
@@ -594,8 +596,7 @@ function FiltersSection({
         key={option}
         value={option}
         className={({ active }) =>
-          `cursor-pointer select-none px-3 py-2 ${active ? "bg-emerald-100 text-emerald-700" : "text-slate-700"
-          }`
+          `cursor-pointer select-none px-3 py-2 ${active ? "bg-emerald-100 text-emerald-700" : "text-emerald-200"}`
         }
       >
         {option}
@@ -622,9 +623,9 @@ function FiltersSection({
 
     return (
       <div className="flex flex-col sm:mr-6 items-start mb-2 ml-2 sm:mb-0 sm:w-48">
+        {/* --- Dropdown label --- */}
         <label
-          className={`block text-xs font-semibold mb-1 sm:mb-0 ${grayOut ? "text-gray-400" : "text-emerald-700"
-            }`}
+          className={`block text-xs font-semibold mb-1 sm:mb-0 ${grayOut ? "text-emerald-300" : "text-emerald-200"}`}
         >
           {label}
         </label>
@@ -635,8 +636,9 @@ function FiltersSection({
                 <>
                   <Listbox.Button
                     ref={buttonRef}
-                    className={`w-full px-3 py-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 text-left ${grayOut ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
-                      }`}
+                    className={`w-full px-3 py-2 rounded-lg border border-[#333] bg-[#181818] text-emerald-400 text-left ${
+                      grayOut ? "bg-gray-800 text-emerald-300 cursor-not-allowed" : ""
+                    }`}
                     style={{ minHeight: '40px' }}
                   >
                     {value}
@@ -644,7 +646,7 @@ function FiltersSection({
                   {open &&
                     ReactDOM.createPortal(
                       <Listbox.Options
-                        className="absolute w-48 bg-white border border-emerald-200 rounded-lg shadow-lg z-[9999] max-h-60 overflow-y-auto"
+                        className="absolute w-48 bg-[#181818] border border-[#333] rounded-lg shadow-lg z-[99999] max-h-60 overflow-y-auto"
                         style={{
                           left: buttonRef.current
                             ? buttonRef.current.getBoundingClientRect().left
@@ -672,7 +674,7 @@ function FiltersSection({
 
   // --- Render Filter Dropdowns ---
   return (
-    <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full justify-center mt-0 gap-3
+    <div className={`overflow-hidden transition-all duration-500 ease-in-out w-full justify-center mb-2 gap-3
       ${filtersExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}
       sm:max-h-none sm:opacity-100 sm:flex sm:flex-row flex-col`}
       style={{ transitionProperty: "max-height, opacity" }}
@@ -720,7 +722,7 @@ function FiltersSection({
       <div className="sm:w-auto flex justify-center sm:items-end mt-2 mb-1.5 sm:mt-0">
         <div className="sm:flex-row items-center justify-center">
           <button
-            className="bg-slate-400 text-black px-3 py-2.5 rounded text-xs hover:bg-slate-600 whitespace-nowrap"
+            className="bg-[#333] text-emerald-200 px-3 py-2.5 rounded text-xs hover:bg-[#444] whitespace-nowrap border border-[#333]"
             onClick={() => handleFullReset(
               setSelectedManager,
               setSelectedSeason,
@@ -856,7 +858,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // =======================
   return (
     <>
-      <div className={latestOnly ? "w-full flex flex-col items-center" : "min-h-screen flex flex-col items-center"}>
+      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#181818]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
         {/* Header and Stats */}
         {latestOnly ? (
           <button
@@ -867,13 +869,16 @@ export default function Ices({ latestOnly = false }: IcesProps) {
             Latest Ice
           </button>
         ) : (
-          <div className="w-full bg-white/80 border-b border-emerald-100">
+          <div className="w-full bg-[#232323] border-b border-[#444]">
             <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col items-center">
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700 mb-2 text-center">Ices</h1>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-100 mb-2 text-center">Ices</h1>
               <div className="w-full">
                 {/* Mobile toggle button for stats */}
-                <button className="sm:hidden w-full flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-lg"
-                  onClick={() => setStatsExpanded(prev => !prev)} aria-expanded={statsExpanded}>
+                <button
+                  className="sm:hidden w-full flex items-center justify-center bg-[#232323] border border-[#444] rounded-lg px-4 py-2 mb-2 font-bold text-emerald-100 text-lg"
+                  onClick={() => setStatsExpanded(prev => !prev)}
+                  aria-expanded={statsExpanded}
+                >
                   <span>{statsExpanded ? "Hide Records" : "Show Records"}</span>
                   <span className="ml-2">{statsExpanded ? <ChevronUp /> : <ChevronDown />}</span>
                 </button>
@@ -921,8 +926,11 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 videos={videos}
               />
               {/* Mobile filters toggle button */}
-              <button className="sm:hidden w-full flex items-center justify-center bg-white border border-emerald-200 rounded-lg px-4 py-2 mb-2 font-bold text-emerald-700 text-base transition-all duration-300"
-                onClick={() => setFiltersExpanded(prev => !prev)} aria-expanded={filtersExpanded}>
+              <button
+                className="sm:hidden w-full flex items-center justify-center bg-[#232323] border border-[#444] rounded-lg px-4 py-2 mb-2 font-bold text-emerald-100 text-base transition-all duration-300"
+                onClick={() => setFiltersExpanded(prev => !prev)}
+                aria-expanded={filtersExpanded}
+              >
                 <span>{filtersExpanded ? "Hide Filters" : "Show Filters"}</span>
               </button>
             </div>
@@ -964,7 +972,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     ref={el => { seasonRefs.current[season] = el; }}
                   >
                     {/* Season header with collapse toggle */}
-                    <button className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-1 font-bold text-emerald-700 text-lg transition hover:bg-emerald-100"
+                    <button className="w-full flex items-center justify-between bg-[#232323] border border-[#444] rounded-lg px-4 py-2 mb-1 font-bold text-emerald-100 text-lg transition hover:bg-[#333]"
                       onClick={() => setCollapsedSeasons(prev => ({ ...prev, [season]: !prev[season] }))}>
                       <span>{season}</span>
                       <span className="ml-2">{isCollapsed ? "▼" : "▲"}</span>

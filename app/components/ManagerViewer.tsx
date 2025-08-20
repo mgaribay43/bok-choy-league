@@ -501,7 +501,7 @@ export default function ManagerViewer() {
                 {managerTeams.length === 0 ? (
                     <p className="text-center text-slate-500">No teams found for this manager.</p>
                 ) : (
-                    <div className="mt-4">
+                    <div className="mt-4"> {/* Removed pb-12 */}
                         {/* Show 2025 team (current year) above collapsible if present */}
                         {managerTeams.some(team => team.season === "2025") && (
                             <div className="mb-4">
@@ -557,9 +557,10 @@ export default function ManagerViewer() {
                             className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!collapsed ? "opacity-100" : "opacity-0"}`}
                             style={{
                                 transitionProperty: "max-height, opacity",
-                                marginBottom: "32px",
+                                marginBottom: "16px", // Reduced from 48px
                                 minHeight: "1px",
-                                maxHeight: collapsed ? "0px" : undefined
+                                maxHeight: collapsed ? "0px" : undefined,
+                                paddingBottom: !collapsed ? "16px" : "0px" // Reduced from 24px
                             }}
                         >
                             <div ref={contentRef} className="flex flex-col gap-6 mt-2">

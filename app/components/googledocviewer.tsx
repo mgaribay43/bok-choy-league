@@ -13,28 +13,28 @@ const GoogleDocViewer = ({ docId }: GoogleDocViewerProps) => {
   const viewUrl = `https://docs.google.com/document/d/${docId}/view`;
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-white z-0">
+    <div className="fixed inset-0 w-full h-full z-0 bg-[#181818]">
       {/* View Fullscreen Link */}
       <p className="text-center mb-4 pt-6">
         <a
           href={viewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-green-700 hover:text-green-900 font-medium"
+          className="text-emerald-300 hover:text-emerald-400 font-medium"
         >
           View in fullscreen
         </a>
       </p>
 
       {/* Iframe container without refresh button */}
-      <div className="relative w-full h-[92vh]">
+      <div className="relative w-full h-[92vh] bg-[#232323] rounded-md shadow-lg">
         {/* Embedded Google Doc */}
         <iframe
           key={refreshKey}
           src={embedUrl}
           className="absolute top-0 left-0 w-full h-full rounded-md border-0"
           allowFullScreen
-          style={{ border: 'none' }}
+          style={{ border: 'none', background: '#232323' }}
         ></iframe>
       </div>
     </div>

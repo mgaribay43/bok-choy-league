@@ -299,12 +299,12 @@ export default function ManagerViewer() {
         const sortedManagers = [...managerNames].sort((a, b) => (managerScores[b] ?? 0) - (managerScores[a] ?? 0));
 
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center">
-                <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-xl w-full border border-emerald-100">
-                    <h1 className="text-4xl font-extrabold text-emerald-700 mb-6 text-center tracking-tight drop-shadow">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+                <div className="bg-[#232323] rounded-2xl shadow-2xl p-10 max-w-xl w-full border border-[#333]">
+                    <h1 className="text-4xl font-extrabold text-emerald-200 mb-6 text-center tracking-tight drop-shadow">
                         League Managers
                     </h1>
-                    <p className="text-center text-slate-600 mb-8 text-lg">
+                    <p className="text-center text-emerald-400 mb-8 text-lg">
                         Select a manager below to view their trophy case, team history, and more!
                     </p>
                     <ul className="grid grid-cols-2 gap-6 items-center justify-center">
@@ -312,7 +312,7 @@ export default function ManagerViewer() {
                             <li key={name} className="flex flex-col items-center">
                                 <Link
                                     href={`/manager?name=${encodeURIComponent(name)}`}
-                                    className="bg-emerald-100 hover:bg-emerald-200 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-700 hover:text-emerald-900 shadow flex flex-col items-center w-full"
+                                    className="bg-[#181818] hover:bg-emerald-900 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-200 hover:text-emerald-100 shadow flex flex-col items-center w-full border border-[#333]"
                                 >
                                     {managerTiers[name] ? (
                                         <img
@@ -388,9 +388,9 @@ export default function ManagerViewer() {
     // Only one spinner for the whole page
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center">
-                <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full">
-                    <h1 className="text-3xl font-bold text-emerald-700 mb-4 text-center">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+                <div className="bg-[#232323] rounded-xl shadow-lg p-8 max-w-2xl w-full border border-[#333]">
+                    <h1 className="text-3xl font-bold text-emerald-200 mb-4 text-center">
                         {getDisplayManagerName(managerName)}
                     </h1>
                     <div className="flex flex-col items-center justify-center py-20">
@@ -420,14 +420,14 @@ export default function ManagerViewer() {
     const hasTrophies = managerTeams.some(team => [1, 2, 3].includes(team.rank));
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center">
-            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-4 relative">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+            <div className="bg-[#232323] rounded-xl shadow-lg max-w-2xl w-full p-4 relative border border-[#333]">
                 {/* Member Since Badge - top left */}
                 {earliestYear && getYearBadgeUrl(earliestYear) && (
                     <img
                         src={getYearBadgeUrl(earliestYear)}
                         alt={`Member since ${earliestYear}`}
-                        className="absolute top-4 left-4 w-20 h-20 z-10"
+                        className="absolute top-4 left-4 w-24 h-24 sm:w-36 sm:h-36 z-10"
                         style={{ objectFit: "contain" }}
                     />
                 )}
@@ -441,20 +441,20 @@ export default function ManagerViewer() {
                                 style={{ objectFit: "contain" }}
                             />
                             {managerFeloScore && (
-                                <span className="text-xs text-slate-500 mb-2">
+                                <span className="text-xs text-emerald-400 mb-2">
                                     Rating: {managerFeloScore}
                                 </span>
                             )}
                         </>
                     )}
-                    <h1 className="text-3xl font-bold text-emerald-700 text-center">
+                    <h1 className="text-3xl font-bold text-emerald-200 text-center">
                         {getDisplayManagerName(managerName)}
                     </h1>
                 </div>
                 {/* Trophy Case Section */}
                 {hasTrophies && (
                     <div className="mb-8">
-                        <h2 className="text-xl font-bold text-amber-700 text-center mb-2">Trophy Case</h2>
+                        <h2 className="text-xl font-bold text-yellow-600 text-center mb-2">Trophy Case</h2>
                         <div className="flex flex-col items-center gap-8 overflow-x-auto w-full">
                             {[1, 2, 3].map(place => {
                                 const trophies = managerTeams.filter(team => team.rank === place);
@@ -472,9 +472,9 @@ export default function ManagerViewer() {
                                                 />
                                             ))}
                                         </div>
-                                        <span className={`text-lg font-bold mt-2 ${place === 1 ? "text-yellow-700" : place === 2 ? "text-slate-500" : "text-amber-700"}`}>
+                                        <span className={`text-lg font-bold mt-2 ${place === 1 ? "text-yellow-600" : place === 2 ? "text-emerald-400" : "text-amber-700"}`}>
                                         </span>
-                                        <span className="text-xs text-slate-500 mt-1">
+                                        <span className="text-xs text-emerald-400 mt-1">
                                             {place === 1 ? "1st Place" : place === 2 ? "2nd Place" : "3rd Place"}
                                         </span>
                                     </div>
@@ -485,23 +485,23 @@ export default function ManagerViewer() {
                 )}
                 {/* Average Finish & Draft Grade Cards */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
-                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-emerald-700 mb-1">Avg. Finish</div>
-                        <div className="text-3xl font-bold text-emerald-900">{averageFinish}</div>
+                    <div className="bg-[#181818] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-emerald-200 mb-1">Avg. Finish</div>
+                        <div className="text-3xl font-bold text-emerald-100">{averageFinish}</div>
                     </div>
-                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-emerald-700 mb-1">Avg. Draft Grade</div>
-                        <div className="text-3xl font-bold text-emerald-900">{avgDraftGrade}</div>
+                    <div className="bg-[#181818] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-emerald-200 mb-1">Avg. Draft Grade</div>
+                        <div className="text-3xl font-bold text-emerald-100">{avgDraftGrade}</div>
                     </div>
-                    <div className="bg-blue-100 border border-blue-300 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
-                        <div className="text-lg font-semibold text-blue-700 mb-1">Ices</div>
-                        <div className="text-3xl font-bold text-blue-900">{icesCount}</div>
+                    <div className="bg-[#232323] border border-blue-900 rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                        <div className="text-lg font-semibold text-blue-300 mb-1">Ices</div>
+                        <div className="text-3xl font-bold text-blue-100">{icesCount}</div>
                     </div>
                 </div>
                 {managerTeams.length === 0 ? (
-                    <p className="text-center text-slate-500">No teams found for this manager.</p>
+                    <p className="text-center text-emerald-400">No teams found for this manager.</p>
                 ) : (
-                    <div className="mt-4"> {/* Removed pb-12 */}
+                    <div className="mt-4">
                         {/* Show 2025 team (current year) above collapsible if present */}
                         {managerTeams.some(team => team.season === "2025") && (
                             <div className="mb-4">
@@ -513,37 +513,37 @@ export default function ManagerViewer() {
                                             <Link
                                                 key={team.season + team.id}
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
+                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
+                                                <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-200 text-center mt-1">
                                                     Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                                                 </div>
                                             </Link>
                                         ) : (
                                             <div
                                                 key={team.season + team.id}
-                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
+                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
+                                                <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-200 text-center mt-1">
                                                     Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                                                 </div>
-                                                <div className="text-xs text-red-500 mt-2">Draft not completed</div>
+                                                <div className="text-xs text-red-400 mt-2">Draft not completed</div>
                                             </div>
                                         );
                                     })}
                             </div>
                         )}
                         <button
-                            className="w-full flex items-center justify-between px-4 py-3 bg-emerald-200 rounded-lg shadow font-semibold text-emerald-800 mb-6 focus:outline-none"
+                            className="w-full flex items-center justify-between px-4 py-3 bg-[#232323] border border-[#333] rounded-lg shadow font-semibold text-emerald-200 mb-6 focus:outline-none"
                             onClick={() => setCollapsed(!collapsed)}
                             aria-expanded={!collapsed}
                         >
@@ -554,13 +554,13 @@ export default function ManagerViewer() {
                         </button>
                         <div
                             ref={collapseRef}
-                            className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${!collapsed ? "opacity-100" : "opacity-0"}`}
+                            className={`transition-all duration-500 ease-in-out w-full ${!collapsed ? "overflow-visible opacity-100" : "overflow-hidden opacity-0"}`}
                             style={{
                                 transitionProperty: "max-height, opacity",
-                                marginBottom: "16px", // Reduced from 48px
+                                marginBottom: !collapsed ? "32px" : "0px",
                                 minHeight: "1px",
-                                maxHeight: collapsed ? "0px" : undefined,
-                                paddingBottom: !collapsed ? "16px" : "0px" // Reduced from 24px
+                                maxHeight: collapsed ? "0px" : contentRef.current ? contentRef.current.scrollHeight + 128 + "px" : undefined,
+                                paddingBottom: !collapsed ? "64px" : "0px"
                             }}
                         >
                             <div ref={contentRef} className="flex flex-col gap-6 mt-2">
@@ -572,30 +572,30 @@ export default function ManagerViewer() {
                                             <Link
                                                 key={team.season + team.id}
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-100 transition cursor-pointer"
+                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
+                                                <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-200 text-center mt-1">
                                                     Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                                                 </div>
                                             </Link>
                                         ) : (
                                             <div
                                                 key={team.season + team.id}
-                                                className="bg-emerald-50 rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed"
+                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
-                                                <div className="text-lg font-bold text-emerald-700 text-center">{team.name}</div>
-                                                <div className="text-xs text-slate-500 text-center mb-1">Season: {team.season}</div>
-                                                <div className="text-xs text-slate-700 text-center">Final Rank: {team.rank}</div>
-                                                <div className="text-xs text-emerald-700 text-center mt-1">
+                                                <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
+                                                <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
+                                                <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                                                <div className="text-xs text-emerald-200 text-center mt-1">
                                                     Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                                                 </div>
-                                                <div className="text-xs text-red-500 mt-2">Draft not completed</div>
+                                                <div className="text-xs text-red-400 mt-2">Draft not completed</div>
                                             </div>
                                         );
                                     })}

@@ -5,12 +5,12 @@ import Image from "next/image";
 import leagueKeysByYearJson from "../data/League_Keys/league_keys.json";
 
 const positionColors: Record<string, string> = {
-  QB: "bg-gradient-to-br from-orange-300 to-orange-500",
-  RB: "bg-gradient-to-br from-green-300 to-green-500",
-  WR: "bg-gradient-to-br from-blue-300 to-blue-500",
-  TE: "bg-gradient-to-br from-purple-300 to-purple-500",
-  K: "bg-gradient-to-br from-yellow-200 to-yellow-400",
-  DEF: "bg-gradient-to-br from-gray-300 to-gray-500",
+  QB: "bg-gradient-to-br from-orange-700 to-orange-900",
+  RB: "bg-gradient-to-br from-green-700 to-green-900",
+  WR: "bg-gradient-to-br from-blue-700 to-blue-900",
+  TE: "bg-gradient-to-br from-purple-700 to-purple-900",
+  K: "bg-gradient-to-br from-yellow-700 to-yellow-900",
+  DEF: "bg-gradient-to-br from-gray-700 to-gray-900",
 };
 
 export default function DraftBoardPage() {
@@ -111,17 +111,17 @@ export default function DraftBoardPage() {
   const pickMap = Object.fromEntries(draftPicks.map((p) => [p.pick, p]));
 
   return (
-    <div className="w-full overflow-x-auto px-2 py-0">
-      <h1 className="text-4xl font-extrabold text-center mb-8 text-green-800">Draft Board</h1>
+    <div className="w-full overflow-x-auto px-2 py-0 bg-[#181818] min-h-screen">
+      <h1 className="text-4xl font-extrabold text-center mb-8 text-emerald-200">Draft Board</h1>
       <div className="mb-6 flex justify-center gap-4 flex-wrap">
-        <label htmlFor="year-select" className="font-semibold self-center">Select Year:</label>
+        <label htmlFor="year-select" className="font-semibold self-center text-emerald-100">Select Year:</label>
         <select
           id="year-select"
           value={selectedYear}
           onChange={e => setSelectedYear(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2 bg-white text-black"
+          className="border border-[#333] rounded px-3 py-2 bg-[#232323] text-emerald-100"
         >
-          <option value="">Select Year</option>
+          <option value="" className="bg-[#232323] text-emerald-100">Select Year</option>
           {Object.keys(leagueKeysByYear).sort((a, b) => Number(b) - Number(a)).map(year => (
             <option
               key={year}
@@ -130,11 +130,12 @@ export default function DraftBoardPage() {
                 year === "2025" &&
                 (!draftTime2025 || Date.now() < draftTime2025)
               }
+              className="bg-[#232323] text-emerald-100"
             >
               {year === "2025"
                 ? draftTime2025 && Date.now() >= draftTime2025
                   ? "2025"
-                  : "2025 (after draft)"
+                  : "2025 (available after draft)"
                 : year}
             </option>
           ))}
@@ -145,7 +146,7 @@ export default function DraftBoardPage() {
           <div className="relative">
             <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
           </div>
-          <p className="mt-4 text-center text-slate-500">Draft results will be available after the draft.</p>
+          <p className="mt-4 text-center text-emerald-400">Draft results will be available after the draft.</p>
         </div>
       ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -154,16 +155,16 @@ export default function DraftBoardPage() {
           </div>
         </div>
       ) : error ? (
-        <p className="text-center text-red-500">{error}</p>
+        <p className="text-center text-red-400">{error}</p>
       ) : !selectedYear ? (
-        <p className="text-center italic text-gray-600">Please select a year to view the draft board.</p>
+        <p className="text-center italic text-emerald-400">Please select a year to view the draft board.</p>
       ) : (
-        <div className="overflow-x-auto max-h-[80vh] rounded shadow-md">
+        <div className="overflow-x-auto max-h-[80vh] rounded shadow-md bg-[#232323]">
           <table className="min-w-[900px] w-full border-separate border-spacing-0 text-sm md:text-base">
-            <thead className="bg-white sticky top-0 z-30 shadow-sm">
+            <thead className="bg-[#232323] sticky top-0 z-30 shadow-sm">
               <tr>
                 {teamOrder.map(teamKey => (
-                  <th key={teamKey} className="px-3 py-2 text-center w-28 whitespace-normal break-words font-semibold text-gray-700 border-b border-gray-300" title={teamKeyToName[teamKey]}>
+                  <th key={teamKey} className="px-3 py-2 text-center w-28 whitespace-normal break-words font-semibold text-emerald-200 border-b border-[#333]" title={teamKeyToName[teamKey]}>
                     {teamKeyToName[teamKey]}
                   </th>
                 ))}
@@ -171,11 +172,11 @@ export default function DraftBoardPage() {
             </thead>
             <tbody>
               {rounds.map(round => (
-                <tr key={round} className="hover:bg-gray-50 transition-colors duration-150">
+                <tr key={round} className="hover:bg-[#222] transition-colors duration-150">
                   {teamOrder.map((teamKey, colIndex) => {
                     const pick = groupedByRoundAndTeam[round]?.[teamKey];
                     const player = pick ? players[pick.player_key] : null;
-                    const positionColorClass = player?.position && positionColors[player.position] ? positionColors[player.position] : "bg-white";
+                    const positionColorClass = player?.position && positionColors[player.position] ? positionColors[player.position] : "bg-[#232323]";
                     const nextPick = pick ? pickMap[pick.pick + 1] : undefined;
                     let arrowDirection: "right" | "down" | "left" | null = null;
                     if (nextPick) {
@@ -194,7 +195,7 @@ export default function DraftBoardPage() {
                     return (
                       <td
                         key={teamKey}
-                        className={`align-top p-1 rounded-md max-w-[9rem] min-w-[8rem] relative cursor-default ${positionColorClass}`}
+                        className={`align-top p-1 rounded-md max-w-[9rem] min-w-[8rem] relative cursor-default ${positionColorClass} border border-[#222]`}
                         title={player ? `${player.name} (${player.team} - ${player.position})\nPick ${pick.pick}` : undefined}
                       >
                         {player ? (
@@ -207,18 +208,18 @@ export default function DraftBoardPage() {
                                   const lastName = rest.join(" ");
                                   return (
                                     <>
-                                      <p className="font-semibold text-gray-800 leading-tight" style={{ fontSize: "clamp(0.7rem, 1.5vw, 0.9rem)", lineHeight: 1.1 }} title={player.name}>{firstName}</p>
-                                      <p className="font-semibold text-gray-700 leading-tight" style={{ fontSize: "clamp(0.65rem, 1.3vw, 0.85rem)", lineHeight: 1.1 }}>{lastName}</p>
+                                      <p className="font-semibold text-emerald-100 leading-tight" style={{ fontSize: "clamp(0.7rem, 1.5vw, 0.9rem)", lineHeight: 1.1 }} title={player.name}>{firstName}</p>
+                                      <p className="font-semibold text-emerald-200 leading-tight" style={{ fontSize: "clamp(0.65rem, 1.3vw, 0.85rem)", lineHeight: 1.1 }}>{lastName}</p>
                                     </>
                                   );
                                 })()}
-                                <p className="text-xs text-gray-600" style={{ fontSize: "clamp(0.55rem, 1vw, 0.65rem)" }}>{player.team} – {player.position}</p>
-                                <p className="text-xs text-gray-500" style={{ fontSize: "clamp(0.5rem, 0.9vw, 0.6rem)" }}>Pick {pick.pick}</p>
+                                <p className="text-xs text-emerald-400" style={{ fontSize: "clamp(0.55rem, 1vw, 0.65rem)" }}>{player.team} – {player.position}</p>
+                                <p className="text-xs text-emerald-400" style={{ fontSize: "clamp(0.5rem, 0.9vw, 0.6rem)" }}>Pick {pick.pick}</p>
                               </div>
                             </div>
                             {arrowDirection && (
                               <div className="absolute bottom-1 right-1" style={{ width: "1rem", height: "1rem", transform: `rotate(${rotationDegrees[arrowDirection]}deg)`, transition: "transform 0.3s ease" }} aria-label={`Next pick: ${nextPick!.pick}`} title={`Next pick: ${nextPick!.pick}`}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                                   <line x1="3" y1="12" x2="21" y2="12" />
                                   <polyline points="15 6 21 12 15 18" />
                                 </svg>
@@ -226,7 +227,7 @@ export default function DraftBoardPage() {
                             )}
                           </>
                         ) : (
-                          <span className="italic text-gray-400">—</span>
+                          <span className="italic text-emerald-700">—</span>
                         )}
                       </td>
                     );

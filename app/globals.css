@@ -26,3 +26,9 @@
 body {
   background-color: #0f0f0f;
 }
+
+.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+}

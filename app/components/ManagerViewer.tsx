@@ -331,7 +331,7 @@ export default function ManagerViewer() {
         const sortedManagers = [...managerNames].sort((a, b) => (managerScores[b] ?? 0) - (managerScores[a] ?? 0));
 
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0f0f]">
                 <div className="bg-[#232323] rounded-2xl shadow-2xl p-10 max-w-xl w-full border border-[#333]">
                     <h1 className="text-4xl font-extrabold text-emerald-200 mb-6 text-center tracking-tight drop-shadow">
                         League Managers
@@ -344,7 +344,7 @@ export default function ManagerViewer() {
                             <li key={name} className="flex flex-col items-center">
                                 <Link
                                     href={`/manager?name=${encodeURIComponent(name)}`}
-                                    className="bg-[#181818] hover:bg-emerald-900 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-200 hover:text-emerald-100 shadow flex flex-col items-center w-full border border-[#333]"
+                                    className="bg-[#0f0f0f] hover:bg-emerald-900 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-200 hover:text-emerald-100 shadow flex flex-col items-center w-full border border-[#333]"
                                 >
                                     {managerTiers[name] ? (
                                         <img
@@ -415,7 +415,7 @@ export default function ManagerViewer() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0f0f]">
                 <div className="bg-[#232323] rounded-xl shadow-lg p-8 max-w-2xl w-full border border-[#333]">
                     <h1 className="text-3xl font-bold text-emerald-200 mb-4 text-center">
                         {getDisplayManagerName(managerName!)}
@@ -453,7 +453,7 @@ export default function ManagerViewer() {
         }));
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#181818]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0f0f]">
             <div className="bg-[#232323] rounded-xl shadow-lg max-w-2xl w-full p-4 relative border border-[#333]">
                 {/* Member Since Badge - top left */}
                 {earliestYear && getYearBadgeUrl(earliestYear) && (
@@ -527,11 +527,11 @@ export default function ManagerViewer() {
 
                 {/* Average Finish & Draft Grade Cards */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-6">
-                    <div className="bg-[#181818] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                    <div className="bg-[#0f0f0f] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
                         <div className="text-lg font-semibold text-emerald-200 mb-1">Avg. Finish</div>
                         <div className="text-3xl font-bold text-emerald-100">{averageFinish}</div>
                     </div>
-                    <div className="bg-[#181818] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
+                    <div className="bg-[#0f0f0f] border border-[#333] rounded-lg shadow px-6 py-4 flex flex-col items-center w-full sm:w-48 min-w-[12rem]">
                         <div className="text-lg font-semibold text-emerald-200 mb-1">Avg. Draft Grade</div>
                         <div className="text-3xl font-bold text-emerald-100">{avgDraftGrade}</div>
                     </div>
@@ -556,7 +556,7 @@ export default function ManagerViewer() {
                                             <Link
                                                 key={team.season + team.id}
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
+                                                className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
@@ -569,7 +569,7 @@ export default function ManagerViewer() {
                                         ) : (
                                             <div
                                                 key={team.season + team.id}
-                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
+                                                className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
@@ -617,7 +617,7 @@ export default function ManagerViewer() {
                                             <Link
                                                 key={team.season + team.id}
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
-                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
+                                                className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
@@ -630,7 +630,7 @@ export default function ManagerViewer() {
                                         ) : (
                                             <div
                                                 key={team.season + team.id}
-                                                className="bg-[#181818] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
+                                                className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
                                                 <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />

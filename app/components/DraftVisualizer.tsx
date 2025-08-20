@@ -111,7 +111,7 @@ export default function DraftBoardPage() {
   const pickMap = Object.fromEntries(draftPicks.map((p) => [p.pick, p]));
 
   return (
-    <div className="w-full overflow-x-auto px-2 py-0 bg-[#181818] min-h-screen">
+    <div className="w-full overflow-x-auto px-2 py-0 bg-[#0f0f0f] min-h-screen">
       <h1 className="text-4xl font-extrabold text-center mb-8 text-emerald-200">Draft Board</h1>
       <div className="mb-6 flex justify-center gap-4 flex-wrap">
         <label htmlFor="year-select" className="font-semibold self-center text-emerald-100">Select Year:</label>

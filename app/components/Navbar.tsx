@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useRouter } from 'next/navigation';
+import Image from "next/image";
 
 let leagueTimeout: NodeJS.Timeout;
 
@@ -33,24 +34,37 @@ export default function Navbar() {
       <div className="w-full px-2 sm:px-4 lg:px-0">
         <div className="flex justify-between items-center h-16 lg:h-18">
           {/* Logo */}
-          <Link href="/" className="group" onClick={() => setIsOpen(false)}>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="text-3xl">🥬</div>
-              </div>
+          <div className="flex items-center space-x-3 ml-2">
+            <div className="relative">
+              <a
+                href="https://football.fantasysports.yahoo.com/league/thebokchoyleague69"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Image
+                  src="/yahoo_fantasy.png"
+                  alt="Yahoo Fantasy Logo"
+                  width={40}
+                  height={40}
+                  className="rounded-lg shadow"
+                />
+              </a>
+            </div>
+            <Link href="/" className="group" onClick={() => setIsOpen(false)}>
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-emerald-100 group-hover:text-white transition-colors duration-200">
                   The Bok Choy League
                 </h1>
                 <p className="text-xs text-emerald-400 font-medium hidden sm:block">Fantasy Football</p>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
+
 
           {!user ? (
             <Link
               href="/login"
-              className="px-4 py-2 rounded-xl text-emerald-100 bg-emerald-700 hover:bg-emerald-800 transition-all duration-200 font-medium"
+              className="px-4 py-2 rounded-xl text-emerald-100 bg-emerald-700 hover:bg-emerald-800 transition-all duration-200 font-medium "
             >
               Sign In
             </Link>
@@ -85,11 +99,10 @@ export default function Navbar() {
                     <ChevronUp size={16} className={`${isLeagueOpen ? 'rotate-180' : ''} transition-transform duration-200`} />
                   </button>
                   <div
-                    className={`absolute right-0 top-full mt-2 w-72 transition-all duration-200 transform ${
-                      isLeagueOpen
-                        ? 'opacity-100 visible translate-y-0 pointer-events-auto'
-                        : 'opacity-0 invisible translate-y-2 pointer-events-none'
-                    }`}
+                    className={`absolute right-0 top-full mt-2 w-72 transition-all duration-200 transform ${isLeagueOpen
+                      ? 'opacity-100 visible translate-y-0 pointer-events-auto'
+                      : 'opacity-0 invisible translate-y-2 pointer-events-none'
+                      }`}
                   >
                     <div className="bg-[#232323] rounded-2xl shadow-2xl border border-[#333] overflow-hidden backdrop-blur-sm">
                       <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80 flex items-center gap-2">
@@ -140,7 +153,7 @@ export default function Navbar() {
 
                 {/* User Name */}
                 <div
-                  className="ml-6 px-4 py-2 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
+                  className="ml-6 px-4 py-2 pr-6 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
                   onMouseEnter={() => setIsNameHovered(true)}
                   onMouseLeave={() => setIsNameHovered(false)}
                 >
@@ -152,7 +165,7 @@ export default function Navbar() {
                         await signOut(auth);
                         router.replace('/login');
                       }}
-                      className="flex items-center justify-center px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
+                      className="flex items-center justify-center px-4 py-2 pr-6 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
                     >
                       Sign Out
                     </button>
@@ -186,7 +199,7 @@ export default function Navbar() {
           <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
             <div className="bg-[#232323] backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-[#333]">
               <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80">{userDisplay}</div>
-              
+
               {/* League Section - moved to top */}
               <div className="border-b border-[#333]">
                 <button
@@ -270,34 +283,36 @@ export default function Navbar() {
         {/* Floating mobile menu button */}
         <button
           type="button"
-          className={`fixed bottom-6 right-6 z-50 md:hidden bg-emerald-900 hover:bg-emerald-800 text-emerald-100 rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+          className={`fixed bottom-6 right-6 z-50 md:hidden bg-[#181818] hover:bg-[#232323] text-emerald-100 rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
           aria-label={isOpen ? "Close Menu" : "Open Menu"}
           onClick={() => setIsOpen((prev) => !prev)}
-          style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+          style={{
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15), 0 0 16px 4px #34d39988'
+          }}
         >
           <span className="relative w-6 h-6 flex items-center justify-center">
             {/* Top bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-400 rounded transition-all duration-300
                 ${isOpen ? 'rotate-45 top-2.5' : 'rotate-0 top-1'}
               `}
             />
             {/* Middle bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-400 rounded transition-all duration-300
                 ${isOpen ? 'opacity-0' : 'opacity-100 top-3'}
               `}
             />
             {/* Bottom bar */}
             <span
-              className={`absolute w-6 h-0.5 bg-emerald-100 rounded transition-all duration-300
+              className={`absolute w-6 h-0.5 bg-emerald-400 rounded transition-all duration-300
                 ${isOpen ? '-rotate-45 top-2.5' : 'rotate-0 top-5'}
               `}
             />
           </span>
         </button>
       </div>
-    </nav>
+    </nav >
   );
 }
 

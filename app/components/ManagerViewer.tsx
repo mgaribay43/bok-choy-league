@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import leagueKeys from "../data/League_Keys/league_keys.json";
 import Link from "next/link";
 import icesData from "../data/Videos/ices.json";
+import Image from "next/image";
 import ReactModal from "react-modal";
 import { Line } from "react-chartjs-2";
 import { Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend } from "chart.js";
@@ -347,9 +348,11 @@ export default function ManagerViewer() {
                                     className="bg-[#0f0f0f] hover:bg-emerald-900 transition rounded-lg px-6 py-4 text-lg font-bold text-emerald-200 hover:text-emerald-100 shadow flex flex-col items-center w-full border border-[#333]"
                                 >
                                     {managerTiers[name] ? (
-                                        <img
-                                            src={getFeloTierImage(managerTiers[name])}
-                                            alt={managerTiers[name] + " tier"}
+                                        <Image
+                                            src={getFeloTierImage(managerTiers[name]) ?? "/images/defaultFeloTier.png"}
+                                            alt={(managerTiers[name] ?? "Unknown") + " tier"}
+                                            width={64}
+                                            height={64}
                                             className="w-16 h-16 mb-2"
                                             style={{ objectFit: "contain" }}
                                         />
@@ -457,9 +460,11 @@ export default function ManagerViewer() {
             <div className="bg-[#232323] rounded-xl shadow-lg max-w-2xl w-full p-4 relative border border-[#333]">
                 {/* Member Since Badge - top left */}
                 {earliestYear && getYearBadgeUrl(earliestYear) && (
-                    <img
-                        src={getYearBadgeUrl(earliestYear)}
+                    <Image
+                        src={getYearBadgeUrl(earliestYear) ?? "/images/defaultYearBadge.png"}
                         alt={`Member since ${earliestYear}`}
+                        width={144}
+                        height={144}
                         className="absolute top-4 left-4 w-24 h-24 sm:w-36 sm:h-36 z-10"
                         style={{ objectFit: "contain" }}
                     />
@@ -467,6 +472,14 @@ export default function ManagerViewer() {
                 <div className="flex flex-col items-center mb-4">
                     {managerFeloTierImg && (
                         <>
+                            <Image
+                                src={managerFeloTierImg}
+                                alt={managerFeloTier + " tier"}
+                                width={64}
+                                height={64}
+                                className="w-16 h-16"
+                                style={{ objectFit: "contain" }}
+                            />
                             <button
                                 onClick={() => setShowFeloModal(true)}
                                 className="focus:outline-none"
@@ -504,10 +517,12 @@ export default function ManagerViewer() {
                                     <div key={place} className="flex flex-col items-center w-full">
                                         <div className="flex flex-row flex-wrap justify-center gap-x-2 gap-y-2 w-full max-w-full">
                                             {trophies.map(team => (
-                                                <img
+                                                <Image
                                                     key={team.season}
-                                                    src={getTrophyUrl(place, team.season)}
+                                                    src={getTrophyUrl(place, team.season) ?? "/images/defaultTrophy.png"}
                                                     alt={`${place} Place Trophy ${team.season}`}
+                                                    width={96}
+                                                    height={96}
                                                     className="w-24 h-24 max-w-[96px] object-contain"
                                                     style={{ flex: "0 0 auto" }}
                                                 />
@@ -558,7 +573,7 @@ export default function ManagerViewer() {
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
                                                 className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
-                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                                                 <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
                                                 <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
@@ -572,7 +587,7 @@ export default function ManagerViewer() {
                                                 className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
-                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                                                 <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
                                                 <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
@@ -619,7 +634,7 @@ export default function ManagerViewer() {
                                                 href={`/roster?year=${team.season}&teamId=${team.id}`}
                                                 className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center hover:bg-emerald-900 transition cursor-pointer border border-[#333]"
                                             >
-                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                                                 <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
                                                 <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
@@ -633,7 +648,7 @@ export default function ManagerViewer() {
                                                 className="bg-[#0f0f0f] rounded-lg shadow p-4 flex flex-col items-center opacity-60 cursor-not-allowed border border-[#333]"
                                                 title="Team will be viewable after the draft."
                                             >
-                                                <img src={team.logo} alt={team.name} className="w-16 h-16 rounded-full mb-2" />
+                                                <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                                                 <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                                                 <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
                                                 <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>

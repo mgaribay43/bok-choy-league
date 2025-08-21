@@ -472,14 +472,6 @@ export default function ManagerViewer() {
                 <div className="flex flex-col items-center mb-4">
                     {managerFeloTierImg && (
                         <>
-                            <Image
-                                src={managerFeloTierImg}
-                                alt={managerFeloTier + " tier"}
-                                width={64}
-                                height={64}
-                                className="w-16 h-16"
-                                style={{ objectFit: "contain" }}
-                            />
                             <button
                                 onClick={() => setShowFeloModal(true)}
                                 className="focus:outline-none"

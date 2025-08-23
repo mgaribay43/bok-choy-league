@@ -38,7 +38,14 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
         const pollsCollection = collection(dbInstance, 'Polls');
         const querySnapshot = await getDocs(pollsCollection);
         const fetchedPolls = querySnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }));
-        setPolls(fetchedPolls);
+
+        setPolls((prevPolls) => {
+          const mergedPolls = fetchedPolls.map((fetchedPoll) => {
+            const existingPoll = prevPolls.find((p) => p.id === fetchedPoll.id);
+            return existingPoll ? { ...fetchedPoll, responses: existingPoll.responses } : fetchedPoll;
+          });
+          return mergedPolls;
+        });
 
         const initialTimeLeftMap = fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
           acc[poll.id] = calculateTimeLeft(poll.pollDuration);

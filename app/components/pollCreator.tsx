@@ -15,6 +15,8 @@ const PollCreator: React.FC = () => {
   const [allowTextboxResponse, setAllowTextboxResponse] = useState(false);
   const [pollResults, setPollResults] = useState<any[]>([]);
   const [pollDuration, setPollDuration] = useState('');
+  const [showParticipants, setShowParticipants] = useState(true); // State for participants section
+  const [showResponses, setShowResponses] = useState(true); // State for detailed responses section
   const router = useRouter();
 
   useEffect(() => {
@@ -288,17 +290,17 @@ const PollCreator: React.FC = () => {
             onClick={() => setShowCheckResultsModal(false)}
           >
             <div
-              className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 max-h-[85vh] overflow-hidden"
+              className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 max-h-[calc(100vh-40px)] overflow-hidden" /* Adjusted max height */
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 border-b border-slate-600">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 border-b border-slate-600"> {/* Increased padding */}
                 <div className="flex items-center justify-between">
-                  <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <h2 className="text-3xl font-bold text-white flex items-center gap-4"> {/* Updated icon */}
+                    <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"> {/* New icon */}
+                      <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z" />
                     </svg>
-                    Poll Results Dashboard
+                    Poll Results
                   </h2>
                   <button
                     onClick={() => setShowCheckResultsModal(false)}
@@ -400,57 +402,81 @@ const PollCreator: React.FC = () => {
                             <div className="grid md:grid-cols-2 gap-6">
                               {/* Detailed Responses */}
                               {poll.responses && Object.keys(poll.responses).length > 0 && (
-                                <div className="bg-slate-600/30 rounded-lg p-5 border border-slate-500/30">
-                                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30">
+                                  <h4
+                                    className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
+                                    onClick={() => setShowResponses(!showResponses)}
+                                  >
                                     <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                                     </svg>
                                     Detailed Responses
+                                    <svg
+                                      className={`w-5 h-5 text-gray-400 transition-transform ${showResponses ? 'rotate-180' : ''}`}
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                    </svg>
                                   </h4>
-                                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                                    {Object.entries(poll.responses).map(([email, responseData]: [string, any]) => (
-                                      <div key={email} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-green-400">
-                                        <div className="text-sm text-gray-300 mb-1">{email}</div>
-                                        <div className="text-white font-medium mb-1">
-                                          Voted: {responseData.optionText}
-                                        </div>
-                                        {responseData.response && (
-                                          <div className="text-gray-200 text-sm italic bg-slate-800/50 p-2 rounded mt-2">
-                                            "{responseData.response}"
+                                  {showResponses && (
+                                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                                      {Object.entries(poll.responses).map(([email, responseData]: [string, any]) => (
+                                        <div key={email} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-green-400">
+                                          <div className="text-sm text-gray-300 mb-1">{email}</div>
+                                          <div className="text-white font-medium mb-1">
+                                            Voted: {responseData.optionText}
                                           </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
+                                          {responseData.response && (
+                                            <div className="text-gray-200 text-sm italic bg-slate-800/50 p-2 rounded mt-2">
+                                              "{responseData.response}"
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
                               {/* Voter List */}
-                              <div className="bg-slate-600/30 rounded-lg p-5 border border-slate-500/30">
-                                <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                              <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30"> {/* Reduced padding */}
+                                <h4
+                                  className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
+                                  onClick={() => setShowParticipants(!showParticipants)}
+                                >
                                   <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1a1 1 0 102 0V7zM12 7a1 1 0 112 0v1a1 1 0 11-2 0V7z" />
                                   </svg>
                                   Participants ({poll.voters.length})
+                                  <svg
+                                    className={`w-5 h-5 text-gray-400 transition-transform ${showParticipants ? 'rotate-180' : ''}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                  </svg>
                                 </h4>
-                                {poll.voters.length > 0 ? (
-                                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {poll.voters.map((voter: any, index: number) => (
-                                      <div key={index} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-purple-400">
-                                        <div className="text-white text-sm flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                                          {voter}
+                                {showParticipants && (
+                                  poll.voters.length > 0 ? (
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                      {poll.voters.map((voter: any, index: number) => (
+                                        <div key={index} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-purple-400">
+                                          <div className="text-white text-sm flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                                            {voter}
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <p className="text-gray-400">No participants yet</p>
-                                  </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8">
+                                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                      </svg>
+                                      <p className="text-gray-400">No participants yet</p>
+                                    </div>
+                                  )
                                 )}
                               </div>
                             </div>
@@ -474,9 +500,9 @@ const PollCreator: React.FC = () => {
               <div className="bg-slate-800/50 border-t border-slate-600 p-4">
                 <button
                   onClick={() => setShowCheckResultsModal(false)}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg"
+                  className="w-full px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg"
                 >
-                  Close Dashboard
+                  Close Results
                 </button>
               </div>
             </div>

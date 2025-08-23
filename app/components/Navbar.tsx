@@ -146,6 +146,15 @@ export default function Navbar() {
                           </div>
                           <span className="font-medium">Managers</span>
                         </Link>
+                        <Link
+                          href="/polls"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-blue-900 rounded">
+                            <span className="text-xs">📊</span>
+                          </div>
+                          <span className="font-medium">Polls</span>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -253,6 +262,16 @@ export default function Navbar() {
                         <Users size={16} className="text-emerald-100" />
                       </div>
                       <span className="font-medium">Managers</span>
+                    </Link>
+                    <Link
+                      href="/polls"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-blue-900 rounded">
+                        <span className="text-xs">📊</span>
+                      </div>
+                      <span className="font-medium">Polls</span>
                     </Link>
                   </div>
                 </div>

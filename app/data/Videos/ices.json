@@ -221,20 +221,20 @@
             "flavor": "Standard"
         },
         {
-            "id": "bhz5nI01Gp8",
-            "player": "Colts Defense",
-            "manager": "Johnny",
-            "date": "12-29-2024",
-            "week": "Week 17",
-            "flavor": "Standard"
-        },
-        {
-            "id": "",
+            "id": "_P_CbHJocpo",
             "player": "Jalen Hurts",
             "manager": "Harris",
             "date": "12-29-2024",
             "week": "Week 17",
             "24_hr_penalty": true,
+            "flavor": "Standard"
+        },  
+        {
+            "id": "bhz5nI01Gp8",
+            "player": "Colts Defense",
+            "manager": "Johnny",
+            "date": "12-29-2024",
+            "week": "Week 17",
             "flavor": "Standard"
         }
     ],

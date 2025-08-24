@@ -251,78 +251,81 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       {ActivePolls && polls.length > 0 && (
         <div className="w-full max-w-lg mx-auto">
           <h2 className="text-5xl font-extrabold text-emerald-200 mb-6 text-center">Active Polls</h2>
-          {polls.map((poll) => {
-            const userHasVoted = poll.voters && poll.voters.includes(userName);
-            const timeLeft = timeLeftMap[poll.id];
-            const isExpired = timeLeft === 'Expired';
+          {/* Render polls with spacing */}
+          <div className="space-y-6"> {/* Added spacing */}
+            {polls.map((poll) => {
+              const userHasVoted = poll.voters && poll.voters.includes(userName);
+              const timeLeft = timeLeftMap[poll.id];
+              const isExpired = timeLeft === 'Expired';
 
-            const pollCard = (
-              <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
-                <span className="absolute top-4 left-4 text-sm text-emerald-300 font-medium">Total Votes: {poll.options.reduce((total: number, option: { votes: number }) => total + option.votes, 0)}</span>
-                <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
-                <span className="absolute top-4 right-4 text-sm text-emerald-300 font-medium">{timeLeft}</span>
-                {userHasVoted && (
-                  <p className="text-center text-green-500 font-medium mb-4">Your Vote Has Been Cast</p>
-                )}
-                <ul className="flex flex-col gap-4">
-                  {poll.options.map((option: any, index: number) => (
-                    <li key={`${poll.id}-option-${index}`}>
-                      <button
-                        onClick={() => handleVote(poll.id, option.id)}
-                        disabled={userHasVoted || isExpired}
-                        className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${
+              const pollCard = (
+                <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
+                  <span className="absolute top-4 left-4 text-sm text-emerald-300 font-medium">Total Votes: {poll.options.reduce((total: number, option: { votes: number }) => total + option.votes, 0)}</span>
+                  <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
+                  <span className="absolute top-4 right-4 text-sm text-emerald-300 font-medium">{timeLeft}</span>
+                  {userHasVoted && (
+                    <p className="text-center text-green-500 font-medium mb-4">Your Vote Has Been Cast</p>
+                  )}
+                  <ul className="flex flex-col gap-4">
+                    {poll.options.map((option: any, index: number) => (
+                      <li key={`${poll.id}-option-${index}`}>
+                        <button
+                          onClick={() => handleVote(poll.id, option.id)}
+                          disabled={userHasVoted || isExpired}
+                          className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${
+                            userHasVoted || isExpired
+                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          {option.text}
+                        </button>
+                        {isExpired && (
+                          <span className="block mt-2 text-center text-emerald-300 font-medium">{option.votes} votes</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {poll.allowTextboxResponse && (
+                    <div className="mt-4">
+                      <label className="block text-emerald-300 font-medium mb-2">Additional Message (optional)</label>
+                      <textarea
+                        value={textboxResponses[poll.id] || ''}
+                        onChange={(e) => handleResponseChange(poll.id, e.target.value)}
+                        disabled={userHasVoted || isExpired} // Disable the textbox if the poll is expired
+                        className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                           userHasVoted || isExpired
                             ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            : 'bg-[#333] text-emerald-100 border-[#444]'
                         }`}
-                      >
-                        {option.text}
-                      </button>
-                      {isExpired && (
-                        <span className="block mt-2 text-center text-emerald-300 font-medium">{option.votes} votes</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                {poll.allowTextboxResponse && (
-                  <div className="mt-4">
-                    <label className="block text-emerald-300 font-medium mb-2">Additional Message (optional)</label>
-                    <textarea
-                      value={textboxResponses[poll.id] || ''}
-                      onChange={(e) => handleResponseChange(poll.id, e.target.value)}
-                      disabled={userHasVoted || isExpired} // Disable the textbox if the poll is expired
-                      className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        userHasVoted || isExpired
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-[#333] text-emerald-100 border-[#444]'
-                      }`}
-                      rows={4}
-                    />
-                  </div>
-                )}
-                {userHasVoted && (
-                  <button
-                    onClick={() => handleEditResponse(poll.id)}
-                    className="mt-4 w-full py-2 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
-                  >
-                    Edit Response
-                  </button>
-                )}
-              </div>
-            );
+                        rows={4}
+                      />
+                    </div>
+                  )}
+                  {userHasVoted && (
+                    <button
+                      onClick={() => handleEditResponse(poll.id)}
+                      className="mt-4 w-full py-2 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+                    >
+                      Edit Response
+                    </button>
+                  )}
+                </div>
+              );
 
-            return ActivePolls ? (
-              <div className="w-full max-w-lg mx-auto" key={`active-poll-${poll.id}`}>
-                {/* Added unique key for ActivePolls render */}
-                {pollCard}
-              </div>
-            ) : (
-              <div key={`poll-wrapper-${poll.id}`} className="w-full max-w-lg mx-auto">
-                {/* Ensured unique key for individual poll cards */}
-                {pollCard}
-              </div>
-            );
-          })}
+              return ActivePolls ? (
+                <div className="w-full max-w-lg mx-auto" key={`active-poll-${poll.id}`}>
+                  {/* Added unique key for ActivePolls render */}
+                  {pollCard}
+                </div>
+              ) : (
+                <div key={`poll-wrapper-${poll.id}`} className="w-full max-w-lg mx-auto">
+                  {/* Ensured unique key for individual poll cards */}
+                  {pollCard}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
       {!ActivePolls && polls.map((poll) => {

@@ -82,6 +82,7 @@ const PollCreator: React.FC = () => {
         voters: [],
         allowTextboxResponse,
         pollDuration, // Include the new field in the poll document
+        isExpired: false, // New field added
       });
       alert('Poll created successfully!');
       setPollId('');

@@ -27,6 +27,8 @@ const calculateTimeLeft = (deadline: string) => {
 
 const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   const [polls, setPolls] = useState<any[]>([]);
+  const [expiredPolls, setExpiredPolls] = useState<any[]>([]);
+  const [showExpired, setShowExpired] = useState(false);
   const [textboxResponses, setTextboxResponses] = useState<{ [pollId: string]: string }>({});
   const [timeLeftMap, setTimeLeftMap] = useState<{ [pollId: string]: string }>({});
   const [userName, setUserName] = useState<string>('');
@@ -44,7 +46,12 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
             const existingPoll = prevPolls.find((p) => p.id === fetchedPoll.id);
             return existingPoll ? { ...fetchedPoll, responses: existingPoll.responses } : fetchedPoll;
           });
-          return mergedPolls;
+
+          const active = mergedPolls.filter((poll) => !poll.isExpired);
+          const expired = mergedPolls.filter((poll) => poll.isExpired);
+
+          setExpiredPolls(expired);
+          return active;
         });
 
         const initialTimeLeftMap = fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
@@ -64,8 +71,26 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
     const interval = setInterval(() => {
       setTimeLeftMap((prevTimeLeftMap) => {
         const updatedTimeLeftMap = { ...prevTimeLeftMap };
-        polls.forEach((poll) => {
-          updatedTimeLeftMap[poll.id] = calculateTimeLeft(poll.pollDuration);
+        polls.forEach(async (poll) => {
+          const timeLeft = calculateTimeLeft(poll.pollDuration);
+          updatedTimeLeftMap[poll.id] = timeLeft;
+
+          // Ensure responses field is initialized as an empty object if undefined when poll expires
+          if (timeLeft === 'Expired' && !poll.isExpired) {
+            try {
+              const dbInstance = getFirestore();
+              const pollDoc = doc(dbInstance, 'Polls', poll.id);
+              await setDoc(pollDoc, {
+                ...poll,
+                isExpired: true,
+                expirationDate: new Date().toISOString(),
+                responses: poll.responses || {},
+              });
+              window.location.reload();
+            } catch (error) {
+              console.error('Error updating poll expiration:', error);
+            }
+          }
         });
         return updatedTimeLeftMap;
       });
@@ -151,12 +176,26 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
         },
       };
 
-      await setDoc(pollDoc, {
-        ...poll,
-        options: updatedOptions,
-        voters: updatedVoters,
-        responses: updatedResponses, // Save the updated responses
-      });
+      if (updatedOptions.reduce((total: number, option: { votes: number }) => total + option.votes, 0) >= 10) {
+        // If votes reach 10, mark poll as expired
+        await setDoc(pollDoc, {
+          ...poll,
+          options: updatedOptions,
+          voters: updatedVoters,
+          responses: updatedResponses || {}, // Default to an empty object if undefined
+          isExpired: true, // Mark poll as expired
+        });
+
+        setPolls((prevPolls) => prevPolls.filter((p) => p.id !== pollId));
+        setExpiredPolls((prevExpired) => [...prevExpired, { ...poll, isExpired: true }]);
+      } else {
+        await setDoc(pollDoc, {
+          ...poll,
+          options: updatedOptions,
+          voters: updatedVoters,
+          responses: updatedResponses,
+        });
+      }
 
       setPolls((prevPolls) =>
         prevPolls.map((p) =>
@@ -400,6 +439,36 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
           </div>
         );
       })}
+      {/* Render expired polls section */}
+      {!ActivePolls && expiredPolls.length > 0 && (
+        <div className="w-full max-w-lg mx-auto">
+          <button
+            onClick={() => setShowExpired(!showExpired)}
+            className="w-full py-2 px-4 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition"
+          >
+            {showExpired ? 'Hide Expired Polls' : 'Show Expired Polls'}
+          </button>
+          {showExpired && (
+            <div className="space-y-6 mt-4">
+              {expiredPolls.map((poll) => (
+                <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
+                  <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
+                  <p className="text-sm text-gray-400 text-center">Expired on: {poll.expirationDate ? new Date(poll.expirationDate).toLocaleString() : new Date(poll.pollDuration).toLocaleString()}</p>
+                  <ul className="flex flex-col gap-4">
+                    {poll.options.map((option: any, index: number) => (
+                      <li key={`${poll.id}-option-${index}`}>
+                        <span className={`block mt-2 text-center font-medium ${option.votes === Math.max(...poll.options.map((o: any) => o.votes)) ? 'text-yellow-400 font-bold' : 'text-emerald-300'}`}>
+                          {option.text}: {option.votes} votes
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

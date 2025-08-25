@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import leagueKeysByYearJson from "../data/League_Keys/league_keys.json";
+import yahooDefImagesJson from "../data/yahooDefImages.json";
 
 const positionColors: Record<string, string> = {
   QB: "bg-gradient-to-br from-orange-700 to-orange-900",
@@ -12,6 +13,9 @@ const positionColors: Record<string, string> = {
   K: "bg-gradient-to-br from-yellow-700 to-yellow-900",
   DEF: "bg-gradient-to-br from-gray-700 to-gray-900",
 };
+
+// Map team abbreviations to Yahoo defense image hashes and image paths
+const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 export default function DraftBoardPage() {
   const [selectedYear, setSelectedYear] = useState("");
@@ -35,7 +39,7 @@ export default function DraftBoardPage() {
       setPlayers(cached.players);
       setTeamManagers(cached.teamManagers);
       setLoading(false);
-      return; // <-- Only fetch if not cached
+      return;
     }
 
     const safeParse = (raw: string) => JSON.parse(raw.replace(/^callback\((.*)\)$/, "$1"));
@@ -98,6 +102,42 @@ export default function DraftBoardPage() {
     }
     fetchDraftTime();
   }, []);
+
+  useEffect(() => {
+    if (!players || Object.keys(players).length === 0) return;
+
+    Object.values(players).forEach((player: any) => {
+      let imgUrl = (() => {
+        const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+        if (player.position === "DEF") {
+          let rawAbbr = player.team?.toUpperCase() || "FA";
+          if (rawAbbr === "WAS") rawAbbr = "WSH";
+          const defInfo = yahooDefImages[rawAbbr];
+          if (defInfo) {
+            if (defInfo.pxFolder) {
+              return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+            }
+            const folder = defInfo.folder || "20190724";
+            return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+          }
+          return fallbackUrl;
+        }
+        if (
+          !player.image_url ||
+          player.image_url === "/fallback-avatar.png" ||
+          player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+        ) {
+          return fallbackUrl;
+        }
+        const match = player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+        if (match) return match[1];
+        return player.image_url.replace(/(\.png).*$/, '$1');
+      })();
+
+      const img = new window.Image();
+      img.src = imgUrl;
+    });
+  }, [players]);
 
   // Table data prep
   const groupedByRoundAndTeam: Record<number, Record<string, any>> = {};
@@ -204,8 +244,22 @@ export default function DraftBoardPage() {
                               <Image
                                 src={
                                   (() => {
-                                    // Always use Yahoo silhouette for fallback
                                     const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                    if (player.position === "DEF") {
+                                      let rawAbbr = player.team?.toUpperCase() || "FA";
+                                      if (rawAbbr === "WAS") rawAbbr = "WSH";
+                                      const defInfo = yahooDefImages[rawAbbr];
+                                      if (defInfo) {
+                                        // Special case for teams with pxFolder (Jets, Bears, etc.)
+                                        if (defInfo.pxFolder) {
+                                          return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                                        }
+                                        // Use folder from mapping if present, else default to 20190724
+                                        const folder = defInfo.folder || "20190724";
+                                        return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+                                      }
+                                      return fallbackUrl;
+                                    }
                                     if (
                                       !player.image_url ||
                                       player.image_url === "/fallback-avatar.png" ||
@@ -222,6 +276,7 @@ export default function DraftBoardPage() {
                                 width={60}
                                 height={60}
                                 className="rounded-full object-cover flex-shrink-0"
+                                loading="eager"
                               />
                               <div className="flex flex-col flex-shrink min-w-0 text-left">
                                 {(() => {

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import keepersJson from "../data/keepers/keepers.json";
+import yahooDefImagesJson from "../data/yahooDefImages.json";
 
 type KeeperYearData = { Teams: { TeamID: string; keeper: string; }[] };
 type KeepersType = { [year: string]: KeeperYearData };
@@ -33,6 +34,8 @@ interface Team {
   logo_url?: string;
   players: Player[];
 }
+
+const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 export default function KeepersPage() {
   const currentYear = String(new Date().getFullYear());
@@ -252,6 +255,19 @@ export default function KeepersPage() {
                             src={
                               (() => {
                                 const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                if (player.position === "DEF") {
+                                  let rawAbbr = player.team_abbr?.toUpperCase() || "FA";
+                                  if (rawAbbr === "WAS") rawAbbr = "WSH";
+                                  const defInfo = yahooDefImages[rawAbbr];
+                                  if (defInfo) {
+                                    if (defInfo.pxFolder) {
+                                      return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                                    }
+                                    const folder = defInfo.folder || "20190724";
+                                    return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+                                  }
+                                  return fallbackUrl;
+                                }
                                 if (
                                   !player.image_url ||
                                   player.image_url === "/fallback-avatar.png" ||
@@ -267,7 +283,11 @@ export default function KeepersPage() {
                             alt={player.name}
                             width={40}
                             height={40}
-                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
+                            className={`sm:w-12 sm:h-12 rounded-full flex-shrink-0 ${player.position === "DEF" ? "bg-[#232323]" : "object-cover bg-[#232323]"}`}
+                            style={player.position === "DEF"
+                              ? { objectFit: "contain", padding: "6px" }
+                              : undefined
+                            }
                             unoptimized={false}
                           />
 
@@ -341,15 +361,40 @@ export default function KeepersPage() {
                           <Image
                             src={
                               (() => {
-                                const match = player.image_url?.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                if (player.position === "DEF") {
+                                  let rawAbbr = player.team_abbr?.toUpperCase() || "FA";
+                                  if (rawAbbr === "WAS") rawAbbr = "WSH";
+                                  const defInfo = yahooDefImages[rawAbbr];
+                                  if (defInfo) {
+                                    if (defInfo.pxFolder) {
+                                      return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                                    }
+                                    const folder = defInfo.folder || "20190724";
+                                    return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+                                  }
+                                  return fallbackUrl;
+                                }
+                                if (
+                                  !player.image_url ||
+                                  player.image_url === "/fallback-avatar.png" ||
+                                  player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+                                ) {
+                                  return fallbackUrl;
+                                }
+                                const match = typeof player.image_url === "string" && player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
                                 if (match) return match[1];
-                                return (player.image_url || "/fallback-avatar.png").replace(/(\.png).*$/, '$1');
+                                return player.image_url.replace(/(\.png).*$/, '$1');
                               })()
                             }
                             alt={player.name}
                             width={40}
                             height={40}
-                            className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
+                            className={`sm:w-12 sm:h-12 rounded-full flex-shrink-0 ${player.position === "DEF" ? "bg-[#232323]" : "object-cover bg-[#232323]"}`}
+                            style={player.position === "DEF"
+                              ? { objectFit: "contain",}
+                              : undefined
+                            }
                             unoptimized={false}
                           />
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import yahooDefImagesJson from "../data/yahooDefImages.json";
 
 // Helper to build statId -> statName map from league settings
 async function fetchLeagueSettings(year: string) {
@@ -68,6 +69,8 @@ function getTotalStats(weekStats: any[], statColumns: { id: string; label: strin
     });
     return totals;
 }
+
+const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 export default function PlayerViewer({
     player,
@@ -322,27 +325,40 @@ export default function PlayerViewer({
                                 Bye Week: {player.stats?.byeWeek ?? "-"}
                             </div>
                         </div>
-                        {player.headshotUrl && (
-                            <Image
-                                src={
-                                    (() => {
-                                        const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
-                                        if (
-                                            !player.headshotUrl ||
-                                            player.headshotUrl.includes("dh/ap/default/140828/silhouette@2x.png")
-                                        ) {
-                                            return fallbackUrl;
+                        {(
+                            (() => {
+                                const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                let imgUrl = fallbackUrl;
+                                if (player.position === "DEF") {
+                                    let rawAbbr = player.team?.toUpperCase() || "FA";
+                                    if (rawAbbr === "WAS") rawAbbr = "WSH";
+                                    const defInfo = yahooDefImages[rawAbbr];
+                                    if (defInfo) {
+                                        if (defInfo.pxFolder) {
+                                            imgUrl = `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                                        } else {
+                                            const folder = defInfo.folder || "20190724";
+                                            imgUrl = `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
                                         }
-                                        const match = player.headshotUrl.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
-                                        if (match) return match[1];
-                                        return player.headshotUrl.replace(/(\.png).*$/, '$1');
-                                    })()
+                                    }
+                                } else if (
+                                    player.headshotUrl &&
+                                    !player.headshotUrl.includes("dh/ap/default/140828/silhouette@2x.png")
+                                ) {
+                                    const match = player.headshotUrl.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                    if (match) imgUrl = match[1];
+                                    else imgUrl = player.headshotUrl.replace(/(\.png).*$/, '$1');
                                 }
-                                alt={player.name}
-                                width={150}
-                                height={150}
-                                className="full"
-                            />
+                                return (
+                                    <Image
+                                        src={imgUrl}
+                                        alt={player.name}
+                                        width={150}
+                                        height={150}
+                                        style={player.position === "DEF" ? { background: "#181a20" } : undefined}
+                                    />
+                                );
+                            })()
                         )}
                     </div>
                     <div className="flex justify-between items-center mt-4 mb-2">

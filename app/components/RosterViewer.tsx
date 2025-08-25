@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import PlayerViewer from "./PlayerViewer";
 import Link from "next/link";
+import yahooDefImagesJson from "../data/yahooDefImages.json";
 
 const slotColor = (slot: string) =>
   ({
@@ -41,6 +42,35 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }: Col
       {open && children}
     </section>
   );
+}
+
+const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
+
+function getPlayerImageUrl(player: any) {
+  const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+  if (player.position === "DEF") {
+    let rawAbbr = player.team?.toUpperCase() || "FA";
+    if (rawAbbr === "WAS") rawAbbr = "WSH";
+    const defInfo = yahooDefImages[rawAbbr];
+    if (defInfo) {
+      if (defInfo.pxFolder) {
+        return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+      }
+      const folder = defInfo.folder || "20190724";
+      return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+    }
+    return fallbackUrl;
+  }
+  if (
+    !player.headshotUrl ||
+    player.headshotUrl === "/fallback-avatar.png" ||
+    player.headshotUrl.includes("dh/ap/default/140828/silhouette@2x.png")
+  ) {
+    return fallbackUrl;
+  }
+  const match = player.headshotUrl.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+  if (match) return match[1];
+  return player.headshotUrl.replace(/(\.png).*$/, '$1');
 }
 
 export default function RosterPage() {
@@ -230,11 +260,16 @@ export default function RosterPage() {
             {p.selectedPosition || p.position}
           </div>
           <Image
-            src={normalizeYahooPlayerUrl(p.headshotUrl)}
+            src={getPlayerImageUrl(p)}
             alt={p.name}
             width={48}
             height={48}
-            className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-emerald-900 shadow"
+            className={`w-12 h-12 sm:w-20 sm:h-20 rounded-full border-2 sm:border-4 border-emerald-900 shadow ${
+              p.position === "DEF"
+                ? "object-cover scale-115"
+                : "object-cover"
+            }`}
+            style={p.position === "DEF" ? { background: "#232323" } : undefined}
           />
           <div className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-emerald-100 text-center truncate w-full">{p.name}</div>
           <div className="text-xs sm:text-sm text-emerald-400 mb-1 sm:mb-2">{p.team} &middot; {p.position}</div>

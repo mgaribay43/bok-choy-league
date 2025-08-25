@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import leagueKeysByYearJson from "../data/League_Keys/league_keys.json";
+import yahooDefImagesJson from "../data/yahooDefImages.json";
 
 const positionColors: Record<string, string> = {
   QB: "bg-gradient-to-br from-orange-700 to-orange-900",
@@ -14,40 +15,7 @@ const positionColors: Record<string, string> = {
 };
 
 // Map team abbreviations to Yahoo defense image hashes and image paths
-const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = {
-  DEN: { hash: "2ryPkHnKLeN6pwLpCNLIzw--", img: "2019_DEN.png" },
-  PHI: { hash: "sHdqDnOKm.VqhUcJbkQV0w--", img: "2019_PHI.png" },
-  MIN: { hash: "a3fAhhYYFltgzqJ5xDDUaQ--", img: "2019_MIN.png" },
-  KC: { hash: "zw8PWS4vfpxgMVqp1v1eYw--", img: "2019_KC.png" },
-  DET: { hash: "X_djfvvxv1QajPN7MyNkkA--", img: "2019_DET.png" },
-  LAC: { hash: "SD0F5LgxJ8K9uyPRNViKEA--", img: "chargers.png", folder: "20200508" },
-  HOU: { hash: ".ATgePlNDvMZQcZ1ZFVlOg--", img: "2019_HOU.png" },
-  BUF: { hash: "4AM2K40.PxCYdXcjee18Jg--", img: "2019_BUF.png" },
-  NYJ: { hash: "dtEwQvkZ5sLY30lGabPhkA--~C", img: "Jets.png", folder: "20240610", pxFolder: "500px" },
-  SEA: { hash: "LzAnPXULOD65CNY8w.NM.A--", img: "2019_SEA.png" },
-  LAR: { hash: "VJs6Ghs66W811UkkDd90OA--", img: "rams.png", folder: "20200323" },
-  CLE: { hash: "T4mvF8UQVaXOxTDw2.Uz1Q--", img: "2019_CLE.png" },
-  GB: { hash: "2MMBKgdqastSfmxSSWLLfg--", img: "2019_GB.png" },
-  DAL: { hash: "Ip32wf6PnIkm9U05Ap73.A--", img: "2019_DAL.png" },
-  NE: { hash: "YYUnurcCTjQMbkvgRkiqdg--", img: "2019_NE.png" },
-  SF: { hash: "WtaL3IcCDTpU6Scpaz9p4A--", img: "2019_SF.png" },
-  TB: { hash: "2zXlLUp.mFnpy2rcwCwa.Q--", img: "buccaneers.png", folder: "20200508" },
-  CHI: { hash: "X_NszvC1JzHbQQSCwAydGw--~C", img: "bears_new.png", folder: "20230905", pxFolder: "500px" },
-  MIA: { hash: "hVO5JWGw_LUVjO8XOZO1nA--", img: "2019_MIA.png" },
-  WSH: { hash: "nJpfIFmBhh6CiJPTSCDRcQ--", img: "washington.png", folder: "20220202" },
-  CIN: { hash: "0vqhunH68VeIojFhZGhOFg--", img: "2019_CIN.png" },
-  NO: { hash: "p1Xthb1b70rMVPYADzbc3Q--", img: "2019_NO.png" },
-  IND: { hash: "1qH8FeRuMdO9r7JfL5fA0g--", img: "2019_IND.png" },
-  PIT: { hash: "rh_v5LuGevS5sHMS_.OxKw--", img: "2019_PIT.png" },
-  ARI: { hash: "flzok_70._33ZWZkdlghUA--", img: "ari.png", folder: "20230503" },
-  ATL: { hash: "vWPPZRKii.sPlRox48SNfA--", img: "2019_ATL.png" },
-  BAL: { hash: "tYcK6qUrDTAyQ1luc5u_bg--", img: "2019_BAL.png" },
-  CAR: { hash: "BOZYXBAlx4uxlnfjGc7SkQ--", img: "2019_CAR.png" },
-  JAX: { hash: "Ub6qKzgdAA1vq_u9vSgRoA--", img: "2019_JAX.png" },
-  LV: { hash: "zBNWLq5MM9vDEvd9fY.pdQ--", img: "raiders.png", folder: "20200908" },
-  NYG: { hash: "TuBVnXSCrgeyV8jqNIyeIQ--", img: "2019_NYG.png" },
-  TEN: { hash: "nHwnFC87xWH3nZPQSa2VRw--", img: "2019_TEN.png" },
-};
+const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 export default function DraftBoardPage() {
   const [selectedYear, setSelectedYear] = useState("");
@@ -71,7 +39,7 @@ export default function DraftBoardPage() {
       setPlayers(cached.players);
       setTeamManagers(cached.teamManagers);
       setLoading(false);
-      return; // <-- Only fetch if not cached
+      return;
     }
 
     const safeParse = (raw: string) => JSON.parse(raw.replace(/^callback\((.*)\)$/, "$1"));
@@ -134,6 +102,42 @@ export default function DraftBoardPage() {
     }
     fetchDraftTime();
   }, []);
+
+  useEffect(() => {
+    if (!players || Object.keys(players).length === 0) return;
+
+    Object.values(players).forEach((player: any) => {
+      let imgUrl = (() => {
+        const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+        if (player.position === "DEF") {
+          let rawAbbr = player.team?.toUpperCase() || "FA";
+          if (rawAbbr === "WAS") rawAbbr = "WSH";
+          const defInfo = yahooDefImages[rawAbbr];
+          if (defInfo) {
+            if (defInfo.pxFolder) {
+              return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+            }
+            const folder = defInfo.folder || "20190724";
+            return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+          }
+          return fallbackUrl;
+        }
+        if (
+          !player.image_url ||
+          player.image_url === "/fallback-avatar.png" ||
+          player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+        ) {
+          return fallbackUrl;
+        }
+        const match = player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+        if (match) return match[1];
+        return player.image_url.replace(/(\.png).*$/, '$1');
+      })();
+
+      const img = new window.Image();
+      img.src = imgUrl;
+    });
+  }, [players]);
 
   // Table data prep
   const groupedByRoundAndTeam: Record<number, Record<string, any>> = {};
@@ -272,6 +276,7 @@ export default function DraftBoardPage() {
                                 width={60}
                                 height={60}
                                 className="rounded-full object-cover flex-shrink-0"
+                                loading="eager"
                               />
                               <div className="flex flex-col flex-shrink min-w-0 text-left">
                                 {(() => {

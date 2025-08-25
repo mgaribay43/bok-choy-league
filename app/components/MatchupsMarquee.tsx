@@ -101,6 +101,7 @@ const MatchupsMarquee = () => {
               borderRadius: '10px',
               padding: '10px 20px',
               margin: '5px 20px',
+              marginBottom: "20px",
               boxShadow: '0 2px 12px 0 #00FF00',
               fontFamily: 'Arial, sans-serif',
               fontSize: '15px',

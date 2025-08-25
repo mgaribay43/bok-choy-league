@@ -229,13 +229,13 @@ export default function RosterPage() {
           <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 sm:px-4 sm:py-1 rounded-full text-xs sm:text-sm text-white font-bold shadow-lg ${slotColor(p.selectedPosition || p.position)}`}>
             {p.selectedPosition || p.position}
           </div>
-          {p.headshotUrl ? (
-            <Image src={p.headshotUrl} alt={p.name} width={48} height={48} className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-emerald-900 shadow" />
-          ) : (
-            <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-xl sm:text-3xl font-bold text-emerald-700 border-2 sm:border-4 border-emerald-900 shadow">
-              {p.name.charAt(0)}
-            </div>
-          )}
+          <Image
+            src={normalizeYahooPlayerUrl(p.headshotUrl)}
+            alt={p.name}
+            width={48}
+            height={48}
+            className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-emerald-900 shadow"
+          />
           <div className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-emerald-100 text-center truncate w-full">{p.name}</div>
           <div className="text-xs sm:text-sm text-emerald-400 mb-1 sm:mb-2">{p.team} &middot; {p.position}</div>
           <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2">
@@ -322,4 +322,18 @@ export default function RosterPage() {
       )}
     </div>
   );
+}
+
+function normalizeYahooPlayerUrl(url: string) {
+  const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+  if (
+    !url ||
+    url === "/fallback-avatar.png" ||
+    url.includes("dh/ap/default/140828/silhouette@2x.png")
+  ) {
+    return fallbackUrl;
+  }
+  const match = url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+  if (match) return match[1];
+  return url.replace(/(\.png).*$/, '$1');
 }

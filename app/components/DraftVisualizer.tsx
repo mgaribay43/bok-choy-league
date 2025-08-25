@@ -201,7 +201,28 @@ export default function DraftBoardPage() {
                         {player ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <Image src={player.image_url} alt={player.name} width={28} height={28} className="rounded-full object-cover flex-shrink-0" />
+                              <Image
+                                src={
+                                  (() => {
+                                    // Always use Yahoo silhouette for fallback
+                                    const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                    if (
+                                      !player.image_url ||
+                                      player.image_url === "/fallback-avatar.png" ||
+                                      player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+                                    ) {
+                                      return fallbackUrl;
+                                    }
+                                    const match = player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                    if (match) return match[1];
+                                    return player.image_url.replace(/(\.png).*$/, '$1');
+                                  })()
+                                }
+                                alt={player.name}
+                                width={60}
+                                height={60}
+                                className="rounded-full object-cover flex-shrink-0"
+                              />
                               <div className="flex flex-col flex-shrink min-w-0 text-left">
                                 {(() => {
                                   const [firstName, ...rest] = player.name.split(" ");

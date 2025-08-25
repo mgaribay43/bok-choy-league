@@ -249,14 +249,28 @@ export default function KeepersPage() {
                         >
                           {/* Player Image - Smaller on mobile */}
                           <Image
-                            src={player.image_url || "/fallback-avatar.png"}
+                            src={
+                              (() => {
+                                const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                if (
+                                  !player.image_url ||
+                                  player.image_url === "/fallback-avatar.png" ||
+                                  player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+                                ) {
+                                  return fallbackUrl;
+                                }
+                                const match = typeof player.image_url === "string" && player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                if (match) return match[1];
+                                return player.image_url.replace(/(\.png).*$/, '$1');
+                              })()
+                            }
                             alt={player.name}
                             width={40}
                             height={40}
                             className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
                             unoptimized={false}
                           />
-                          
+
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>
@@ -325,14 +339,20 @@ export default function KeepersPage() {
                         >
                           {/* Player Image - Smaller on mobile */}
                           <Image
-                            src={player.image_url || "/fallback-avatar.png"}
+                            src={
+                              (() => {
+                                const match = player.image_url?.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                if (match) return match[1];
+                                return (player.image_url || "/fallback-avatar.png").replace(/(\.png).*$/, '$1');
+                              })()
+                            }
                             alt={player.name}
                             width={40}
                             height={40}
                             className="sm:w-12 sm:h-12 rounded-full object-cover bg-[#232323] flex-shrink-0"
                             unoptimized={false}
                           />
-                          
+
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>

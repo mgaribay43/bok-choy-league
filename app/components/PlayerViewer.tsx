@@ -312,7 +312,7 @@ export default function PlayerViewer({
                     &times;
                 </button>
                 <div ref={headerRef} className="px-6 pt-6 pb-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-bottom justify-between">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-1">{player.name}</h2>
                             <div className="text-slate-300 text-sm">
@@ -324,11 +324,24 @@ export default function PlayerViewer({
                         </div>
                         {player.headshotUrl && (
                             <Image
-                                src={player.headshotUrl}
+                                src={
+                                    (() => {
+                                        const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                        if (
+                                            !player.headshotUrl ||
+                                            player.headshotUrl.includes("dh/ap/default/140828/silhouette@2x.png")
+                                        ) {
+                                            return fallbackUrl;
+                                        }
+                                        const match = player.headshotUrl.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                        if (match) return match[1];
+                                        return player.headshotUrl.replace(/(\.png).*$/, '$1');
+                                    })()
+                                }
                                 alt={player.name}
-                                width={64}
-                                height={64}
-                                className="rounded-full"
+                                width={150}
+                                height={150}
+                                className="full"
                             />
                         )}
                     </div>

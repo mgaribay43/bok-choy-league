@@ -163,6 +163,7 @@ export default function DraftBoardPage() {
           value={selectedYear}
           onChange={e => setSelectedYear(e.target.value)}
           className="border border-[#333] rounded px-3 py-2 bg-[#232323] text-emerald-100"
+          style={{ minWidth: "230px" }} // Add a fixed minWidth
         >
           <option value="" className="bg-[#232323] text-emerald-100">Select Year</option>
           {Object.keys(leagueKeysByYear).sort((a, b) => Number(b) - Number(a)).map(year => (

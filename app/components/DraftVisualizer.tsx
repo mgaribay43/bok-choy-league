@@ -150,6 +150,9 @@ export default function DraftBoardPage() {
   const teamKeyToName = Object.fromEntries(teamOrder.map((key) => [key, teamManagers[key] || key]));
   const pickMap = Object.fromEntries(draftPicks.map((p) => [p.pick, p]));
 
+  // Detect mobile device
+  const isMobile = typeof window !== "undefined" && /Mobi|Android/i.test(window.navigator.userAgent);
+
   return (
     <div className="w-full overflow-x-auto px-2 py-0 bg-[#0f0f0f] min-h-screen">
       <h1 className="text-4xl font-extrabold text-center mb-8 text-emerald-200">Draft Board</h1>
@@ -241,43 +244,43 @@ export default function DraftBoardPage() {
                         {player ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <Image
-                                src={
-                                  (() => {
-                                    const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
-                                    if (player.position === "DEF") {
-                                      let rawAbbr = player.team?.toUpperCase() || "FA";
-                                      if (rawAbbr === "WAS") rawAbbr = "WSH";
-                                      const defInfo = yahooDefImages[rawAbbr];
-                                      if (defInfo) {
-                                        // Special case for teams with pxFolder (Jets, Bears, etc.)
-                                        if (defInfo.pxFolder) {
-                                          return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                              {!isMobile && (
+                                <Image
+                                  src={
+                                    (() => {
+                                      const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
+                                      if (player.position === "DEF") {
+                                        let rawAbbr = player.team?.toUpperCase() || "FA";
+                                        if (rawAbbr === "WAS") rawAbbr = "WSH";
+                                        const defInfo = yahooDefImages[rawAbbr];
+                                        if (defInfo) {
+                                          if (defInfo.pxFolder) {
+                                            return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/${defInfo.folder}/${defInfo.pxFolder}/${defInfo.img}`;
+                                          }
+                                          const folder = defInfo.folder || "20190724";
+                                          return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
                                         }
-                                        // Use folder from mapping if present, else default to 20190724
-                                        const folder = defInfo.folder || "20190724";
-                                        return `https://s.yimg.com/iu/api/res/1.2/${defInfo.hash}/YXBwaWQ9eXNwb3J0cztmaT1maWxsO2g9NDMwO3E9ODA7dz02NTA-/https://s.yimg.com/cv/apiv2/default/nfl/${folder}/500x500/${defInfo.img}`;
+                                        return fallbackUrl;
                                       }
-                                      return fallbackUrl;
-                                    }
-                                    if (
-                                      !player.image_url ||
-                                      player.image_url === "/fallback-avatar.png" ||
-                                      player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
-                                    ) {
-                                      return fallbackUrl;
-                                    }
-                                    const match = player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
-                                    if (match) return match[1];
-                                    return player.image_url.replace(/(\.png).*$/, '$1');
-                                  })()
-                                }
-                                alt={player.name}
-                                width={60}
-                                height={60}
-                                className="rounded-full object-cover flex-shrink-0"
-                                loading="eager"
-                              />
+                                      if (
+                                        !player.image_url ||
+                                        player.image_url === "/fallback-avatar.png" ||
+                                        player.image_url.includes("dh/ap/default/140828/silhouette@2x.png")
+                                      ) {
+                                        return fallbackUrl;
+                                      }
+                                      const match = player.image_url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
+                                      if (match) return match[1];
+                                      return player.image_url.replace(/(\.png).*$/, '$1');
+                                    })()
+                                  }
+                                  alt={player.name}
+                                  width={60}
+                                  height={60}
+                                  className="rounded-full object-cover flex-shrink-0"
+                                  loading="eager"
+                                />
+                              )}
                               <div className="flex flex-col flex-shrink min-w-0 text-left">
                                 {(() => {
                                   const [firstName, ...rest] = player.name.split(" ");

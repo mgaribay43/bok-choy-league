@@ -79,7 +79,8 @@ export default function RosterPage() {
   const teamId = searchParams.get("teamId");
   const yearNum = Number(year);
   const maxWeek = yearNum >= 2017 && yearNum <= 2020 ? 16 : 17;
-  const [week, setWeek] = useState(maxWeek);
+
+  const [week, setWeek] = useState<number | null>(null); // Start as null
   const [teamName, setTeamName] = useState("");
   const [teamLogo, setTeamLogo] = useState("");
   const [managerName, setManagerName] = useState("");
@@ -92,7 +93,35 @@ export default function RosterPage() {
   const weekSliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!year || !teamId) return;
+    // On mount, fetch settings.json to get current week for 2025
+    async function fetchCurrentWeek() {
+      if (year === "2025") {
+        try {
+          const res = await fetch(
+            `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=2025`
+          );
+          if (!res.ok) throw new Error("Failed to fetch settings");
+          const settingsJson = await res.json();
+          // Use matchup_week for the current week
+          let matchupWeek = settingsJson?.fantasy_content?.league?.[0]?.matchup_week;
+          matchupWeek = Number(matchupWeek);
+          if (Number.isFinite(matchupWeek) && matchupWeek >= 1 && matchupWeek <= maxWeek) {
+            setWeek(matchupWeek);
+          } else {
+            setWeek(maxWeek); // fallback
+          }
+        } catch {
+          setWeek(maxWeek); // fallback
+        }
+      } else {
+        setWeek(maxWeek); // fallback for other years
+      }
+    }
+    fetchCurrentWeek();
+  }, [year, maxWeek]);
+
+  useEffect(() => {
+    if (!year || !teamId || week == null) return;
     const buildScoringMap = (settingsJson: any) => {
       const league = settingsJson?.fantasy_content?.league;
       const settings = league?.[1]?.settings?.[0] || {};
@@ -240,6 +269,14 @@ export default function RosterPage() {
     }
   }, [week]);
 
+  useEffect(() => {
+    if (!players || players.length === 0) return;
+    players.forEach((player) => {
+      const img = new window.Image();
+      img.src = getPlayerImageUrl(player);
+    });
+  }, [players]);
+
   if (!year || !teamId) return <p className="text-center text-red-500 mt-10">Missing year or teamId in URL.</p>;
 
   const weekOptions = Array.from({ length: maxWeek }, (_, i) => i + 1);
@@ -247,38 +284,45 @@ export default function RosterPage() {
   const bench = players.filter((p) => p.selectedPosition === "BN");
   const ir = players.filter((p) => p.selectedPosition === "IR");
 
-  // Update PlayerGrid to accept onPlayerClick
-  const PlayerGrid = ({ players, onPlayerClick }: { players: any[]; onPlayerClick: (p: any) => void }) => (
-    <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-10">
-      {players.map((p) => (
-        <div
-          key={p.playerKey}
-          className="relative rounded-2xl shadow-xl border border-[#222] bg-[#232323] p-2 sm:p-5 flex flex-col items-center transition-transform hover:-translate-y-1 hover:shadow-emerald-900 cursor-pointer"
-          onClick={() => onPlayerClick(p)}
-        >
-          <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 sm:px-4 sm:py-1 rounded-full text-xs sm:text-sm text-white font-bold shadow-lg ${slotColor(p.selectedPosition || p.position)}`}>
-            {p.selectedPosition || p.position}
-          </div>
-          <Image
-            src={getPlayerImageUrl(p)}
-            alt={p.name}
-            width={48}
-            height={48}
-            className={`w-12 h-12 sm:w-20 sm:h-20 rounded-full border-2 sm:border-4 border-emerald-900 shadow ${
-              p.position === "DEF"
-                ? "object-cover scale-115"
-                : "object-cover"
-            }`}
-            style={p.position === "DEF" ? { background: "#232323" } : undefined}
-          />
-          <div className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-emerald-100 text-center truncate w-full">{p.name}</div>
-          <div className="text-xs sm:text-sm text-emerald-400 mb-1 sm:mb-2">{p.team} &middot; {p.position}</div>
-          <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2">
-            <span className="text-emerald-300 font-bold text-base sm:text-xl">{p.stats?.fanPts != null ? p.stats.fanPts.toFixed(1) : "-"}</span>
-            <span className="text-xs text-emerald-700">pts</span>
-          </div>
+  const RosterSlot = ({
+    slot,
+    player,
+    onPlayerClick,
+  }: {
+    slot: string;
+    player: any;
+    onPlayerClick: (p: any) => void;
+  }) => (
+    <div className="flex items-center gap-3 py-2 px-2 border-b border-[#222] bg-[#181818] hover:bg-[#232323] transition cursor-pointer" onClick={() => onPlayerClick(player)}>
+      <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white text-base sm:text-lg shadow ${slotColor(slot)}`}>
+        {slot}
+      </div>
+      <Image
+        src={getPlayerImageUrl(player)}
+        alt={player.name}
+        width={40}
+        height={40}
+        loading="eager"
+        className={`w-10 h-10 rounded-full border-2 border-[#232323] object-cover ${player.position === "DEF" ? "object-contain p-1" : ""}`}
+        style={player.position === "DEF" ? { background: "#232323" } : undefined}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-base sm:text-lg text-white truncate">{player.name}</div>
+        <div className="text-xs text-emerald-300 truncate">
+          {player.team} - {player.position}
         </div>
-      ))}
+        {player.stats?.byeWeek && (
+          <div className="text-xs text-slate-400">Bye Week: {player.stats.byeWeek}</div>
+        )}
+        {player.matchup && (
+          <div className="text-xs text-slate-400">{player.matchup}</div>
+        )}
+      </div>
+      <div className="flex flex-col items-end min-w-[48px]">
+        <div className="font-bold text-emerald-200 text-base sm:text-lg">
+          {player.stats?.fanPts != null ? player.stats.fanPts.toFixed(2) : "-"}
+        </div>
+      </div>
     </div>
   );
 
@@ -319,6 +363,7 @@ export default function RosterPage() {
                     week === w ? "bg-emerald-600 text-white shadow-lg" : "bg-[#232323] text-emerald-200 hover:bg-emerald-900"
                   }`}
                   onClick={() => setWeek(w)}
+                  disabled={week == null}
                 >
                   {w}
                 </button>
@@ -327,7 +372,7 @@ export default function RosterPage() {
           </div>
         </div>
       </div>
-      <main className="w-full max-w-5xl px-2 sm:px-6 py-10 flex flex-col gap-12">
+      <main className="w-full max-w-5xl px-2 sm:px-6 py-2 flex flex-col gap-2">
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
@@ -338,16 +383,31 @@ export default function RosterPage() {
         {error && <p className="text-center text-red-400 text-lg mt-10">{error}</p>}
         {!loading && !error && (
           <>
-            <CollapsibleSection title="Starters" count={starters.length} defaultOpen={true}>
-              <PlayerGrid players={starters} onPlayerClick={setSelectedPlayer} />
-            </CollapsibleSection>
-            <CollapsibleSection title="Bench" count={bench.length} defaultOpen={false}>
-              <PlayerGrid players={bench} onPlayerClick={setSelectedPlayer} />
-            </CollapsibleSection>
+            <section>
+              <h2 className="text-lg font-bold text-emerald-200">Starters</h2>
+              <div className="rounded-lg overflow-hidden shadow bg-[#181818]">
+                {starters.map((p) => (
+                  <RosterSlot key={p.playerKey} slot={p.selectedPosition || p.position} player={p} onPlayerClick={setSelectedPlayer} />
+                ))}
+              </div>
+            </section>
+            <section>
+              <h2 className="text-lg font-bold text-emerald-200">Bench</h2>
+              <div className="rounded-lg overflow-hidden shadow bg-[#181818]">
+                {bench.map((p) => (
+                  <RosterSlot key={p.playerKey} slot={p.selectedPosition || p.position} player={p} onPlayerClick={setSelectedPlayer} />
+                ))}
+              </div>
+            </section>
             {ir.length > 0 && (
-              <CollapsibleSection title="Injured Reserve" count={ir.length} defaultOpen={false}>
-                <PlayerGrid players={ir} onPlayerClick={setSelectedPlayer} />
-              </CollapsibleSection>
+              <section>
+                <h2 className="text-lg font-bold text-emerald-200">Injured Reserve</h2>
+                <div className="rounded-lg overflow-hidden shadow bg-[#181818]">
+                  {ir.map((p) => (
+                    <RosterSlot key={p.playerKey} slot={p.selectedPosition || p.position} player={p} onPlayerClick={setSelectedPlayer} />
+                  ))}
+                </div>
+              </section>
             )}
           </>
         )}

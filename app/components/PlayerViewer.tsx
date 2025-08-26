@@ -294,11 +294,15 @@ export default function PlayerViewer({
     const gameLogLoading = !stats || !Array.isArray(stats) || stats.length === 0;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+            style={{ pointerEvents: "none" }}
+        >
             <div
                 ref={cardRef}
                 className="bg-[#181A20] rounded-2xl shadow-2xl p-0 w-[400px] h-[600px] flex flex-col relative overflow-hidden"
                 style={{
+                    pointerEvents: "auto",
                     transform: `translateY(${translateY}px)`,
                     transition: isAnimating
                         ? "transform 1s cubic-bezier(.4,2,.6,1)"

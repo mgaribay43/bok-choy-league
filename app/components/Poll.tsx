@@ -153,7 +153,11 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       console.error('Error fetching user name:', error);
     }
 
-    if (poll.voters && poll.voters.includes(userName)) {
+    const userHasVoted =
+      (poll.voters && poll.voters.includes(userName)) ||
+      (poll.responses && poll.responses[userName]);
+
+    if (userHasVoted) {
       alert('You have already voted.');
       return;
     }

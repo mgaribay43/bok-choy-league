@@ -34,25 +34,20 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
+    const dbInstance = getFirestore();
+
     const fetchPolls = async () => {
       try {
-        const dbInstance = getFirestore();
         const pollsCollection = collection(dbInstance, 'Polls');
         const querySnapshot = await getDocs(pollsCollection);
         const fetchedPolls = querySnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }));
 
-        setPolls((prevPolls) => {
-          const mergedPolls = fetchedPolls.map((fetchedPoll) => {
-            const existingPoll = prevPolls.find((p) => p.id === fetchedPoll.id);
-            return existingPoll ? { ...fetchedPoll, responses: existingPoll.responses } : fetchedPoll;
-          });
+        // Overwrite local state with fetched data
+        const active = fetchedPolls.filter((poll) => !poll.isExpired);
+        const expired = fetchedPolls.filter((poll) => poll.isExpired);
 
-          const active = mergedPolls.filter((poll) => !poll.isExpired);
-          const expired = mergedPolls.filter((poll) => poll.isExpired);
-
-          setExpiredPolls(expired);
-          return active;
-        });
+        setPolls(active);
+        setExpiredPolls(expired);
 
         const initialTimeLeftMap = fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
           acc[poll.id] = calculateTimeLeft(poll.pollDuration);
@@ -64,7 +59,13 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       }
     };
 
-    fetchPolls();
+    fetchPolls(); // Initial fetch
+
+    const interval = setInterval(() => {
+      fetchPolls();
+    }, 10000); // Poll every 10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -309,11 +310,10 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                         <button
                           onClick={() => handleVote(poll.id, option.id)}
                           disabled={userHasVoted || isExpired}
-                          className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${
-                            userHasVoted || isExpired
+                          className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${userHasVoted || isExpired
                               ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                               : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          }`}
+                            }`}
                         >
                           {option.text}
                         </button>
@@ -330,11 +330,10 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                         value={textboxResponses[poll.id] || ''}
                         onChange={(e) => handleResponseChange(poll.id, e.target.value)}
                         disabled={userHasVoted || isExpired} // Disable the textbox if the poll is expired
-                        className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                          userHasVoted || isExpired
+                        className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${userHasVoted || isExpired
                             ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                             : 'bg-[#333] text-emerald-100 border-[#444]'
-                        }`}
+                          }`}
                         rows={4}
                       />
                     </div>
@@ -384,11 +383,10 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                   <button
                     onClick={() => handleVote(poll.id, option.id)}
                     disabled={userHasVoted || isExpired}
-                    className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${
-                      userHasVoted || isExpired
+                    className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${userHasVoted || isExpired
                         ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    }`}
+                      }`}
                   >
                     {option.text}
                   </button>
@@ -405,11 +403,10 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                   value={textboxResponses[poll.id] || ''}
                   onChange={(e) => handleResponseChange(poll.id, e.target.value)}
                   disabled={userHasVoted || isExpired} // Disable the textbox if the poll is expired
-                  className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                    userHasVoted || isExpired
+                  className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${userHasVoted || isExpired
                       ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                       : 'bg-[#333] text-emerald-100 border-[#444]'
-                  }`}
+                    }`}
                   rows={4}
                 />
               </div>

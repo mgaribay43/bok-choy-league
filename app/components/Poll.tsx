@@ -180,26 +180,13 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
         },
       };
 
-      if (updatedOptions.reduce((total: number, option: { votes: number }) => total + option.votes, 0) >= 10) {
-        // If votes reach 10, mark poll as expired
-        await setDoc(pollDoc, {
-          ...poll,
-          options: updatedOptions,
-          voters: updatedVoters,
-          responses: updatedResponses || {}, // Default to an empty object if undefined
-          isExpired: true, // Mark poll as expired
-        });
-
-        setPolls((prevPolls) => prevPolls.filter((p) => p.id !== pollId));
-        setExpiredPolls((prevExpired) => [...prevExpired, { ...poll, isExpired: true }]);
-      } else {
-        await setDoc(pollDoc, {
-          ...poll,
-          options: updatedOptions,
-          voters: updatedVoters,
-          responses: updatedResponses,
-        });
-      }
+      // Removed logic that auto-expires poll at 10 votes
+      await setDoc(pollDoc, {
+        ...poll,
+        options: updatedOptions,
+        voters: updatedVoters,
+        responses: updatedResponses,
+      });
 
       setPolls((prevPolls) =>
         prevPolls.map((p) =>
@@ -218,64 +205,71 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   };
 
   const handleEditResponse = async (pollId: string) => {
-    const poll = polls.find((p) => p.id === pollId);
-    if (!poll) return;
+    const dbInstance = getFirestore();
+    const pollDocRef = doc(dbInstance, 'Polls', pollId);
 
+    // Fetch the latest poll data from Firestore
+    let poll;
     try {
-      const dbInstance = getFirestore();
-      const pollDoc = doc(dbInstance, 'Polls', pollId);
-
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const email = user.email || '';
-
-        // Fetch the user's name from the Login_ID's collection
-        let userName = email; // Default to email if name is not found
-        try {
-          const querySnapshot = await getDocs(collection(dbInstance, "Login_ID's"));
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.email === email) {
-              userName = data.name || email;
-            }
-          });
-        } catch (error) {
-          console.error('Error fetching user name:', error);
-        }
-
-        const voters = poll.voters || [];
-        const updatedVoters = voters.filter((voter: string) => voter !== userName);
-
-        // Identify the option the user voted for and decrement its vote count
-        const userResponseOptionText = poll.responses?.[userName]?.optionText;
-        const updatedOptions = poll.options.map((option: any) => {
-          if (option.text === userResponseOptionText) {
-            return { ...option, votes: Math.max(option.votes - 1, 0) }; // Ensure votes don't go below 0
-          }
-          return option;
-        });
-
-        const updatedResponses = { ...(poll.responses || {}) };
-        delete updatedResponses[userName]; // Remove the user's response
-
-        await setDoc(pollDoc, {
-          ...poll,
-          options: updatedOptions,
-          voters: updatedVoters,
-          responses: updatedResponses,
-        });
-
-        setPolls((prevPolls) =>
-          prevPolls.map((p) =>
-            p.id === pollId
-              ? { ...p, options: updatedOptions, voters: updatedVoters, responses: updatedResponses }
-              : p
-          )
-        );
-      }
+      const pollSnap = await getDoc(pollDocRef);
+      if (!pollSnap.exists()) return;
+      poll = pollSnap.data();
     } catch (error) {
-      console.error('Error editing response:', error);
+      console.error('Error fetching latest poll:', error);
+      return;
+    }
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const email = user.email || '';
+    let userName = email;
+    try {
+      const querySnapshot = await getDocs(collection(dbInstance, "Login_ID's"));
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.email === email) {
+          userName = data.name || email;
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching user name:', error);
+    }
+
+    const voters = poll.voters || [];
+    const updatedVoters = voters.filter((voter: string) => voter !== userName);
+
+    // Identify the option the user voted for and decrement its vote count
+    const userResponseOptionText = poll.responses?.[userName]?.optionText;
+    const updatedOptions = poll.options.map((option: any) => {
+      if (option.text === userResponseOptionText) {
+        return { ...option, votes: Math.max(option.votes - 1, 0) };
+      }
+      return option;
+    });
+
+    const updatedResponses = { ...(poll.responses || {}) };
+    delete updatedResponses[userName];
+
+    // Only use the fetched poll data for the update!
+    await setDoc(pollDocRef, {
+      ...poll,
+      options: updatedOptions,
+      voters: updatedVoters,
+      responses: updatedResponses,
+    });
+
+    // Refetch the poll from Firestore to update local state
+    try {
+      const pollSnap = await getDoc(pollDocRef);
+      if (!pollSnap.exists()) return;
+      const updatedPoll = { id: pollId, ...pollSnap.data() };
+      setPolls((prevPolls) =>
+        prevPolls.map((p) => (p.id === pollId ? updatedPoll : p))
+      );
+    } catch (error) {
+      console.error('Error refetching poll:', error);
     }
   };
 

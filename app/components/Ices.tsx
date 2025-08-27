@@ -9,7 +9,7 @@ import Image from "next/image";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Listbox } from '@headlessui/react';
 import Link from "next/link";
-// Firestore imports (same as Poll.tsx)
+
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 
 // =======================

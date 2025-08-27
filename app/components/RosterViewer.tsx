@@ -20,30 +20,6 @@ const slotColor = (slot: string) =>
     IR: "bg-gradient-to-br from-red-800 to-red-900",
   }[slot] || "bg-gradient-to-br from-slate-800 to-slate-900");
 
-type CollapsibleSectionProps = {
-  title: string;
-  count: number;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-};
-
-function CollapsibleSection({ title, count, defaultOpen = false, children }: CollapsibleSectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className={`mb-0`}>
-      <button
-        className="flex items-center gap-2 mb-2 w-full text-left"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <h2 className="text-2xl font-bold text-emerald-200">{title}</h2>
-        <span className="bg-emerald-900 text-emerald-200 px-3 py-1 rounded-full font-semibold text-sm">{count}</span>
-        <span className="ml-auto text-emerald-400">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && children}
-    </section>
-  );
-}
-
 const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 function getPlayerImageUrl(player: any) {

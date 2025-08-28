@@ -472,23 +472,45 @@ function StatsSection({
               </div>
             </div>
 
-            {/* Most Ices in Single Week Card */}
+            {/* Most Ices in a Single Week Card */}
             <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
               <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
                 Most Ices in a Single Week
               </h3>
               <div className="space-y-2">
-                {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
-                  .flatMap(([manager, weeks]) => (
-                    Object.entries(weeks)
-                      .sort(([, countA], [, countB]) => countB - countA)
-                      .slice(0, 3)
-                      .map(([weekSeason, count], idx) => ({ manager, weekSeason, count, idx }))
-                  ))
-                  .sort((a, b) => b.count - a.count)
-                  .slice(0, 3)
-                  .map(({ manager, weekSeason, count }, index) => (
-                    <div key={manager + weekSeason + index} className="flex items-center justify-between">
+                {(() => {
+                  // Flatten all week records
+                  const allRecords = Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
+                    .flatMap(([manager, weeks]) =>
+                      Object.entries(weeks)
+                        .map(([weekSeason, count]) => ({
+                          manager,
+                          week: weekSeason.split("|")[0],
+                          season: weekSeason.split("|")[1],
+                          count,
+                          weekSeason,
+                        }))
+                    )
+                    .sort((a, b) => b.count - a.count || b.season.localeCompare(a.season)); // Sort by count, then most recent season
+
+                  // Deduplicate managers, keeping only their most recent record for each count
+                  const seenManagers = new Set<string>();
+                  const seenCounts = new Set<number>();
+                  const uniqueRecords: typeof allRecords = [];
+                  for (const rec of allRecords) {
+                    if (!seenManagers.has(rec.manager)) {
+                      uniqueRecords.push(rec);
+                      seenManagers.add(rec.manager);
+                      seenCounts.add(rec.count);
+                    } else if (!seenCounts.has(rec.count)) {
+                      uniqueRecords.push(rec);
+                      seenCounts.add(rec.count);
+                    }
+                    if (uniqueRecords.length === 3) break;
+                  }
+
+                  return uniqueRecords.map((rec, index) => (
+                    <div key={rec.manager + rec.weekSeason + index} className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="bg-orange-900 text-orange-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                           {index + 1}
@@ -496,12 +518,12 @@ function StatsSection({
                         <button
                           className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left text-xs sm:text-sm"
                           onClick={() => {
-                            setSelectedSeason(weekSeason.split('|')[1]);
-                            setSelectedWeek(weekSeason.split('|')[0]);
-                            setSelectedManager(manager);
+                            setSelectedSeason(rec.season);
+                            setSelectedWeek(rec.week);
+                            setSelectedManager(rec.manager);
                             setSelectedPlayer("All");
                             setSelectedFlavor("All");
-                            scrollToSeason(weekSeason.split('|')[1]);
+                            scrollToSeason(rec.season);
                             setCollapsedSeasons((prev: Record<string, boolean>) => {
                               const expanded: Record<string, boolean> = {};
                               Object.keys(prev).forEach(season => {
@@ -513,16 +535,16 @@ function StatsSection({
                           }}
                         >
                           <div className="truncate">
-                            <div className="font-medium">{manager}</div>
-                            <div className="text-emerald-300 text-xs">{weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}</div>
+                            <div className="font-medium">{rec.manager} {rec.week}, {rec.season}</div>
                           </div>
                         </button>
                       </div>
                       <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
-                        {count}
+                        {rec.count}
                       </span>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>
@@ -562,8 +584,7 @@ function StatsSection({
                             scrollToVideos();
                           }}
                         >
-                          <div className="font-medium text-sm">{record.manager}</div>
-                          <div className="text-emerald-300 text-xs">{record.weeks}</div>
+                          <div className="font-medium text-sm">{record.manager} {record.weeks}</div>
                         </button>
                       </div>
                       <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
@@ -601,8 +622,7 @@ function StatsSection({
                               scrollToVideos();
                             }}
                           >
-                            <div className="font-medium text-sm">{record.manager}</div>
-                            <div className="text-emerald-300 text-xs">{record.season}</div>
+                            <div className="font-medium text-sm">{record.manager} {record.season}</div>
                           </button>
                         </div>
                         <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">

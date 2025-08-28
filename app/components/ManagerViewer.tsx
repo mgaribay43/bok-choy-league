@@ -605,6 +605,7 @@ export default function ManagerViewer() {
                   .filter(team => team.season === "2025")
                   .map(team => {
                     const drafted = isDraftCompleted(team.season);
+                    const isCurrentSeason = team.season === currentYear;
                     return drafted ? (
                       <Link
                         key={team.season + team.id}
@@ -614,7 +615,9 @@ export default function ManagerViewer() {
                         <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                         <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                         <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
-                        <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                        <div className="text-xs text-emerald-400 text-center">
+                          {isCurrentSeason ? "Current Rank" : "Final Rank"}: {isNaN(team.rank) ? "-" : team.rank}
+                        </div>
                         <div className="text-xs text-emerald-200 text-center mt-1">
                           Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                         </div>
@@ -628,7 +631,9 @@ export default function ManagerViewer() {
                         <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                         <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                         <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
-                        <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                        <div className="text-xs text-emerald-400 text-center">
+                          {isCurrentSeason ? "Current Rank" : "Final Rank"}: {isNaN(team.rank) ? "-" : team.rank}
+                        </div>
                         <div className="text-xs text-emerald-200 text-center mt-1">
                           Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                         </div>
@@ -666,6 +671,7 @@ export default function ManagerViewer() {
                   .filter(team => team.season !== "2025")
                   .map(team => {
                     const drafted = isDraftCompleted(team.season);
+                    const isCurrentSeason = team.season === currentYear;
                     return drafted ? (
                       <Link
                         key={team.season + team.id}
@@ -675,7 +681,9 @@ export default function ManagerViewer() {
                         <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                         <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                         <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
-                        <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                        <div className="text-xs text-emerald-400 text-center">
+                          {isCurrentSeason ? "Current Rank" : "Final Rank"}: {isNaN(team.rank) ? "-" : team.rank}
+                        </div>
                         <div className="text-xs text-emerald-200 text-center mt-1">
                           Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                         </div>
@@ -689,7 +697,9 @@ export default function ManagerViewer() {
                         <Image src={team.logo} alt={team.name} width={64} height={64} className="w-16 h-16 rounded-full mb-2" />
                         <div className="text-lg font-bold text-emerald-200 text-center">{team.name}</div>
                         <div className="text-xs text-emerald-400 text-center mb-1">Season: {team.season}</div>
-                        <div className="text-xs text-emerald-400 text-center">Final Rank: {team.rank}</div>
+                        <div className="text-xs text-emerald-400 text-center">
+                          {isCurrentSeason ? "Current Rank" : "Final Rank"}: {isNaN(team.rank) ? "-" : team.rank}
+                        </div>
                         <div className="text-xs text-emerald-200 text-center mt-1">
                           Draft Grade: <span className="font-semibold">{team.draftGrade}</span>
                         </div>

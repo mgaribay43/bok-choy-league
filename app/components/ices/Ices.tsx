@@ -257,7 +257,7 @@ function useManagerWithMostFlavors(videos: IceVideo[]): { manager: string; flavo
 // =======================
 // Manager with Most Consecutive Weeks Calculation Hook
 // =======================
-function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: string; consecutiveWeeks: number; weeks: string } {
+function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: string; consecutiveWeeks: number; weeks: string }[] {
   const managerWeekCounts: Record<string, Set<string>> = {};
 
   videos.forEach(video => {
@@ -273,9 +273,7 @@ function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: stri
     }
   });
 
-  let maxConsecutiveWeeks = 0;
-  let managerWithMostConsecutiveWeeks = "None";
-  let streakWeeks = "";
+  const streaks: { manager: string; consecutiveWeeks: number; weeks: string }[] = [];
 
   Object.entries(managerWeekCounts).forEach(([manager, weeksSet]) => {
     const weeksArr = Array.from(weeksSet)
@@ -309,25 +307,58 @@ function useManagerWithMostConsecutiveWeeks(videos: IceVideo[]): { manager: stri
       }
     }
 
-    if (longestStreak > maxConsecutiveWeeks) {
-      maxConsecutiveWeeks = longestStreak;
-      managerWithMostConsecutiveWeeks = manager;
-      if (longestStreakWeeks.length > 1) {
-        const first = longestStreakWeeks[0];
-        const last = longestStreakWeeks[longestStreakWeeks.length - 1];
-        streakWeeks = `Week ${first.weekNum} - Week ${last.weekNum}, ${first.season}`;
-      } else if (longestStreakWeeks.length === 1) {
-        const only = longestStreakWeeks[0];
-        streakWeeks = `Week ${only.weekNum}, ${only.season}`;
-      }
+    let streakWeeks = "";
+    if (longestStreakWeeks.length > 1) {
+      const first = longestStreakWeeks[0];
+      const last = longestStreakWeeks[longestStreakWeeks.length - 1];
+      streakWeeks = `Week ${first.weekNum} - Week ${last.weekNum}, ${first.season}`;
+    } else if (longestStreakWeeks.length === 1) {
+      const only = longestStreakWeeks[0];
+      streakWeeks = `Week ${only.weekNum}, ${only.season}`;
+    }
+
+    streaks.push({ manager, consecutiveWeeks: longestStreak, weeks: streakWeeks });
+  });
+
+  // Sort and take top 3
+  return streaks.sort((a, b) => b.consecutiveWeeks - a.consecutiveWeeks).slice(0, 3);
+}
+
+// =======================
+// Most Ices in a Single Season Calculation Hook
+// =======================
+function useMostIcesInSingleSeason(videos: IceVideo[]) {
+  // Map: manager -> season -> count
+  const managerSeasonCounts: { manager: string; season: string; count: number }[] = [];
+  const countsMap: Record<string, Record<string, number>> = {};
+
+  videos.forEach(video => {
+    const manager = video.manager?.trim();
+    const season = video.season ?? getYear(video.date);
+    const playerCount = splitPlayers(video.player).length;
+    if (manager && season) {
+      if (!countsMap[manager]) countsMap[manager] = {};
+      countsMap[manager][season] = (countsMap[manager][season] || 0) + playerCount;
     }
   });
 
-  return { manager: managerWithMostConsecutiveWeeks, consecutiveWeeks: maxConsecutiveWeeks, weeks: streakWeeks };
+  Object.entries(countsMap).forEach(([manager, seasons]) => {
+    Object.entries(seasons).forEach(([season, count]) => {
+      managerSeasonCounts.push({ manager, season, count });
+    });
+  });
+
+  // Sort and take top 3
+  return managerSeasonCounts
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
 }
 
 // =======================
 // Stats Section Component
+// =======================
+// =======================
+// Stats Section Component - Mobile-First Redesign
 // =======================
 function StatsSection({
   stats,
@@ -344,148 +375,338 @@ function StatsSection({
   managerWithMostFlavors,
   managerWithMostConsecutiveWeeks,
   setCollapsedSeasons,
+  mostIcesInSingleSeason,
 }: any) {
   return (
     <div className="w-full mb-6">
-      <div className="bg-[#232323] rounded-lg p-6 border border-[#333] w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Top Managers */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Iced Managers</h3>
-            <ul className="list-decimal list-inside text-emerald-200 text-center">
-              {stats.topManagers.map(([manager, count]: any) => (
-                <li key={manager}>
-                  <button
-                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
-                    onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
-                  >
-                    {manager}
-                  </button> <span className="text-emerald-200">({count})</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Bottom Managers */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Least Iced Managers</h3>
-            <ul className="list-decimal list-inside text-emerald-200 text-center">
-              {stats.bottomManagers.map(([manager, count]: any) => (
-                <li key={manager}>
-                  <button
-                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
-                    onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
-                  >
-                    {manager}
-                  </button> ({count})
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Top Players */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Ices by a Player</h3>
-            <ul className="list-decimal list-inside text-emerald-200 text-center">
-              {stats.topPlayers.map(([player, count]: any) => (
-                <li key={player}>
-                  <button
-                    className="font-semibold text-emerald-400 hover:underline focus:outline-none"
-                    onClick={() => { handlePlayerClick(player); scrollToVideos(); }}
-                  >
-                    {player}
-                  </button> ({count})
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Manager with Most Consecutive Weeks Iced */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Consecutive Weeks</h3>
-            <p className="text-center text-emerald-400">
-              {managerWithMostConsecutiveWeeks.manager} ({managerWithMostConsecutiveWeeks.consecutiveWeeks} consecutive weeks)
-            </p>
-            {managerWithMostConsecutiveWeeks.weeks && (
-              <p className="text-xs text-center text-emerald-200 mt-1">
-                {managerWithMostConsecutiveWeeks.weeks}
-              </p>
-            )}
-          </div>
-          {/* Most Ices in a Single Week */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Ices in a Single Week</h3>
-            <ol className="list-decimal list-inside text-emerald-200 text-center">
-              {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
-                .flatMap(([manager, weeks]) => (
-                  Object.entries(weeks)
-                    .sort(([, countA], [, countB]) => countB - countA)
-                    .slice(0, 3)
-                    .map(([weekSeason, count], idx) => ({ manager, weekSeason, count, idx }))
-                ))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 3)
-                .map(({ manager, weekSeason, count, idx }) => (
-                  <li key={manager + weekSeason + idx}>
-                    <button
-                      className="font-semibold text-emerald-400 hover:underline focus:outline-none"
-                      onClick={() => {
-                        setSelectedManager(manager);
-                        setSelectedSeason(weekSeason.split('|')[1]);
-                        setSelectedWeek("All");
-                        setSelectedFlavor("All"); // Reset flavor filter
-                        scrollToVideos();
-                        setCollapsedSeasons((prev: Record<string, boolean>) => {
-                          const expanded: Record<string, boolean> = {};
-                          Object.keys(prev).forEach(season => {
-                            expanded[season] = false;
-                          });
-                          return expanded;
-                        });
-                        setTimeout(scrollToVideos, 100); // Ensure scroll after expand
-                      }}
-                    >
-                      {manager}
-                    </button>{" - "}
-                    <button
-                      className="hover:underline focus:outline-none text-emerald-400"
-                      onClick={() => {
-                        setSelectedSeason(weekSeason.split('|')[1]);
-                        setSelectedWeek(weekSeason.split('|')[0]);
-                        setSelectedManager(manager);
-                        setSelectedPlayer("All");
-                        setSelectedFlavor("All"); // Reset flavor filter
-                        scrollToSeason(weekSeason.split('|')[1]);
-                        setCollapsedSeasons((prev: Record<string, boolean>) => {
-                          const expanded: Record<string, boolean> = {};
-                          Object.keys(prev).forEach(season => {
-                            expanded[season] = false;
-                          });
-                          return expanded;
-                        });
-                        setTimeout(scrollToVideos, 100); // Ensure scroll after expand
-                      }}
-                    >
-                      {weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}
-                    </button> ({count})
-                  </li>
+      <div className="bg-[#232323] rounded-lg p-3 sm:p-6 border border-[#333] w-full">
+
+        {/* Mobile: Single column stack, Desktop: Grid */}
+        <div className="flex flex-col space-y-4 sm:space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+
+          {/* Top Row - Most/Least Iced Managers */}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6 lg:col-span-2">
+
+            {/* Top Managers Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Iced Managers
+              </h3>
+              <div className="space-y-2">
+                {stats.topManagers.map(([manager, count]: any, index: number) => (
+                  <div key={manager} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-emerald-900 text-emerald-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <button
+                        className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left"
+                        onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
+                      >
+                        {manager}
+                      </button>
+                    </div>
+                    <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                      {count}
+                    </span>
+                  </div>
                 ))}
-            </ol>
-          </div>
-          {/* Unique Ice Flavors */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Total Unique Flavors Consumed</h3>
-            <p className="text-center text-emerald-400 mb-2 text-lg font-semibold">{uniqueFlavorsCount}</p>
-          </div>
-          {/* Most Flavors Consumed */}
-          <div>
-            <h3 className="text-emerald-400 font-semibold mb-2 text-center text-base">Most Flavors Consumed</h3>
-            {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
-              <div key={manager} className="text-center text-emerald-400 mb-2 font-medium">
-                <span className="font-semibold">{manager}</span> <span className="text-emerald-200">({flavorCount})</span>
-                <div className="mt-1 text-xs text-emerald-200">
-                  {flavors.join(', ')}
-                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Bottom Managers Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Least Iced Managers
+              </h3>
+              <div className="space-y-2">
+                {stats.bottomManagers.map(([manager, count]: any, index: number) => (
+                  <div key={manager} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-blue-900 text-blue-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <button
+                        className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left"
+                        onClick={() => { handleManagerClick(manager); scrollToVideos(); }}
+                      >
+                        {manager}
+                      </button>
+                    </div>
+                    <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* Second Row - Player Stats & Week Records */}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6 lg:col-span-2">
+
+            {/* Top Players Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Ices by a Player
+              </h3>
+              <div className="space-y-2">
+                {stats.topPlayers.map(([player, count]: any, index: number) => (
+                  <div key={player} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-purple-900 text-purple-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <button
+                        className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left"
+                        onClick={() => { handlePlayerClick(player); scrollToVideos(); }}
+                      >
+                        {player}
+                      </button>
+                    </div>
+                    <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Most Ices in Single Week Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Ices in a Single Week
+              </h3>
+              <div className="space-y-2">
+                {Object.entries(stats.weekCounts as Record<string, Record<string, number>>)
+                  .flatMap(([manager, weeks]) => (
+                    Object.entries(weeks)
+                      .sort(([, countA], [, countB]) => countB - countA)
+                      .slice(0, 3)
+                      .map(([weekSeason, count], idx) => ({ manager, weekSeason, count, idx }))
+                  ))
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 3)
+                  .map(({ manager, weekSeason, count }, index) => (
+                    <div key={manager + weekSeason + index} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-orange-900 text-orange-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <button
+                          className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left text-xs sm:text-sm"
+                          onClick={() => {
+                            setSelectedSeason(weekSeason.split('|')[1]);
+                            setSelectedWeek(weekSeason.split('|')[0]);
+                            setSelectedManager(manager);
+                            setSelectedPlayer("All");
+                            setSelectedFlavor("All");
+                            scrollToSeason(weekSeason.split('|')[1]);
+                            setCollapsedSeasons((prev: Record<string, boolean>) => {
+                              const expanded: Record<string, boolean> = {};
+                              Object.keys(prev).forEach(season => {
+                                expanded[season] = false;
+                              });
+                              return expanded;
+                            });
+                            setTimeout(scrollToVideos, 100);
+                          }}
+                        >
+                          <div className="truncate">
+                            <div className="font-medium">{manager}</div>
+                            <div className="text-emerald-300 text-xs">{weekSeason.split('|')[0]}, {weekSeason.split('|')[1]}</div>
+                          </div>
+                        </button>
+                      </div>
+                      <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Third Row - Season & Consecutive Records */}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6 lg:col-span-2">
+
+            {/* Most Consecutive Weeks Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Consecutive Weeks
+              </h3>
+              <div className="space-y-2">
+                {managerWithMostConsecutiveWeeks
+                  .sort((a: { consecutiveWeeks: number; }, b: { consecutiveWeeks: number; }) => b.consecutiveWeeks - a.consecutiveWeeks)
+                  .slice(0, 3)
+                  .map((record: { manager: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; weeks: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; consecutiveWeeks: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, index: number) => (
+                    <div key={`${record.manager ?? ""}_${record.weeks ?? ""}`} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-yellow-900 text-yellow-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <button
+                          className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left"
+                          onClick={() => {
+                            setSelectedManager(record.manager);
+                            const match = typeof record.weeks === "string" ? record.weeks.match(/Week (\d+)(?: - Week (\d+))?, (\d{4})/) : null;
+                            if (match) {
+                              setSelectedSeason(match[3]);
+                              setSelectedWeek("All");
+                            } else {
+                              setSelectedSeason("All");
+                              setSelectedWeek("All");
+                            }
+                            setSelectedPlayer("All");
+                            setSelectedFlavor("All");
+                            scrollToVideos();
+                          }}
+                        >
+                          <div className="font-medium text-sm">{record.manager}</div>
+                          <div className="text-emerald-300 text-xs">{record.weeks}</div>
+                        </button>
+                      </div>
+                      <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                        {record.consecutiveWeeks}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Most Ices in Single Season Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Ices in a Single Season
+              </h3>
+              <div className="space-y-2">
+                {mostIcesInSingleSeason
+                  .sort((a: { count: number; }, b: { count: number; }) => b.count - a.count)
+                  .slice(0, 3)
+                  .map(
+                    (record: { manager: string; season: string; count: number }, index: number) => (
+                      <div key={record.manager + record.season} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-red-900 text-red-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <button
+                            className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left"
+                            onClick={() => {
+                              setSelectedManager(record.manager);
+                              setSelectedSeason(record.season);
+                              setSelectedPlayer("All");
+                              setSelectedWeek("All");
+                              setSelectedFlavor("All");
+                              scrollToVideos();
+                            }}
+                          >
+                            <div className="font-medium text-sm">{record.manager}</div>
+                            <div className="text-emerald-300 text-xs">{record.season}</div>
+                          </button>
+                        </div>
+                        <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                          {record.count}
+                        </span>
+                      </div>
+                    )
+                  )}
+              </div>
+            </div>
+          </div>
+
+          {/* Fourth Row - Flavor Stats */}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6 lg:col-span-2">
+
+            {/* Total Unique Flavors Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Total Unique Flavors Consumed
+              </h3>
+              <div className="text-center">
+                <div className="text-3xl sm:text-4xl font-bold text-emerald-400 mb-1">{uniqueFlavorsCount}</div>
+                <div className="text-emerald-300 text-xs">Different flavors</div>
+              </div>
+            </div>
+
+            {/* Most Flavors Consumed Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Flavors Consumed
+              </h3>
+              <div className="space-y-3">
+                {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
+                  <div key={manager}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-emerald-400">{manager}</span>
+                      <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                        {flavorCount}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {flavors.map(flavor => {
+                        // Use the same flavor badge logic as VideoCard
+                        const flavorLower = flavor.toLowerCase();
+                        if (flavorLower === "red, white & berry") {
+                          return (
+                            <span
+                              key={flavor}
+                              className="px-3 py-1 rounded-full font-bold text-xs"
+                              style={{
+                                background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
+                                color: "#353535ff",
+                                border: "1px solid #141414ff"
+                              }}
+                            >
+                              {flavor}
+                            </span>
+                          );
+                        } else if (flavorLower === "red, white & merry holiday punch") {
+                          return (
+                            <span
+                              key={flavor}
+                              className="px-3 py-1 rounded-full font-bold text-xs"
+                              style={{
+                                background: "#ab2308",
+                                color: "#ffffffff",
+                                border: "1px solid #ddd"
+                              }}
+                            >
+                              {flavor}
+                            </span>
+                          );
+                        } else if (flavorLower === "screwdriver") {
+                          return (
+                            <span
+                              key={flavor}
+                              className="px-3 py-1 rounded-full font-bold text-xs"
+                              style={{
+                                background: "#ffbc13ff",
+                                color: "#ffffffff",
+                                border: "1px solid #ddd"
+                              }}
+                            >
+                              {flavor}
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span
+                              key={flavor}
+                              className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs"
+                            >
+                              {flavor}
+                            </span>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -638,9 +859,8 @@ function FiltersSection({
                 <>
                   <Listbox.Button
                     ref={buttonRef}
-                    className={`w-full px-3 py-2 rounded-lg border border-[#333] bg-[#0f0f0f] text-emerald-400 text-left ${
-                      grayOut ? "bg-gray-800 text-emerald-300 cursor-not-allowed" : ""
-                    }`}
+                    className={`w-full px-3 py-2 rounded-lg border border-[#333] bg-[#0f0f0f] text-emerald-400 text-left ${grayOut ? "bg-gray-800 text-emerald-300 cursor-not-allowed" : ""
+                      }`}
                     style={{ minHeight: '40px' }}
                   >
                     {value}
@@ -812,7 +1032,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const stats = useStats(videos);
   const uniqueFlavorsCount = useUniqueFlavors(videos);
   const managerWithMostFlavors = useManagerWithMostFlavors(videos);
-  const managerWithMostConsecutiveWeeks = useManagerWithMostConsecutiveWeeks(videos);
+  const managerWithMostConsecutiveWeeksArr = useManagerWithMostConsecutiveWeeks(videos);
+  const mostIcesInSingleSeason = useMostIcesInSingleSeason(videos);
 
   // --- Filtering Logic ---
   const filterVideo = (video: IceVideo) => {
@@ -925,8 +1146,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     scrollToSeason={scrollToSeason}
                     uniqueFlavorsCount={uniqueFlavorsCount}
                     managerWithMostFlavors={managerWithMostFlavors}
-                    managerWithMostConsecutiveWeeks={managerWithMostConsecutiveWeeks}
+                    managerWithMostConsecutiveWeeks={managerWithMostConsecutiveWeeksArr}
                     setCollapsedSeasons={setCollapsedSeasons}
+                    mostIcesInSingleSeason={mostIcesInSingleSeason}
                   />
                 </div>
               </div>
@@ -1106,10 +1328,10 @@ function handleFullReset(
 
 // Add this reverse lookup helper:
 function getManagerKeyFromDisplayName(displayName: string): string {
-    if (displayName === "Harris") return "Jacob";
-    if (displayName === "Hughes") return "jake.hughes275";
-    if (displayName === "Johnny") return "johnny5david";
-    if (displayName === "Zach") return "Zachary";
-    if (displayName === "Mike") return "Michael";
-    return displayName;
+  if (displayName === "Harris") return "Jacob";
+  if (displayName === "Hughes") return "jake.hughes275";
+  if (displayName === "Johnny") return "johnny5david";
+  if (displayName === "Zach") return "Zachary";
+  if (displayName === "Mike") return "Michael";
+  return displayName;
 }

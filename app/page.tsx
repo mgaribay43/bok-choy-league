@@ -1,5 +1,5 @@
 import React from 'react';
-import Ices from './components/Ices';
+import Ices from './components/ices/Ices';
 import Standings from './components/Standings';
 import Events from './components/Events';
 import KeeperBanner from './components/KeeperMarquee'

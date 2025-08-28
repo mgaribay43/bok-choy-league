@@ -166,7 +166,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       </div>
       <div className="flex justify-center gap-2 text-xs text-emerald-400 mb-2">
         {video.week && (
-          <span className="bg-emerald-900 text-emerald-100 px-2 py-0.5 rounded-full font-semibold">{video.week}</span>
+          <span className="bg-emerald-900 text-emerald-100 px-2 py-0.5 rounded-full font-semibold">Week {video.week}</span>
         )}
         <span>{video.date}</span>
       </div>

@@ -535,7 +535,7 @@ function StatsSection({
                           }}
                         >
                           <div className="truncate">
-                            <div className="font-medium">{rec.manager} {rec.week}, {rec.season}</div>
+                            <div className="font-medium">{rec.manager} - {rec.week}, {rec.season}</div>
                           </div>
                         </button>
                       </div>
@@ -622,7 +622,7 @@ function StatsSection({
                               scrollToVideos();
                             }}
                           >
-                            <div className="font-medium text-sm">{record.manager} {record.season}</div>
+                            <div className="font-medium text-sm">{record.manager} - {record.season}</div>
                           </button>
                         </div>
                         <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">

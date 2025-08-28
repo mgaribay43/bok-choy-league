@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import yahooDefImagesJson from "../data/yahooDefImages.json";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
+import dynamic from "next/dynamic";
+const PlayerViewer = dynamic(() => import("./PlayerViewer"), { ssr: false });
 
 type KeeperYearData = { Teams: { TeamID: string; keeper: string; }[] };
 type KeepersType = { [year: string]: KeeperYearData };
@@ -38,7 +40,7 @@ const yahooDefImages: Record<string, { hash: string; img: string; folder?: strin
 
 export default function KeepersPage() {
   const currentYear = String(new Date().getFullYear());
-  const availableYears = ["2024", "2025"];
+  const availableYears = ["2025", "2024"]; // More recent years first
   const [selectedYear, setSelectedYear] = useState<string>(currentYear);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,16 @@ export default function KeepersPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [keepers, setKeepers] = useState<KeepersType>({});
+
+  interface ModalPlayer extends Player {
+    season: string;
+    headshotUrl: string;
+    team: string;
+    stats?: { fanPts: number };
+  }
+  const [modalPlayer, setModalPlayer] = useState<ModalPlayer | null>(null);
+  const [modalStats, setModalStats] = useState<any[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Fetch keepers from Firestore
   useEffect(() => {
@@ -121,6 +133,96 @@ export default function KeepersPage() {
   const visibleTeams = selectedTeamId
     ? teams.filter((team) => team.id === selectedTeamId)
     : teams;
+
+  const handlePlayerClick = async (player: Player, teamAbbr: string) => {
+    setModalLoading(true);
+    setModalPlayer({
+      ...player,
+      season: String(Number(selectedYear) - 1),
+      headshotUrl: player.image_url,
+      team: teamAbbr,
+    });
+    try {
+      const year = String(Number(selectedYear) - 1);
+      // Fetch league key from Firestore
+      const db = getFirestore();
+      const leagueKeysDoc = await getDoc(doc(db, "League_Keys", "leagueKeysByYear"));
+      const leagueKeysData = leagueKeysDoc.exists() ? leagueKeysDoc.data() : {};
+      const leagueKeyFull = leagueKeysData[year];
+
+      if (!leagueKeyFull) throw new Error("League key not found for year " + year);
+
+      // Only use the first 3 digits of the league key
+      const leaguePrefix = leagueKeyFull.split(".")[0];
+      const playerKey = `${leaguePrefix}.p.${player.player_id}`;
+
+      // Fetch stats for each week (1-17)
+      const weekPromises = [];
+      for (let week = 1; week <= 17; week++) {
+        weekPromises.push(
+          fetch(
+            `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=playerstats&year=${year}&playerKeys=${playerKey}&week=${week}`
+          )
+            .then((res) => res.json())
+            .then((statsJson) => {
+              const playersObj = statsJson?.fantasy_content?.league?.[1]?.players || {};
+              let weekStats: any = null;
+              Object.values(playersObj).forEach((p: any) => {
+                const stats = p?.player?.[1]?.player_stats?.stats;
+                if (Array.isArray(stats)) {
+                  weekStats = { week, stats };
+                }
+              });
+              return weekStats;
+            })
+        );
+      }
+
+      const weeks = (await Promise.all(weekPromises)).filter(Boolean);
+
+      // Fetch stat modifiers from league settings
+      let seasonFanPoints = 0;
+      try {
+        const settingsRes = await fetch(
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${year}`
+        );
+        const settingsJson = await settingsRes.json();
+        const modifiers = settingsJson?.fantasy_content?.league?.[1]?.settings?.[0]?.stat_modifiers?.stats || [];
+        const scoringMap: Record<string, number> = {};
+        modifiers.forEach((mod: any) => {
+          const id = mod?.stat?.stat_id;
+          const value = parseFloat(mod?.stat?.value ?? "0");
+          if (id) scoringMap[id] = value;
+        });
+
+        // Calculate total fan points
+        for (const week of weeks) {
+          if (Array.isArray(week?.stats)) {
+            seasonFanPoints += week.stats.reduce((total: number, s: any) => {
+              const id = String(s?.stat?.stat_id ?? "");
+              const val = parseFloat(s?.stat?.value ?? "0");
+              const mult = Number(scoringMap[id] ?? 0);
+              return Number.isFinite(val) && Number.isFinite(mult) ? total + val * mult : total;
+            }, 0);
+          }
+        }
+      } catch {
+        seasonFanPoints = 0;
+      }
+
+      setModalStats(weeks);
+      setModalPlayer({
+        ...player,
+        season: String(Number(selectedYear) - 1),
+        headshotUrl: player.image_url,
+        team: teamAbbr,
+        stats: { fanPts: seasonFanPoints }, // <-- pass to PlayerViewer
+      });
+    } catch {
+      setModalStats([]);
+    }
+    setModalLoading(false);
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-[#0f0f0f] min-h-screen">
@@ -313,7 +415,14 @@ export default function KeepersPage() {
 
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>
+                            <button
+                              className="font-semibold text-sm sm:text-base truncate text-emerald-100 underline hover:text-emerald-300"
+                              style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                              onClick={() => handlePlayerClick(player, player.team_abbr)}
+                              type="button"
+                            >
+                              {player.name}
+                            </button>
                             <p className="text-xs sm:text-sm text-emerald-400 truncate">
                               {player.position} – {player.team_abbr}
                             </p>
@@ -420,7 +529,14 @@ export default function KeepersPage() {
 
                           {/* Player Info - Better mobile text sizing */}
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm sm:text-base truncate text-emerald-100">{player.name}</p>
+                            <button
+                              className="font-semibold text-sm sm:text-base truncate text-emerald-100 underline hover:text-emerald-300"
+                              style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                              onClick={() => handlePlayerClick(player, player.team_abbr)}
+                              type="button"
+                            >
+                              {player.name}
+                            </button>
                             <p className="text-xs sm:text-sm text-emerald-400 truncate">
                               {player.position} – {player.team_abbr}
                             </p>
@@ -442,6 +558,23 @@ export default function KeepersPage() {
             })}
           </div>
         )
+      )}
+
+      {/* Modal rendering at the end of your component */}
+      {modalPlayer && (
+        <PlayerViewer
+          player={modalPlayer}
+          onClose={() => setModalPlayer(null)}
+          stats={modalStats}
+        />
+      )}
+
+      {modalLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          </div>
+        </div>
       )}
     </div>
   );

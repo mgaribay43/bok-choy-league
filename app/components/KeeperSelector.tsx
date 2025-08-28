@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import keepersJson from "../data/keepers/keepers.json";
 import yahooDefImagesJson from "../data/yahooDefImages.json";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 
 type KeeperYearData = { Teams: { TeamID: string; keeper: string; }[] };
 type KeepersType = { [year: string]: KeeperYearData };
-const keepers: KeepersType = keepersJson as KeepersType;
 
 interface DraftPick {
   pick: number;
@@ -46,6 +45,28 @@ export default function KeepersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [keepers, setKeepers] = useState<KeepersType>({});
+
+  // Fetch keepers from Firestore
+  useEffect(() => {
+    const fetchKeepersFromFirestore = async () => {
+      try {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(collection(db, "Keepers"));
+        const keepersData: KeepersType = {};
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          keepersData[doc.id] = {
+            Teams: Array.isArray(data.Teams) ? data.Teams : [],
+          };
+        });
+        setKeepers(keepersData);
+      } catch (err) {
+        setError("Failed to load keepers from Firestore.");
+      }
+    };
+    fetchKeepersFromFirestore();
+  }, []);
 
   useEffect(() => {
     const fetchKeepers = async () => {
@@ -78,7 +99,6 @@ export default function KeepersPage() {
         }
 
         setTeams(allTeams);
-        // --- Removed setCachedKeepers(selectedYear, allTeams); ---
       } catch (err: any) {
         setError(err?.message || "Unknown error");
       } finally {

@@ -10,6 +10,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Listbox } from '@headlessui/react';
 import Link from "next/link";
 
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+
 // =======================
 // Types
 // =======================
@@ -164,7 +166,7 @@ function VideoCard({ video, expandedVideo, setExpandedVideo }: {
       </div>
       <div className="flex justify-center gap-2 text-xs text-emerald-400 mb-2">
         {video.week && (
-          <span className="bg-emerald-900 text-emerald-100 px-2 py-0.5 rounded-full font-semibold">{video.week}</span>
+          <span className="bg-emerald-900 text-emerald-100 px-2 py-0.5 rounded-full font-semibold">Week {video.week}</span>
         )}
         <span>{video.date}</span>
       </div>
@@ -765,22 +767,44 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const videosSectionRef = useRef<HTMLDivElement>(null);
   const seasonRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // --- Load videos from JSON ---
+  // --- Load videos from Firestore ---
   useEffect(() => {
-    import('../data/Videos/ices.json')
-      .then((data) => {
+    const fetchVideos = async () => {
+      setLoading(true);
+      try {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(collection(db, "Ices"));
         const allVideos: IceVideo[] = [];
-        Object.entries(data).forEach(([season, arr]) => {
-          if (Array.isArray(arr)) arr.forEach((video: IceVideo) => {
-            if (video.date) {
-              allVideos.push({ ...video, season });
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // If the document has an 'entries' array (year doc), flatten it
+          if (Array.isArray(data.entries)) {
+            data.entries.forEach((video: IceVideo) => {
+              if (video.date) {
+                allVideos.push({ ...video, season: doc.id });
+              }
+            });
+          } else {
+            // If the document is a single video object
+            if (data.date) {
+              allVideos.push({
+                ...data, season: data.season ?? doc.id,
+                id: "",
+                player: "",
+                manager: "",
+                date: ""
+              });
             }
-          });
+          }
         });
         setVideos(allVideos);
-      })
-      .catch(() => setError("Failed to load videos."))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        setError("Failed to load videos from Firestore.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVideos();
   }, []);
 
   // --- Filters and Stats ---

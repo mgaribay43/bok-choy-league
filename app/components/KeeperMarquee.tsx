@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Marquee from "react-fast-marquee";
-import keepersData from '../data/keepers/keepers.json';
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 
 interface Team {
   Manager: string;
@@ -18,12 +18,34 @@ interface KeepersData {
 
 const KeeperMarquee = () => {
   const currentYear = new Date().getFullYear().toString();
-  const keepers = (keepersData as KeepersData)[currentYear]?.Teams.filter((team: Team) => team.keeper);
+  const [keepers, setKeepers] = useState<Team[]>([]);
+
+  useEffect(() => {
+    const fetchKeepersFromFirestore = async () => {
+      try {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(collection(db, "Keepers"));
+        let teams: Team[] = [];
+        querySnapshot.forEach((doc) => {
+          if (doc.id === currentYear) {
+            const data = doc.data();
+            if (Array.isArray(data.Teams)) {
+              teams = data.Teams.filter((team: Team) => team.keeper);
+            }
+          }
+        });
+        setKeepers(teams);
+      } catch (err) {
+        setKeepers([]);
+      }
+    };
+    fetchKeepersFromFirestore();
+  }, [currentYear]);
 
   return (
     <div style={{ background: "#0f0f0f", padding: "8px" }}>
       <Marquee autoFill={true} pauseOnHover={true} gradient={false} speed={60}>
-        {keepers?.map((team: Team, index: number) => (
+        {keepers.map((team: Team, index: number) => (
           <div
             key={index}
             style={{

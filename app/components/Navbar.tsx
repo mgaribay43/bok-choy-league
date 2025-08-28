@@ -76,7 +76,10 @@ export default function Navbar() {
                 <NavLink href="/rules" icon={<Award size={18} />} text="Rules" />
                 <NavLink href="/events" icon={<Calendar size={18} />} text="Events" />
                 <NavLink href="/ices" icon={<span className="text-lg">🧊</span>} text="Ices" />
-
+                {/* Admin Link for Michael */}
+                {userDisplay === "Michael" && (
+                  <NavLink href="/admin" icon={<span className="text-lg">🛡️</span>} text="Admin" />
+                )}
                 {/* League Dropdown */}
                 <div
                   className="relative"
@@ -162,7 +165,7 @@ export default function Navbar() {
 
                 {/* User Name */}
                 <div
-                  className="ml-6 px-4 py-2 pr-6 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
+                  className="ml-6 px-4 py-2 pr-10 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
                   onMouseEnter={() => setIsNameHovered(true)}
                   onMouseLeave={() => setIsNameHovered(false)}
                 >
@@ -174,7 +177,7 @@ export default function Navbar() {
                         await signOut(auth);
                         router.replace('/login');
                       }}
-                      className="flex items-center justify-center px-4 py-2 pr-6 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
+                      className="flex items-center justify-center px-4 py-2 pr-10 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
                     >
                       Sign Out
                     </button>
@@ -282,6 +285,10 @@ export default function Navbar() {
               <MobileLink href="/rules" icon={<Award size={20} />} text="Rules" closeMenu={() => setIsOpen(false)} />
               <MobileLink href="/events" icon={<Calendar size={20} />} text="Events" closeMenu={() => setIsOpen(false)} />
               <MobileLink href="/ices" icon={<span className="text-xl">🧊</span>} text="Ices" closeMenu={() => setIsOpen(false)} />
+              {/* Admin Link for Michael (mobile) */}
+              {userDisplay === "Michael" && (
+                <MobileLink href="/admin" icon={<span className="text-xl">🛡️</span>} text="Admin" closeMenu={() => setIsOpen(false)} />
+              )}
 
               {/* Sign Out Button (mobile) */}
               <div className="px-4 py-4">

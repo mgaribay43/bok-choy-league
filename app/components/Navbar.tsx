@@ -177,7 +177,7 @@ export default function Navbar() {
                         await signOut(auth);
                         router.replace('/login');
                       }}
-                      className="flex items-center justify-center px-4 py-2 pr-10 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
+                      className="flex items-center justify-center px-4 py-2 pr-4 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 whitespace-nowrap min-w-[90px]"
                     >
                       Sign Out
                     </button>

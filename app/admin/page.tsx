@@ -6,7 +6,7 @@ import IceCreator from '@/app/components/addIces';
 export default function AdminPage() {
     return (
         <div className="min-h-screen py-10 px-6 bg-[#232323]">
-            <h1 className="text-3xl font-bold text-center text-green-800 mb-6">Admin Page</h1>
+            <h1 className="text-4xl font-bold text-center text-[#a7f3d0] mb-6">Admin Page</h1>
             <p className="text-emerald-400 text-lg text-center mb-6">Welcome, Commissioner!</p>
             <div className="w-full max-w-4xl border border-[#333] rounded-xl p-6 shadow-lg mx-auto flex flex-col gap-8 bg-white/80">
                 {/* Poll Section */}

@@ -332,9 +332,25 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   // --- Render ---
   const renderPollCard = (poll: any, isExpired: boolean, userHasVoted: boolean, timeLeft: string) => {
     const isEditing = editingPollId === poll.id;
-    const pollRanks = rankings[poll.id] || [];
-    const pollSelections = selectedOptions[poll.id] || [];
-    const ranksArray = poll.rankedVoting && poll.maxSelections > 1 ? pollRanks : pollSelections;
+    let ranksArray: number[] = [];
+    if (isEditing) {
+      ranksArray = poll.rankedVoting && poll.maxSelections > 1
+        ? rankings[poll.id] || []
+        : selectedOptions[poll.id] || [];
+    } else if (userHasVoted && poll.responses && poll.responses[userName]) {
+      if (poll.rankedVoting && poll.maxSelections > 1 && Array.isArray(poll.responses[userName].rankings)) {
+        ranksArray = poll.responses[userName].rankings;
+      } else if (poll.maxSelections > 1 && Array.isArray(poll.responses[userName].selectedOptions)) {
+        ranksArray = poll.responses[userName].selectedOptions;
+      } else if (poll.responses[userName].optionText) {
+        const selectedOption = poll.options.find((opt: any) => opt.text === poll.responses[userName].optionText);
+        ranksArray = selectedOption ? [selectedOption.id] : [];
+      }
+    } else {
+      ranksArray = poll.rankedVoting && poll.maxSelections > 1
+        ? rankings[poll.id] || []
+        : selectedOptions[poll.id] || [];
+    }
 
     return (
       <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
@@ -364,7 +380,7 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
               <li key={`${poll.id}-option-${index}`} className="relative">
                 {poll.rankedVoting && isSelected && (
                   <span
-                    className="absolute top-2 left-2 text-lg font-bold px-2 py-1 rounded bg-emerald-900 text-yellow-300 z-10"
+                    className="absolute top-2 left-2 text-lg font-bold px-2 py-1 rounded bg-blue-900 text-yellow-300 z-10"
                     style={{ minWidth: 32, textAlign: "center" }}
                   >
                     {rankIdx + 1}
@@ -374,9 +390,12 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                   type="button"
                   disabled={(!isEditing && userHasVoted) || isExpired}
                   className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all
-                    ${isSelected ? "bg-emerald-700 text-white border-2 border-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"}
-                    ${(!isEditing && userHasVoted) || isExpired ? "bg-gray-700 text-gray-400 cursor-not-allowed" : ""}
-                  `}
+  ${isSelected
+                      ? "bg-blue-900 text-white border-2 border-blue-400"
+                      : ((!isEditing && userHasVoted) || isExpired)
+                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-800"}
+`}
                   onClick={() => {
                     if ((!isEditing && userHasVoted) || isExpired) return;
                     if (poll.rankedVoting && poll.maxSelections > 1) {
@@ -388,7 +407,7 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                       }
                       setRankings(prev => ({ ...prev, [poll.id]: ranks }));
                     } else {
-                      let selections = pollSelections;
+                      let selections: number[] = selectedOptions[poll.id] || [];
                       if (poll.maxSelections > 1) {
                         if (isSelected) {
                           selections = selections.filter(id => id !== option.id);

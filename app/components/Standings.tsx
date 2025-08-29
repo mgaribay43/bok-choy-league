@@ -8,9 +8,10 @@ interface TeamEntry {
   id: string;
   name: string;
   manager: string;
-  realManager: string; // Store real manager name
+  realManager: string;
   rank: number;
   logo: string;
+  record: string; // <-- Add record field
 }
 
 type StandingsProps = {
@@ -109,15 +110,20 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
           const logo =
             metadata.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ??
             "https://via.placeholder.com/100";
+          const outcome = standings?.outcome_totals || {};
+          const wins = outcome.wins ?? 0;
+          const losses = outcome.losses ?? 0;
+          const ties = outcome.ties ?? 0;
+          const record = `(${wins}-${losses}-${ties})`;
 
-          // Update parsing logic to include both real and display manager names
           parsed.push({
             id,
             name,
             manager: getDisplayManagerName(manager),
             realManager: manager,
             rank,
-            logo
+            logo,
+            record // <-- Add record to parsed team
           });
         }
 
@@ -227,6 +233,8 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         {team.manager}
                       </span>
                     </p>
+                    {/* Team Record BELOW manager name */}
+                    <div className="text-emerald-400 text-base font-normal mt-1">{team.record}</div>
                   </div>
                 </div>
               ))}
@@ -335,6 +343,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                 >
                   {champion.name}
                 </Link>
+                <div className="text-yellow-200 text-lg font-normal mt-1">{champion.record}</div>
                 <p className="text-yellow-200 font-medium">
                   Champion:{" "}
                   <Link
@@ -378,6 +387,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                     >
                       {teams[1].name}
                     </Link>
+                    <div className="text-emerald-400 text-base font-normal mt-1">{teams[1].record}</div>
                     <p className="text-emerald-300 font-medium">
                       Runner-up:{" "}
                       <Link
@@ -420,6 +430,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                     >
                       {teams[2].name}
                     </Link>
+                    <div className="text-yellow-200 text-base font-normal mt-1">{teams[2].record}</div>
                     <p className="text-yellow-200 font-medium">
                       Third Place:{" "}
                       <Link
@@ -486,6 +497,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         >
                           {team.name}
                         </Link>
+                        <div className="text-emerald-400 text-base font-normal mt-1">{team.record}</div>
                         {/* Manager Name (clickable) */}
                         <p className="text-emerald-400 font-medium mb-2">
                           <span className="text-emerald-300">Manager:</span>{" "}
@@ -552,6 +564,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                         >
                           {team.name}
                         </Link>
+                        <div className="text-red-400 text-base font-normal mt-1">{team.record}</div>
                         {/* Manager Name (clickable) */}
                         <p className="text-red-400 font-medium mb-2">
                           <span className="text-red-300">Manager:</span>{" "}

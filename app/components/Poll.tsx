@@ -51,24 +51,23 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeLeftMap((prevTimeLeftMap) => {
-        const updatedTimeLeftMap = { ...prevTimeLeftMap };
-        polls.forEach(async (poll) => {
+        const updatedTimeLeftMap: { [key: string]: string } = {};
+        polls.forEach((poll) => {
           const timeLeft = calculateTimeLeft(poll.pollDuration);
           updatedTimeLeftMap[poll.id] = timeLeft;
 
+          // Expire polls if needed (do this outside setTimeLeftMap)
           if (timeLeft === 'Expired' && !poll.isExpired) {
-            try {
-              const dbInstance = getFirestore();
-              const pollDoc = doc(dbInstance, 'Polls', poll.id);
-              await setDoc(pollDoc, {
-                ...poll,
-                isExpired: true,
-                expirationDate: new Date().toISOString(),
-                responses: poll.responses || {},
-              });
-            } catch (error) {
+            const dbInstance = getFirestore();
+            const pollDoc = doc(dbInstance, 'Polls', poll.id);
+            setDoc(pollDoc, {
+              ...poll,
+              isExpired: true,
+              expirationDate: new Date().toISOString(),
+              responses: poll.responses || {},
+            }).catch((error) => {
               console.error('Error updating poll expiration:', error);
-            }
+            });
           }
         });
         return updatedTimeLeftMap;
@@ -171,7 +170,6 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
         voters: updatedVoters,
         responses: updatedResponses,
       });
-      await refetchPolls();
     } catch (error) {
       console.error('Error updating poll data:', error);
     }
@@ -239,27 +237,10 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       voters: updatedVoters,
       responses: updatedResponses,
     });
-    await refetchPolls();
+    // REMOVED: await refetchPolls();
   };
 
-  const refetchPolls = async () => {
-    const dbInstance = getFirestore();
-    try {
-      const pollsCollection = collection(dbInstance, 'Polls');
-      const querySnapshot = await getDocs(pollsCollection);
-      const fetchedPolls = querySnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }));
-      setPolls(fetchedPolls.filter((poll) => !poll.isExpired));
-      setExpiredPolls(fetchedPolls.filter((poll) => poll.isExpired));
-      setTimeLeftMap(
-        fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
-          acc[poll.id] = calculateTimeLeft(poll.pollDuration);
-          return acc;
-        }, {})
-      );
-    } catch (error) {
-      console.error('Error fetching polls:', error);
-    }
-  };
+  // REMOVED refetchPolls function, not needed with real-time listener
 
   // Only return null if there are no polls at all
   if (ActivePolls && polls.length === 0 && expiredPolls.length === 0) {
@@ -330,6 +311,8 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       </div>
     );
   };
+
+  // Remove visibilitychange refetch, not needed with real-time listener
 
   return (
     <div className={`flex flex-col items-center justify-start gap-4 ${polls.length > 0 ? 'pt-4' : ''} px-6`}>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { getFirestore, doc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
 
 const PollCreator: React.FC = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -146,6 +146,44 @@ const PollCreator: React.FC = () => {
     if (showCheckResultsModal) {
       fetchPollResults();
     }
+  }, [showCheckResultsModal]);
+
+  // Replace useEffect for fetching poll results with a Firestore listener
+  useEffect(() => {
+    if (!showCheckResultsModal) return;
+
+    const dbInstance = getFirestore();
+    const pollsCollection = collection(dbInstance, 'Polls');
+
+    // Real-time listener for poll results
+    const unsubscribe = onSnapshot(pollsCollection, (snapshot) => {
+      const pollsData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          question: data.question,
+          options: data.options,
+          voters: data.voters || [],
+          responses: data.responses || {},
+          createdAt: data.createdAt || null,
+          allowTextboxResponse: data.allowTextboxResponse ?? false,
+          isExpired: data.isExpired ?? false,
+          pollDuration: data.pollDuration ?? '',
+        };
+      });
+
+      // Sort by createdAt descending, fallback to id if needed
+      pollsData.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        return b.id.localeCompare(a.id);
+      });
+
+      setPollResults(pollsData);
+    });
+
+    return () => unsubscribe();
   }, [showCheckResultsModal]);
 
   // Add a scroll lock hook to disable scrolling on the page underneath the modal

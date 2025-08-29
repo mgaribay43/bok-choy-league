@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, getFirestore, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, setDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const calculateTimeLeft = (deadline: string) => {
@@ -27,33 +27,24 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
   const [timeLeftMap, setTimeLeftMap] = useState<{ [pollId: string]: string }>({});
   const [userName, setUserName] = useState<string>('');
 
-  // Fetch active polls every 10 seconds
   useEffect(() => {
     const dbInstance = getFirestore();
+    const pollsCollection = collection(dbInstance, 'Polls');
 
-    const fetchPolls = async () => {
-      try {
-        const pollsCollection = collection(dbInstance, 'Polls');
-        const querySnapshot = await getDocs(pollsCollection);
-        const fetchedPolls = querySnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }));
+    // Listen for real-time updates
+    const unsubscribe = onSnapshot(pollsCollection, (querySnapshot) => {
+      const fetchedPolls = querySnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }));
+      setPolls(fetchedPolls.filter((poll) => !poll.isExpired));
+      setExpiredPolls(fetchedPolls.filter((poll) => poll.isExpired));
+      setTimeLeftMap(
+        fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
+          acc[poll.id] = calculateTimeLeft(poll.pollDuration);
+          return acc;
+        }, {})
+      );
+    });
 
-        setPolls(fetchedPolls.filter((poll) => !poll.isExpired));
-        setExpiredPolls(fetchedPolls.filter((poll) => poll.isExpired));
-
-        setTimeLeftMap(
-          fetchedPolls.reduce((acc: { [key: string]: string }, poll: any) => {
-            acc[poll.id] = calculateTimeLeft(poll.pollDuration);
-            return acc;
-          }, {})
-        );
-      } catch (error) {
-        console.error('Error fetching polls:', error);
-      }
-    };
-
-    fetchPolls();
-    const interval = setInterval(fetchPolls, 10000);
-    return () => clearInterval(interval);
+    return () => unsubscribe();
   }, []);
 
   // Update time left every second, expire polls if needed
@@ -75,7 +66,6 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
                 expirationDate: new Date().toISOString(),
                 responses: poll.responses || {},
               });
-              window.location.reload();
             } catch (error) {
               console.error('Error updating poll expiration:', error);
             }
@@ -111,6 +101,20 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
     };
     fetchUserName();
   }, []);
+
+  // When polls are fetched, populate textboxResponses with previous user responses
+  useEffect(() => {
+    if (!userName) return;
+    setTextboxResponses((prev) => {
+      const updated: { [pollId: string]: string } = { ...prev };
+      polls.forEach((poll) => {
+        if (poll.responses && poll.responses[userName]?.response !== undefined) {
+          updated[poll.id] = poll.responses[userName].response || "";
+        }
+      });
+      return updated;
+    });
+  }, [polls, userName]);
 
   const handleVote = async (pollId: string, optionId: number) => {
     const poll = polls.find((p) => p.id === pollId);
@@ -223,6 +227,12 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
     const updatedResponses = { ...(poll.responses || {}) };
     delete updatedResponses[userName];
 
+    // Populate textbox with previous response
+    setTextboxResponses((prev) => ({
+      ...prev,
+      [pollId]: poll.responses?.[userName]?.response || "",
+    }));
+
     await setDoc(pollDocRef, {
       ...poll,
       options: updatedOptions,
@@ -256,60 +266,70 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
     return null;
   }
 
-  const renderPollCard = (poll: any, isExpired: boolean, userHasVoted: boolean, timeLeft: string) => (
-    <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
-      <span className="absolute top-4 left-4 text-sm text-emerald-300 font-medium">
-        Total Votes: {poll.options.reduce((total: number, option: { votes: number }) => total + option.votes, 0)}
-      </span>
-      <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
-      <span className="absolute top-4 right-4 text-sm text-emerald-300 font-medium">{timeLeft}</span>
-      {userHasVoted && (
-        <p className="text-center text-green-500 font-medium mb-4">Your Vote Has Been Cast</p>
-      )}
-      <ul className="flex flex-col gap-4">
-        {poll.options.map((option: any, index: number) => (
-          <li key={`${poll.id}-option-${index}`}>
-            <button
-              onClick={() => handleVote(poll.id, option.id)}
+  const renderPollCard = (poll: any, isExpired: boolean, userHasVoted: boolean, timeLeft: string) => {
+    // Find user's selected option
+    const userSelection = poll.responses?.[userName]?.optionText;
+
+    return (
+      <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
+        <span className="absolute top-4 left-4 text-sm text-emerald-300 font-medium">
+          Total Votes: {poll.options.reduce((total: number, option: { votes: number }) => total + option.votes, 0)}
+        </span>
+        <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
+        <span className="absolute top-4 right-4 text-sm text-emerald-300 font-medium">{timeLeft}</span>
+        {userHasVoted && (
+          <p className="text-center text-green-500 font-medium mb-4">Your Vote Has Been Cast</p>
+        )}
+        <ul className="flex flex-col gap-4">
+          {poll.options.map((option: any, index: number) => {
+            const isUserSelection = userSelection === option.text;
+            return (
+              <li key={`${poll.id}-option-${index}`}>
+                <button
+                  onClick={() => handleVote(poll.id, option.id)}
+                  disabled={userHasVoted || isExpired}
+                  className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all
+                  ${userHasVoted || isExpired
+                    ? `bg-gray-700 text-gray-400 cursor-not-allowed ${isUserSelection ? "bg-green-700 border-2 border-emerald-400" : ""}`
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {option.text}
+                </button>
+                {isExpired && (
+                  <span className="block mt-2 text-center text-emerald-300 font-medium">{option.votes} votes</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {poll.allowTextboxResponse && (
+          <div className="mt-4">
+            <label className="block text-emerald-300 font-medium mb-2">Additional Message (optional)</label>
+            <textarea
+              value={textboxResponses[poll.id] || ''}
+              onChange={(e) => handleResponseChange(poll.id, e.target.value)}
               disabled={userHasVoted || isExpired}
-              className={`w-full py-2 px-4 rounded-lg font-semibold text-lg transition-all ${userHasVoted || isExpired
+              className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${userHasVoted || isExpired
                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-[#333] text-emerald-100 border-[#444]'
                 }`}
-            >
-              {option.text}
-            </button>
-            {isExpired && (
-              <span className="block mt-2 text-center text-emerald-300 font-medium">{option.votes} votes</span>
-            )}
-          </li>
-        ))}
-      </ul>
-      {poll.allowTextboxResponse && (
-        <div className="mt-4">
-          <label className="block text-emerald-300 font-medium mb-2">Additional Message (optional)</label>
-          <textarea
-            value={textboxResponses[poll.id] || ''}
-            onChange={(e) => handleResponseChange(poll.id, e.target.value)}
-            disabled={userHasVoted || isExpired}
-            className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${userHasVoted || isExpired
-              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-              : 'bg-[#333] text-emerald-100 border-[#444]'
-              }`}
-            rows={4}
-          />
-        </div>
-      )}
-      {userHasVoted && !isExpired && (
-        <button
-          onClick={() => handleEditResponse(poll.id)}
-          className="mt-4 w-full py-2 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
-        >
-          Edit Response
-        </button>
-      )}
-    </div>
-  );
+              rows={4}
+              placeholder="Type your response here..."
+            />
+          </div>
+        )}
+        {userHasVoted && !isExpired && (
+          <button
+            onClick={() => handleEditResponse(poll.id)}
+            className="mt-4 w-full py-2 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+          >
+            Edit Response
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={`flex flex-col items-center justify-start gap-4 ${polls.length > 0 ? 'pt-4' : ''} px-6`}>

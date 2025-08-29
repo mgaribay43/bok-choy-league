@@ -1,323 +1,281 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { getAuth } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import { getFirestore, doc, setDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import React, { useEffect, useState, useCallback } from "react";
+import { getAuth } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+} from "firebase/firestore";
 
+// --- Helpers ---
+const getTotalVotes = (poll: any) =>
+  Array.isArray(poll.voters) ? poll.voters.length : 0;
+
+const getVotePercentage = (votes: number, totalVotes: number) =>
+  totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
+
+function useBodyScrollLock(isLocked: boolean) {
+  useEffect(() => {
+    if (!isLocked) return;
+    const scrollY = window.scrollY;
+    const prev = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    };
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+    return () => {
+      const topVal = document.body.style.top;
+      document.body.style.position = prev.position;
+      document.body.style.top = prev.top;
+      document.body.style.width = prev.width;
+      document.body.style.overflow = prev.overflow;
+      const y = Math.abs(parseInt(topVal || "0", 10)) || scrollY;
+      window.scrollTo(0, y);
+    };
+  }, [isLocked]);
+}
+
+// --- Main Component ---
 const PollCreator: React.FC = () => {
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [showCreatePollModal, setShowCreatePollModal] = useState(false);
-  const [showCheckResultsModal, setShowCheckResultsModal] = useState(false);
-  const [pollId, setPollId] = useState('');
-  const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState<string[]>(['', '']);
-  const [allowTextboxResponse, setAllowTextboxResponse] = useState(false);
+  // --- State ---
+  const [authState, setAuthState] = useState({
+    isAuthorized: false,
+    user: null as any,
+  });
+  const [modalState, setModalState] = useState({
+    showCreate: false,
+    showResults: false,
+    showEditResponses: false,
+    showParticipants: false,
+    showResponses: false,
+  });
+  const [pollForm, setPollForm] = useState({
+    id: "",
+    question: "",
+    options: ["", ""],
+    allowTextbox: false,
+    duration: "",
+    maxSelections: 1,
+    rankedVoting: false,
+  });
   const [pollResults, setPollResults] = useState<any[]>([]);
-  const [pollDuration, setPollDuration] = useState('');
-  const [showParticipants, setShowParticipants] = useState(false); // default closed
-  const [showResponses, setShowResponses] = useState(false); // default closed
+  const [editingPoll, setEditingPoll] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    question: "",
+    options: [] as string[],
+    allowTextbox: false,
+    duration: "",
+    isExpired: false,
+    maxSelections: 1,
+    rankedVoting: false,
+    modalReady: false,
+  });
+
   const router = useRouter();
 
-  const [editingPoll, setEditingPoll] = useState<any | null>(null);
-  const [editOptions, setEditOptions] = useState<string[]>([]);
-  const [editQuestion, setEditQuestion] = useState('');
-  const [editAllowTextbox, setEditAllowTextbox] = useState(false);
-  const [editPollDuration, setEditPollDuration] = useState('');
-  const [editIsExpired, setEditIsExpired] = useState(false);
-  const [editModalReady, setEditModalReady] = useState(false);
-  const [showEditResponses, setShowEditResponses] = useState(false);
-
+  // --- Effects ---
   useEffect(() => {
     const auth = getAuth();
     const user = auth.currentUser;
-
-    const fetchAuthorizationStatus = async () => {
-      if (!user) {
-        router.push('/');
-        return;
-      }
-
-      const email = user.email || '';
-      const dbInstance = getFirestore();
-
+    setAuthState((prev) => ({ ...prev, user }));
+    if (!user) {
+      router.push("/");
+      return;
+    }
+    const checkAuth = async () => {
+      const email = user.email || "";
+      const db = getFirestore();
       try {
-        const querySnapshot = await getDocs(collection(dbInstance, "Login_ID's"));
+        const snapshot = await getDocs(collection(db, "Login_ID's"));
         let authorized = false;
-
-        querySnapshot.forEach((doc) => {
+        snapshot.forEach((doc) => {
           const data = doc.data();
-          if (data.email === email && data.is_commissioner === 'true') {
+          if (data.email === email && data.is_commissioner === "true") {
             authorized = true;
           }
         });
-
-        setIsAuthorized(authorized);
-
-        if (!authorized) {
-          router.push('/');
-        }
-      } catch (error) {
-        console.error('Error checking authorization:', error);
-        router.push('/');
+        setAuthState((prev) => ({ ...prev, isAuthorized: authorized }));
+        if (!authorized) router.push("/");
+      } catch {
+        router.push("/");
       }
     };
-
-    fetchAuthorizationStatus();
+    checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    if (modalState.showResults) {
+      const db = getFirestore();
+      const pollsCollection = collection(db, "Polls");
+      const unsubscribe = onSnapshot(pollsCollection, (snapshot) => {
+        const pollsData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            question: data.question,
+            options: (data.options || []).map((opt: any) => ({
+              id: opt.id,
+              text: opt.text,
+              votes: opt.votes,
+              score: opt.score || 0,
+            })),
+            voters: data.voters || [],
+            responses: data.responses || {},
+            createdAt: data.createdAt || null,
+            allowTextboxResponse: data.allowTextboxResponse ?? false,
+            isExpired: data.isExpired ?? false,
+            pollDuration: data.pollDuration ?? "",
+            maxSelections: data.maxSelections ?? 1,
+            rankedVoting: data.rankedVoting ?? false,
+            selectedOptions: data.selectedOptions || [],
+          };
+        });
+        pollsData.sort((a, b) =>
+          a.createdAt && b.createdAt
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : b.id.localeCompare(a.id)
+        );
+        setPollResults(pollsData);
+      });
+      return () => unsubscribe();
+    }
+  }, [modalState.showResults]);
+
+  useBodyScrollLock(modalState.showCreate || modalState.showResults);
+
+  useEffect(() => {
+    if (editingPoll) {
+      setEditForm({
+        question: editingPoll.question || "",
+        options: editingPoll.options ? editingPoll.options.map((opt: any) => opt.text) : [],
+        allowTextbox: !!editingPoll.allowTextboxResponse,
+        duration: editingPoll.pollDuration ? editingPoll.pollDuration.slice(0, 16) : "",
+        isExpired: !!editingPoll.isExpired,
+        maxSelections: editingPoll.maxSelections ?? 1,
+        rankedVoting: !!editingPoll.rankedVoting,
+        modalReady: true,
+      });
+    } else {
+      setEditForm((prev) => ({ ...prev, modalReady: false }));
+    }
+  }, [editingPoll]);
+
+  // --- Handlers ---
+  const handlePollFormChange = useCallback(
+    (field: string, value: any) => {
+      setPollForm((prev) => ({ ...prev, [field]: value }));
+    },
+    []
+  );
+
   const handleAddOption = () => {
-    setOptions([...options, '']);
+    setPollForm((prev) => ({
+      ...prev,
+      options: [...prev.options, ""],
+    }));
   };
 
   const handleOptionChange = (index: number, value: string) => {
-    const updatedOptions = [...options];
-    updatedOptions[index] = value;
-    setOptions(updatedOptions);
+    setPollForm((prev) => {
+      const updated = [...prev.options];
+      updated[index] = value;
+      return { ...prev, options: updated };
+    });
   };
 
   const handleCreatePoll = async () => {
-    if (!pollId.trim() || !question.trim() || options.some((option) => !option.trim()) || !pollDuration) {
-      alert('Please fill out the poll ID, question, all options, and set a poll duration.');
+    const { id, question, options, allowTextbox, duration, maxSelections, rankedVoting } = pollForm;
+    if (!id.trim() || !question.trim() || options.some((o) => !o.trim()) || !duration) {
+      alert("Please fill out the poll ID, question, all options, and set a poll duration.");
       return;
     }
-
     try {
-      const dbInstance = getFirestore();
-      const pollDoc = doc(dbInstance, 'Polls', pollId);
-      await setDoc(pollDoc, {
+      const db = getFirestore();
+      await setDoc(doc(db, "Polls", id), {
         question,
-        options: options.map((text, index) => ({ id: index + 1, text, votes: 0 })),
+        options: options.map((text, idx) => ({ id: idx + 1, text, votes: 0 })),
         voters: [],
-        allowTextboxResponse,
-        pollDuration,
+        allowTextboxResponse: allowTextbox,
+        pollDuration: duration,
         isExpired: false,
-        createdAt: new Date().toISOString(), // <-- Add this line
+        createdAt: new Date().toISOString(),
+        maxSelections,
+        rankedVoting,
       });
-      alert('Poll created successfully!');
-      setPollId('');
-      setQuestion('');
-      setOptions(['', '']);
-      setAllowTextboxResponse(false);
-      setPollDuration('');
-      setShowCreatePollModal(false);
-    } catch (error) {
-      console.error('Error creating poll:', error);
-      alert('Failed to create poll. Please try again.');
+      alert("Poll created successfully!");
+      setPollForm({
+        id: "",
+        question: "",
+        options: ["", ""],
+        allowTextbox: false,
+        duration: "",
+        maxSelections: 1,
+        rankedVoting: false,
+      });
+      setModalState((prev) => ({ ...prev, showCreate: false }));
+    } catch {
+      alert("Failed to create poll. Please try again.");
     }
-  };
-
-  const fetchPollResults = async () => {
-    try {
-      const dbInstance = getFirestore();
-      const pollsCollection = collection(dbInstance, 'Polls');
-      const pollsSnapshot = await getDocs(pollsCollection);
-      const pollsData = pollsSnapshot.docs.map((doc: any) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          question: data.question,
-          options: data.options,
-          voters: data.voters || [],
-          responses: data.responses || {},
-          createdAt: data.createdAt || null,
-          allowTextboxResponse: data.allowTextboxResponse ?? false, // <-- Add this
-          isExpired: data.isExpired ?? false, // <-- Add this
-          pollDuration: data.pollDuration ?? '', // <-- Add this
-        };
-      });
-
-      // Sort by createdAt descending, fallback to id if needed
-      pollsData.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-        return b.id.localeCompare(a.id); // If IDs are timestamps
-      });
-
-      setPollResults(pollsData);
-    } catch (error) {
-      console.error('Error fetching poll results:', error);
-      alert('Failed to fetch poll results. Please try again.');
-    }
-  };
-
-  useEffect(() => {
-    if (showCheckResultsModal) {
-      fetchPollResults();
-    }
-  }, [showCheckResultsModal]);
-
-  // Replace useEffect for fetching poll results with a Firestore listener
-  useEffect(() => {
-    if (!showCheckResultsModal) return;
-
-    const dbInstance = getFirestore();
-    const pollsCollection = collection(dbInstance, 'Polls');
-
-    // Real-time listener for poll results
-    const unsubscribe = onSnapshot(pollsCollection, (snapshot) => {
-      const pollsData = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          question: data.question,
-          options: data.options,
-          voters: data.voters || [],
-          responses: data.responses || {},
-          createdAt: data.createdAt || null,
-          allowTextboxResponse: data.allowTextboxResponse ?? false,
-          isExpired: data.isExpired ?? false,
-          pollDuration: data.pollDuration ?? '',
-        };
-      });
-
-      // Sort by createdAt descending, fallback to id if needed
-      pollsData.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-        return b.id.localeCompare(a.id);
-      });
-
-      setPollResults(pollsData);
-    });
-
-    return () => unsubscribe();
-  }, [showCheckResultsModal]);
-
-  // Add a scroll lock hook to disable scrolling on the page underneath the modal
-  function useBodyScrollLock(isLocked: boolean) {
-    React.useEffect(() => {
-      if (!isLocked) return;
-
-      const scrollY = window.scrollY;
-      const prev = {
-        position: document.body.style.position,
-        top: document.body.style.top,
-        width: document.body.style.width,
-        overflow: document.body.style.overflow,
-      };
-
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflow = "hidden";
-
-      return () => {
-        const topVal = document.body.style.top;
-        document.body.style.position = prev.position;
-        document.body.style.top = prev.top;
-        document.body.style.width = prev.width;
-        document.body.style.overflow = prev.overflow;
-
-        const y = Math.abs(parseInt(topVal || "0", 10)) || scrollY;
-        window.scrollTo(0, y);
-      };
-    }, [isLocked]);
-  }
-
-  // Apply the scroll lock hook to the modals
-  useBodyScrollLock(showCreatePollModal || showCheckResultsModal);
-
-  // Adjust modal container to ensure it is positioned below the navbar
-  const modalClassName = "bg-[#232323] border border-[#333] rounded-xl shadow-lg w-full max-w-2xl mx-4 sm:mx-auto max-h-[80vh] mt-8 flex flex-col";
-
-  // Calculate total votes for a poll
-  const getTotalVotes = (options: any[]) => {
-    return options.reduce((total, option) => total + (option.votes || 0), 0);
-  };
-
-  // Get percentage for vote visualization
-  const getVotePercentage = (votes: number, totalVotes: number) => {
-    return totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
   };
 
   const handleEditPollClick = (poll: any) => {
-    setEditModalReady(false); // Reset loading state
     setEditingPoll(poll);
   };
 
   const handleEditOptionChange = (index: number, value: string) => {
-    const updated = [...editOptions];
-    updated[index] = value;
-    setEditOptions(updated);
+    setEditForm((prev) => {
+      const updated = [...prev.options];
+      updated[index] = value;
+      return { ...prev, options: updated };
+    });
   };
 
   const handleEditPollSubmit = async () => {
     if (!editingPoll) return;
-    if (!editPollDuration) {
-      alert('Poll duration cannot be empty.');
-      return;
-    }
-    const dbInstance = getFirestore();
-    const pollDoc = doc(dbInstance, 'Polls', editingPoll.id);
-
-    const updatedOptions = editOptions.map((text, idx) => ({
+    const db = getFirestore();
+    const updatedOptions = editForm.options.map((text, idx) => ({
       id: idx + 1,
       text,
       votes: editingPoll.options[idx]?.votes || 0,
     }));
-
-    await setDoc(pollDoc, {
+    await setDoc(doc(db, "Polls", editingPoll.id), {
       ...editingPoll,
-      question: editQuestion,
+      question: editForm.question,
       options: updatedOptions,
-      allowTextboxResponse: !!editAllowTextbox, // always boolean
-      pollDuration: editPollDuration || '',
-      isExpired: !!editIsExpired, // always boolean
+      allowTextboxResponse: !!editForm.allowTextbox,
+      pollDuration: editForm.duration || "",
+      isExpired: !!editForm.isExpired,
+      maxSelections: editForm.maxSelections,
+      rankedVoting: editForm.rankedVoting,
     });
-
     setEditingPoll(null);
-    fetchPollResults();
   };
 
-  // Sync edit modal fields with editingPoll when it changes
-  useEffect(() => {
-    if (editingPoll) {
-      setEditAllowTextbox(!!editingPoll.allowTextboxResponse);
-      setEditIsExpired(!!editingPoll.isExpired);
-      setEditPollDuration(
-        editingPoll.pollDuration
-          ? editingPoll.pollDuration.slice(0, 16)
-          : ''
-      );
-      setEditQuestion(editingPoll.question || '');
-      setEditOptions(editingPoll.options ? editingPoll.options.map((opt: any) => opt.text) : []);
-      setEditModalReady(true);
-    } else {
-      setEditModalReady(false);
-    }
-  }, [editingPoll]);
-
-  // Add this function to handle vote deletion
   const handleDeleteVote = async (user: string, optionText: string) => {
     if (!editingPoll) return;
-    const dbInstance = getFirestore();
-    const pollDoc = doc(dbInstance, 'Polls', editingPoll.id);
-
-    // Remove user from responses
+    const db = getFirestore();
     const updatedResponses = { ...(editingPoll.responses || {}) };
     delete updatedResponses[user];
-
-    // Remove user from voters
     const updatedVoters = (editingPoll.voters || []).filter((v: string) => v !== user);
-
-    // Decrement vote count for the option
     const updatedOptions = (editingPoll.options || []).map((opt: any) =>
-      opt.text === optionText
-        ? { ...opt, votes: Math.max((opt.votes || 1) - 1, 0) }
-        : opt
+      opt.text === optionText ? { ...opt, votes: Math.max((opt.votes || 1) - 1, 0) } : opt
     );
-
-    await setDoc(pollDoc, {
+    await setDoc(doc(db, "Polls", editingPoll.id), {
       ...editingPoll,
       options: updatedOptions,
       voters: updatedVoters,
       responses: updatedResponses,
     });
-
-    // Update local state to reflect changes immediately
     setEditingPoll({
       ...editingPoll,
       options: updatedOptions,
@@ -326,22 +284,25 @@ const PollCreator: React.FC = () => {
     });
   };
 
-  if (!isAuthorized) {
-    return null;
-  }
+  // --- Render ---
+  if (!authState.isAuthorized) return null;
+
+  // Modal classes
+  const modalClassName =
+    "bg-[#232323] border border-[#333] rounded-xl shadow-lg w-full max-w-2xl mx-4 sm:mx-auto max-h-[80vh] mt-8 flex flex-col";
 
   return (
     <>
-      {/* Default Buttons */}
+      {/* Main Buttons */}
       <div className="flex flex-col items-center gap-4 w-full">
         <button
-          onClick={() => setShowCreatePollModal(true)}
+          onClick={() => setModalState((prev) => ({ ...prev, showCreate: true }))}
           className="w-48 px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition text-lg"
         >
           Create Poll
         </button>
         <button
-          onClick={() => setShowCheckResultsModal(true)}
+          onClick={() => setModalState((prev) => ({ ...prev, showResults: true }))}
           className="w-48 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-lg"
         >
           Check Results
@@ -349,9 +310,9 @@ const PollCreator: React.FC = () => {
       </div>
 
       {/* Create Poll Modal */}
-      {showCreatePollModal && (
+      {modalState.showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col overflow-hidden">
+          <div className={modalClassName}>
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 border-b border-slate-600 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white flex items-center gap-4">
@@ -361,7 +322,7 @@ const PollCreator: React.FC = () => {
                 Create a New Poll
               </h2>
               <button
-                onClick={() => setShowCreatePollModal(false)}
+                onClick={() => setModalState((prev) => ({ ...prev, showCreate: false }))}
                 className="text-white hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-white/10"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,28 +333,31 @@ const PollCreator: React.FC = () => {
             {/* Modal Content */}
             <div className="p-6 flex-1 overflow-y-auto">
               <div className="space-y-4">
+                {/* Poll ID */}
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll ID</label>
                   <input
                     type="text"
-                    value={pollId}
-                    onChange={(e) => setPollId(e.target.value)}
+                    value={pollForm.id}
+                    onChange={(e) => handlePollFormChange("id", e.target.value)}
                     className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+                {/* Poll Question */}
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll Question</label>
                   <input
                     type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
+                    value={pollForm.question}
+                    onChange={(e) => handlePollFormChange("question", e.target.value)}
                     className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+                {/* Poll Options */}
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll Options</label>
                   <div className="space-y-2">
-                    {options.map((option, index) => (
+                    {pollForm.options.map((option, index) => (
                       <input
                         key={index}
                         type="text"
@@ -410,24 +374,52 @@ const PollCreator: React.FC = () => {
                     Add Option
                   </button>
                 </div>
+                {/* Poll Duration */}
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll Duration</label>
                   <input
                     type="datetime-local"
-                    value={pollDuration}
-                    onChange={(e) => setPollDuration(e.target.value)}
+                    value={pollForm.duration}
+                    onChange={(e) => handlePollFormChange("duration", e.target.value)}
                     className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+                {/* Number of selections allowed */}
+                <div>
+                  <label className="block text-emerald-300 font-medium mb-2">Number of selections allowed</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={pollForm.options.length}
+                    value={pollForm.maxSelections}
+                    onChange={(e) =>
+                      handlePollFormChange("maxSelections", Number(e.target.value))
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                {/* Allow textbox response */}
                 <div>
                   <label className="flex items-center gap-2 text-emerald-300 font-medium">
                     <input
                       type="checkbox"
-                      checked={allowTextboxResponse}
-                      onChange={(e) => setAllowTextboxResponse(e.target.checked)}
+                      checked={pollForm.allowTextbox}
+                      onChange={(e) => handlePollFormChange("allowTextbox", e.target.checked)}
                       className="rounded text-emerald-500 focus:ring-emerald-500"
                     />
                     Allow users to provide a textbox response with their vote
+                  </label>
+                </div>
+                {/* Ranked voting */}
+                <div>
+                  <label className="flex items-center gap-2 text-emerald-300 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={pollForm.rankedVoting}
+                      onChange={(e) => handlePollFormChange("rankedVoting", e.target.checked)}
+                      className="rounded text-emerald-500 focus:ring-emerald-500"
+                    />
+                    Allow users to rank their selections
                   </label>
                 </div>
               </div>
@@ -435,7 +427,7 @@ const PollCreator: React.FC = () => {
             {/* Sticky Footer */}
             <div className="sticky bottom-0 bg-slate-800/50 border-t border-slate-600 px-8 py-4 flex justify-end gap-4 z-10">
               <button
-                onClick={() => setShowCreatePollModal(false)}
+                onClick={() => setModalState((prev) => ({ ...prev, showCreate: false }))}
                 className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium"
               >
                 Cancel
@@ -452,26 +444,26 @@ const PollCreator: React.FC = () => {
       )}
 
       {/* Enhanced Check Results Modal */}
-      {showCheckResultsModal && (
+      {modalState.showResults && (
         <div
           className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
-          onClick={() => setShowCheckResultsModal(false)}
+          onClick={() => setModalState((prev) => ({ ...prev, showResults: false }))}
         >
           <div
-            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 max-h-[calc(100vh-40px)] overflow-hidden" /* Adjusted max height */
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 max-h-[calc(100vh-40px)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 border-b border-slate-600"> {/* Increased padding */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 border-b border-slate-600">
               <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold text-white flex items-center gap-4"> {/* Updated icon */}
-                  <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"> {/* New icon */}
+                <h2 className="text-3xl font-bold text-white flex items-center gap-4">
+                  <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z" />
                   </svg>
                   Poll Results
                 </h2>
                 <button
-                  onClick={() => setShowCheckResultsModal(false)}
+                  onClick={() => setModalState((prev) => ({ ...prev, showResults: false }))}
                   className="text-white hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-white/10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -486,7 +478,7 @@ const PollCreator: React.FC = () => {
               {pollResults.length > 0 ? (
                 <div className="space-y-8">
                   {pollResults.map((poll, pollIndex) => {
-                    const totalVotes = getTotalVotes(poll.options);
+                    const totalVotes = getTotalVotes(poll);
                     const responseCount = poll.responses ? Object.keys(poll.responses).length : 0;
 
                     return (
@@ -534,64 +526,170 @@ const PollCreator: React.FC = () => {
                               Vote Distribution
                             </h4>
                             <div className="space-y-4">
-                              {poll.options.map((option: any) => {
-                                const percentage = getVotePercentage(option.votes, totalVotes);
-
-                                return (
-                                  <div key={option.id} className="bg-slate-600/50 rounded-lg p-4 border border-slate-500/50">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-white font-medium truncate flex-1 mr-4">
-                                        {option.text}
-                                      </span>
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="text-blue-300 font-semibold">
-                                          {option.votes} votes
+                              {poll.rankedVoting ? (
+                                // Sort options by score descending
+                                [...poll.options]
+                                  .sort((a, b) => (b.score || 0) - (a.score || 0))
+                                  .map((option: any, idx: number) => {
+                                    const maxScore = Math.max(...poll.options.map((opt: any) => opt.score || 0));
+                                    return (
+                                      <div key={option.id} className={`bg-slate-600/50 rounded-lg p-4 border border-slate-500/50 ${option.score === maxScore && maxScore > 0 ? 'border-yellow-400' : ''}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-white font-medium truncate flex-1 mr-4">
+                                            {option.text}
+                                            {option.score === maxScore && maxScore > 0 && (
+                                              <span className="ml-2 text-yellow-300 font-bold">(Winner)</span>
+                                            )}
+                                          </span>
+                                          <div className="flex items-center gap-3 text-sm">
+                                            <span className="text-blue-300 font-semibold">
+                                              {option.score || 0} pts
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="w-full bg-slate-700 rounded-full h-2.5">
+                                          <div
+                                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                            style={{ width: `${maxScore ? (option.score || 0) / maxScore * 100 : 0}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                              ) : (
+                                // ...existing vote distribution for non-ranked polls...
+                                poll.options.map((option: any) => {
+                                  const percentage = getVotePercentage(option.votes, totalVotes);
+                                  return (
+                                    <div key={option.id} className="bg-slate-600/50 rounded-lg p-4 border border-slate-500/50">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-white font-medium truncate flex-1 mr-4">
+                                          {option.text}
                                         </span>
-                                        <span className="text-gray-300">
-                                          {percentage}%
-                                        </span>
+                                        <div className="flex items-center gap-3 text-sm">
+                                          <span className="text-blue-300 font-semibold">
+                                            {option.votes} votes
+                                          </span>
+                                          <span className="text-gray-300">
+                                            {percentage}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="w-full bg-slate-700 rounded-full h-2.5">
+                                        <div
+                                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                          style={{ width: `${percentage}%` }}
+                                        />
                                       </div>
                                     </div>
-                                    <div className="w-full bg-slate-700 rounded-full h-2.5">
-                                      <div
-                                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out"
-                                        style={{ width: `${percentage}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })
+                              )}
                             </div>
                           </div>
 
                           <div className="grid md:grid-cols-2 gap-6">
-                            {/* Detailed Responses */}
-                            {poll.responses && Object.keys(poll.responses).length > 0 && (
-                              <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30">
-                                <h4
-                                  className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
-                                  onClick={() => setShowResponses(!showResponses)}
+                            {/* Participants Dropdown */}
+                            <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30">
+                              <h4
+                                className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
+                                onClick={() => setModalState((prev) => ({ ...prev, showParticipants: !prev.showParticipants }))}
+                              >
+                                <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1a1 1 0 102 0V7zM12 7a1 1 0 112 0v1a1 1 0 11-2 0V7z" />
+                                </svg>
+                                Participants ({poll.voters.length})
+                                <svg
+                                  className={`w-5 h-5 text-gray-400 transition-transform ${modalState.showParticipants ? 'rotate-180' : ''}`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
                                 >
-                                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                                  </svg>
-                                  Detailed Responses
-                                  <svg
-                                    className={`w-5 h-5 text-gray-400 transition-transform ${showResponses ? 'rotate-180' : ''}`}
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                                  </svg>
-                                </h4>
-                                {showResponses && (
-                                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                                  <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                </svg>
+                              </h4>
+                              {modalState.showParticipants && (
+                                <div style={{ maxHeight: '16rem', overflowY: 'auto', transition: 'max-height 0.3s' }}>
+                                  {poll.voters.length > 0 ? (
+                                    <div className="space-y-2">
+                                      {poll.voters.map((voter: any, index: number) => (
+                                        <div key={index} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-purple-400">
+                                          <div className="text-white text-sm flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                                            {voter}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8">
+                                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                      </svg>
+                                      <p className="text-gray-400">No participants yet</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Detailed Responses Dropdown */}
+                            <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30">
+                              <h4
+                                className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
+                                onClick={() => setModalState((prev) => ({ ...prev, showResponses: !prev.showResponses }))}
+                              >
+                                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                                </svg>
+                                Detailed Responses
+                                <svg
+                                  className={`w-5 h-5 text-gray-400 transition-transform ${modalState.showResponses ? 'rotate-180' : ''}`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                </svg>
+                              </h4>
+                              {modalState.showResponses && (
+                                <div style={{ maxHeight: '16rem', overflowY: 'auto', transition: 'max-height 0.3s' }}>
+                                  <div className="space-y-3">
                                     {Object.entries(poll.responses).map(([email, responseData]: [string, any]) => (
                                       <div key={email} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-green-400">
                                         <div className="text-sm text-gray-300 mb-1">{email}</div>
-                                        <div className="text-white font-medium mb-1">
-                                          Voted: {responseData.optionText}
-                                        </div>
+                                        {/* Multi-selection and ranking support */}
+                                        {poll.maxSelections > 1 ? (
+                                          <div className="text-white font-medium mb-1">
+                                            Voted:
+                                            <div className="flex flex-col ml-2">
+                                              {Array.isArray(responseData.selectedOptions) && responseData.selectedOptions.length > 0
+                                                ? responseData.selectedOptions.map((id: number, idx: number) => {
+                                                  const optionObj = poll.options.find((opt: any) => opt.id === id);
+                                                  let rankNum = "";
+                                                  if (poll.rankedVoting && Array.isArray(responseData.rankings)) {
+                                                    const rankIdx = responseData.rankings.indexOf(id);
+                                                    if (rankIdx !== -1) {
+                                                      rankNum = `${rankIdx + 1}`;
+                                                    }
+                                                  } else if (poll.rankedVoting) {
+                                                    rankNum = `${idx + 1}`;
+                                                  }
+                                                  return (
+                                                    <span key={id} className="inline-block mb-1 flex items-center gap-2">
+                                                      {poll.rankedVoting && (
+                                                        <span className="text-yellow-300 font-bold min-w-[1.5em] text-center">{rankNum}</span>
+                                                      )}
+                                                      <span>{optionObj ? optionObj.text : id}</span>
+                                                    </span>
+                                                  );
+                                                })
+                                                : <span>No selection</span>}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="text-white font-medium mb-1">
+                                            Voted: {responseData.optionText}
+                                          </div>
+                                        )}
                                         {responseData.response && (
                                           <div className="text-gray-200 text-sm italic bg-slate-800/50 p-2 rounded mt-2">
                                             "{responseData.response}"
@@ -600,48 +698,7 @@ const PollCreator: React.FC = () => {
                                       </div>
                                     ))}
                                   </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Voter List */}
-                            <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-500/30"> {/* Reduced padding */}
-                              <h4
-                                className="text-lg font-semibold text-white flex items-center gap-2 cursor-pointer"
-                                onClick={() => setShowParticipants(!showParticipants)}
-                              >
-                                <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1a1 1 0 102 0V7zM12 7a1 1 0 112 0v1a1 1 0 11-2 0V7z" />
-                                </svg>
-                                Participants ({poll.voters.length})
-                                <svg
-                                  className={`w-5 h-5 text-gray-400 transition-transform ${showParticipants ? 'rotate-180' : ''}`}
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                                </svg>
-                              </h4>
-                              {showParticipants && (
-                                poll.voters.length > 0 ? (
-                                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {poll.voters.map((voter: any, index: number) => (
-                                      <div key={index} className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-purple-400">
-                                        <div className="text-white text-sm flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                                          {voter}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <p className="text-gray-400">No participants yet</p>
-                                  </div>
-                                )
+                                </div>
                               )}
                             </div>
                           </div>
@@ -674,7 +731,7 @@ const PollCreator: React.FC = () => {
             {/* Modal Footer */}
             <div className="bg-slate-800/50 border-t border-slate-600 p-4">
               <button
-                onClick={() => setShowCheckResultsModal(false)}
+                onClick={() => setModalState((prev) => ({ ...prev, showResults: false }))}
                 className="w-full px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg"
               >
                 Close Results
@@ -686,27 +743,27 @@ const PollCreator: React.FC = () => {
 
       {/* Edit Poll Modal - When editing a poll */}
       {editingPoll && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div key={editingPoll.id} className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-[#232323] border border-[#333] rounded-xl shadow-lg w-full max-w-xl mx-auto p-6 max-h-[80vh] overflow-y-auto">
-            {editModalReady ? (
+            {editForm.modalReady ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll Question</label>
                   <input
                     type="text"
-                    value={editQuestion}
-                    onChange={e => setEditQuestion(e.target.value)}
+                    value={editForm.question}
+                    onChange={e => setEditForm(prev => ({ ...prev, question: e.target.value }))}
                     className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
                 <div>
                   <label className="block text-emerald-300 font-medium mb-2">Poll Options</label>
-                  {editOptions.map((option, idx) => (
+                  {editForm.options.map((option, idx) => (
                     <div key={idx} className="flex items-center mb-2">
-                      {editOptions.length > 2 && (
+                      {editForm.options.length > 2 && (
                         <button
                           type="button"
-                          onClick={() => setEditOptions(editOptions.filter((_, i) => i !== idx))}
+                          onClick={() => setEditForm(prev => ({ ...prev, options: prev.options.filter((_, i) => i !== idx) }))}
                           className="mr-2 px-2 py-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition text-xs"
                           aria-label="Remove option"
                         >
@@ -722,39 +779,67 @@ const PollCreator: React.FC = () => {
                     </div>
                   ))}
                   <button
-                    onClick={() => setEditOptions([...editOptions, ''])}
+                    onClick={() => setEditForm(prev => ({ ...prev, options: [...prev.options, ''] }))}
                     className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                   >
                     Add Option
                   </button>
                 </div>
                 <div>
+                  <label className="block text-emerald-300 font-medium mb-2">Poll Duration</label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.duration}
+                    onChange={e => setEditForm(prev => ({ ...prev, duration: e.target.value }))}
+                    className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-emerald-300 font-medium mb-2">Number of selections allowed</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={editForm.options.length}
+                    value={editForm.maxSelections}
+                    onChange={e => {
+                      const value = Number(e.target.value);
+                      setEditForm(prev => ({ ...prev, maxSelections: value }));
+                      if (value <= 1) setEditForm(prev => ({ ...prev, rankedVoting: false }));
+                    }}
+                    className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                {editForm.maxSelections > 1 && (
+                  <div>
+                    <label className="flex items-center gap-2 text-emerald-300 font-medium">
+                      <input
+                        type="checkbox"
+                        checked={editForm.rankedVoting}
+                        onChange={e => setEditForm(prev => ({ ...prev, rankedVoting: e.target.checked }))}
+                        className="rounded text-emerald-500 focus:ring-emerald-500"
+                      />
+                      Allow users to rank their selections
+                    </label>
+                  </div>
+                )}
+                <div>
                   <label className="flex items-center gap-2 text-emerald-300 font-medium">
                     <input
                       type="checkbox"
-                      checked={!!editAllowTextbox}
-                      onChange={e => setEditAllowTextbox(e.target.checked)}
+                      checked={!!editForm.allowTextbox}
+                      onChange={e => setEditForm(prev => ({ ...prev, allowTextbox: e.target.checked }))}
                       className="rounded text-emerald-500 focus:ring-emerald-500"
                     />
                     Allow textbox response
                   </label>
                 </div>
                 <div>
-                  <label className="block text-emerald-300 font-medium mb-2">Poll Duration</label>
-                  <input
-                    type="datetime-local"
-                    value={editPollDuration}
-                    onChange={e => setEditPollDuration(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-                <div>
                   <label className="flex items-center gap-2 text-emerald-300 font-medium">
                     <input
                       type="checkbox"
-                      checked={!!editIsExpired}
-                      onChange={e => setEditIsExpired(e.target.checked)}
+                      checked={!!editForm.isExpired}
+                      onChange={e => setEditForm(prev => ({ ...prev, isExpired: e.target.checked }))}
                       className="rounded text-emerald-500 focus:ring-emerald-500"
                     />
                     Mark poll as expired
@@ -762,30 +847,57 @@ const PollCreator: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center pt-2">
                   <button
-                    onClick={() => setShowEditResponses(!showEditResponses)}
+                    onClick={() => setModalState((prev) => ({ ...prev, showEditResponses: !prev.showEditResponses }))}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    {showEditResponses ? "Hide Edit Responses" : "Edit Responses"}
+                    {modalState.showEditResponses ? "Hide Edit Responses" : "Edit Responses"}
                   </button>
                 </div>
-                {showEditResponses && editingPoll && (
+                {modalState.showEditResponses && editingPoll && (
                   <div className="mt-6 bg-slate-700 rounded-lg p-4 border border-slate-600">
                     <h3 className="text-lg font-bold text-emerald-200 mb-4">Edit Responses</h3>
                     {Object.entries(editingPoll.responses || {}).length === 0 ? (
                       <div className="text-gray-400">No responses to edit.</div>
                     ) : (
                       <ul className="space-y-3">
-                        {Object.entries(editingPoll.responses).map(([user, response]: [string, any]) => (
+                        {Object.entries(editingPoll.responses || {}).map(([user, response]: [string, any]) => (
                           <li key={user} className="flex items-center justify-between bg-slate-800 rounded px-3 py-2">
                             <div>
                               <span className="font-semibold text-white">{user}</span>
-                              <span className="ml-2 text-emerald-300">Voted: {response.optionText}</span>
+                              {/* Multi-selection and ranking support */}
+                              {editingPoll.maxSelections > 1 ? (
+                                <span className="ml-2 text-emerald-300">
+                                  Voted:&nbsp;
+                                  {Array.isArray(response.selectedOptions) && response.selectedOptions.length > 0
+                                    ? response.selectedOptions.map((id: number, idx: number) => {
+                                      const optionObj = editingPoll.options.find((opt: any) => opt.id === id);
+                                      return (
+                                        <span key={id} className="inline-block mr-2">
+                                          {optionObj ? optionObj.text : id}
+                                          {editingPoll.rankedVoting && (
+                                            <span className="ml-1 text-yellow-300 font-bold">
+                                              (Rank {idx + 1})
+                                            </span>
+                                          )}
+                                        </span>
+                                      );
+                                    })
+                                    : "No selection"}
+                                </span>
+                              ) : (
+                                <span className="ml-2 text-emerald-300">Voted: {response.optionText}</span>
+                              )}
                               {response.response && (
                                 <span className="ml-2 text-gray-300 italic">"{response.response}"</span>
                               )}
                             </div>
                             <button
-                              onClick={() => handleDeleteVote(user, response.optionText)}
+                              onClick={() => handleDeleteVote(user, editingPoll.maxSelections > 1
+                                ? Array.isArray(response.selectedOptions) && response.selectedOptions.length > 0
+                                  ? editingPoll.options.find((opt: any) => opt.id === response.selectedOptions[0])?.text
+                                  : ""
+                                : response.optionText
+                              )}
                               className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs flex items-center justify-center"
                               aria-label="Delete vote"
                             >
@@ -796,27 +908,29 @@ const PollCreator: React.FC = () => {
                       </ul>
                     )}
                     <button
-                      onClick={() => setShowEditResponses(false)}
+                      onClick={() => setModalState((prev) => ({ ...prev, showEditResponses: false }))}
                       className="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                     >
                       Done
                     </button>
                   </div>
                 )}
-                <div className="flex justify-end gap-4 pt-4 border-t border-[#444] mt-6">
-                  <button
-                    onClick={() => setEditingPoll(null)}
-                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleEditPollSubmit}
-                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition"
-                  >
-                    Save Changes
-                  </button>
-                </div>
+                {editForm.modalReady && (
+                  <div className="flex justify-end gap-4 pt-4 border-t border-[#444] mt-6">
+                    <button
+                      onClick={() => setEditingPoll(null)}
+                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleEditPollSubmit}
+                      className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center text-emerald-300">Loading...</div>

@@ -129,14 +129,16 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
       const updated: { [pollId: string]: number[] } = { ...prev };
       polls.forEach((poll) => {
         if (poll.id !== editingPollId) {
-          if (poll.responses && poll.responses[userName]) {
+          if (
+            poll.responses &&
+            poll.responses[userName] &&
+            JSON.stringify(poll.responses[userName].selectedOptions) !== JSON.stringify(prev[poll.id])
+          ) {
             if (poll.maxSelections > 1 && Array.isArray(poll.responses[userName].selectedOptions)) {
               updated[poll.id] = poll.responses[userName].selectedOptions;
             } else {
               updated[poll.id] = [];
             }
-          } else {
-            updated[poll.id] = [];
           }
         }
       });
@@ -150,11 +152,9 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
             poll.rankedVoting &&
             poll.responses &&
             poll.responses[userName] &&
-            Array.isArray(poll.responses[userName].rankings)
+            JSON.stringify(poll.responses[userName].rankings) !== JSON.stringify(prev[poll.id])
           ) {
             updated[poll.id] = poll.responses[userName].rankings;
-          } else {
-            updated[poll.id] = [];
           }
         }
       });

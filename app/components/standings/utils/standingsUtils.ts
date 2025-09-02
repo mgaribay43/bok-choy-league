@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export interface TeamEntry {
   id: string;
   name: string;

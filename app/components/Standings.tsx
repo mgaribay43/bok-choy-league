@@ -161,18 +161,20 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             <div className="flex flex-row justify-center gap-4">
               {displayTeams.map((team, idx) => (
                 <div key={team.id} className="group block">
-                  <div className={`flex flex-col items-center bg-[#232323] rounded-xl shadow-md border px-4 py-6 min-w-[120px] max-w-[160px] h-auto min-h-[250px] transition-all duration-200 hover:shadow-lg hover:-translate-y-1
+                  <div className={`flex flex-col items-center justify-center text-center bg-[#232323] rounded-xl shadow-md border px-4 py-6 min-w-[120px] max-w-[160px] h-auto min-h-[250px] transition-all duration-200 hover:shadow-lg hover:-translate-y-1
                     ${idx === 0 ? "border-yellow-400" : idx === 1 ? "border-slate-400" : "border-amber-700"}`}>
-                    {/* Trophy Image */}
-                    <div className="mb-2">
-                      <Image
-                        src={getTrophyUrl(idx + 1, year) ?? ""}
-                        alt={`${idx + 1} Place Trophy`}
-                        width={36}
-                        height={36}
-                        className="mx-auto"
-                      />
-                    </div>
+                    {/* Trophy Image - only show if year is not 2025 */}
+                    {year !== "2025" && (
+                      <div className="mb-2">
+                        <Image
+                          src={getTrophyUrl(idx + 1, year) ?? ""}
+                          alt={`${idx + 1} Place Trophy`}
+                          width={36}
+                          height={36}
+                          className="mx-auto"
+                        />
+                      </div>
+                    )}
                     {/* Team Logo */}
                     <div className="mb-2">
                       <Link href={`/roster?year=${year}&teamId=${team.id}`}>
@@ -181,7 +183,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                           alt={`${team.name} logo`}
                           width={56}
                           height={56}
-                          className="rounded-full object-cover border border-[#333]"
+                          className="rounded-full object-cover border border-[#333] mx-auto"
                         />
                       </Link>
                     </div>

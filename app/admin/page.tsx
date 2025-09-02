@@ -1,6 +1,6 @@
 "use client";
 
-import PollCreator from '@/app/components/pollCreator';
+import PollCreator from '@/app/components/pollCreator/PollCreator';
 import IceCreator from '@/app/components/addIces';
 
 export default function AdminPage() {

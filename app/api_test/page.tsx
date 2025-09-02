@@ -21,8 +21,9 @@ const endpoints = [
   "draftresults",
   "roster",
   "players",
-  "playerstats", // Added for testing player stats endpoint
-  "settings"
+  "playerstats",
+  "settings",
+  "transactions" // Already included
 ]
 
 // Example player keys for testing player stats (replace with your own keys as needed)
@@ -50,12 +51,12 @@ const YahooViewer = () => {
       if (selectedEndpoint === "roster") {
         url += `&teamId=${selectedTeamId}`;
       } else if (selectedEndpoint === "playerstats") {
-        // Add playerKeys and week to query
         const playerKeysParam = examplePlayerKeys.join(",");
         url += `&playerKeys=${encodeURIComponent(playerKeysParam)}&week=${selectedWeek}`;
       } else if (selectedEndpoint === "scoreboard") {
         url += `&week=${selectedWeek}`;
       }
+      // Add support for transactions endpoint (no extra params needed for now)
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch from Yahoo API");

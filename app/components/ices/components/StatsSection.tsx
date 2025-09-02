@@ -1,7 +1,6 @@
 'use client';
 
 import React from "react";
-import { IceVideo, } from "../hooks/hooks";
 
 export default function StatsSection({
   stats,

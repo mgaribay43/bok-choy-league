@@ -499,23 +499,65 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
             </button>
             {showExpired && expiredPolls.length > 0 && (
               <div className="space-y-6 mt-4">
-                {expiredPolls.map((poll) => (
-                  <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
-                    <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
-                    <p className="text-sm text-gray-400 text-center">
-                      Expired on: {poll.expirationDate ? new Date(poll.expirationDate).toLocaleString() : new Date(poll.pollDuration).toLocaleString()}
-                    </p>
-                    <ul className="flex flex-col gap-4">
-                      {poll.options.map((option: any, index: number) => (
-                        <li key={`${poll.id}-option-${index}`}>
-                          <span className={`block mt-2 text-center font-medium ${option.votes === Math.max(...poll.options.map((o: any) => o.votes)) ? 'text-yellow-400 font-bold' : 'text-emerald-300'}`}>
-                            {option.text}: {option.votes} votes
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {expiredPolls.map((poll) => {
+                  // Calculate points for each option based on all responses
+                  const optionPoints: { [optionId: number]: number } = {};
+                  poll.options.forEach((option: any) => {
+                    optionPoints[option.id] = 0;
+                  });
+
+                  if (poll.rankedVoting && poll.maxSelections > 1 && poll.responses) {
+                    Object.values(poll.responses).forEach((response: any) => {
+                      if (Array.isArray(response.rankings)) {
+                        response.rankings.forEach((optionId: number, idx: number) => {
+                          const scoreToAdd = Math.max(poll.maxSelections - idx, 1);
+                          optionPoints[optionId] += scoreToAdd;
+                        });
+                      }
+                    });
+                  } else if (poll.maxSelections > 1 && poll.responses) {
+                    Object.values(poll.responses).forEach((response: any) => {
+                      if (Array.isArray(response.selectedOptions)) {
+                        response.selectedOptions.forEach((optionId: number) => {
+                          optionPoints[optionId] += 1;
+                        });
+                      }
+                    });
+                  } else if (poll.responses) {
+                    Object.values(poll.responses).forEach((response: any) => {
+                      if (typeof response.optionText === 'string') {
+                        const option = poll.options.find((opt: any) => opt.text === response.optionText);
+                        if (option) {
+                          optionPoints[option.id] += 1;
+                        }
+                      }
+                    });
+                  }
+
+                  // Attach points to options and sort
+                  const sortedOptions = [...poll.options].map((option: any) => ({
+                    ...option,
+                    calculatedPoints: optionPoints[option.id] || 0,
+                  })).sort((a: any, b: any) => b.calculatedPoints - a.calculatedPoints);
+
+                  return (
+                    <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
+                      <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
+                      <p className="text-sm text-gray-400 text-center">
+                        Expired on: {poll.expirationDate ? new Date(poll.expirationDate).toLocaleString() : new Date(poll.pollDuration).toLocaleString()}
+                      </p>
+                      <ul className="flex flex-col gap-4">
+                        {sortedOptions.map((option: any, index: number) => (
+                          <li key={`${poll.id}-option-${index}`}>
+                            <span className={`block mt-2 text-center font-medium ${option.calculatedPoints === Math.max(...sortedOptions.map((o: any) => o.calculatedPoints)) ? 'text-yellow-400 font-bold' : 'text-emerald-300'}`}>
+                              {option.text}: {option.calculatedPoints} pts
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

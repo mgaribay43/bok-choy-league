@@ -375,6 +375,16 @@ export const yahooAPI = functions.https.onRequest(
                     endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/settings?format=json`;
                     break;
                 }
+                case "transactions": {
+                    const cacheKey = `transactions_${year}`;
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        res.status(200).json(cached);
+                        return;
+                    }
+                    endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/transactions?format=json`;
+                    break;
+                }
 
                 default:
                     res.status(400).json({ error: "Invalid 'type' parameter" });
@@ -394,7 +404,7 @@ export const yahooAPI = functions.https.onRequest(
 
             // Cache after fetch for all supported types:
             if (
-                ["teams", "standings", "scoreboard", "draftresults", "roster", "settings"].includes(type)
+                ["teams", "standings", "scoreboard", "draftresults", "roster", "settings", "transactions"].includes(type)
             ) {
                 let cacheKey = "";
                 switch (type) {
@@ -439,6 +449,13 @@ export const yahooAPI = functions.https.onRequest(
                             break; // Skip caching for 2025
                         }
                         cacheKey = `settings_${year}`;
+                        break;
+                    }
+                    case "transactions": {
+                        if (year === 2025) {
+                            break; // Skip caching for 2025
+                        }
+                        cacheKey = `transactions_${year}`;
                         break;
                     }
                 }

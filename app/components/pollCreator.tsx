@@ -284,6 +284,51 @@ const PollCreator: React.FC = () => {
     });
   };
 
+  // Function to calculate and sort options by points
+  function getSortedOptionsByPoints(poll: any) {
+    const optionPoints: { [optionId: number]: number } = {};
+    poll.options.forEach((option: any) => {
+      optionPoints[option.id] = 0;
+    });
+
+    if (poll.rankedVoting && poll.maxSelections > 1 && poll.responses) {
+      Object.values(poll.responses).forEach((response: any) => {
+        if (Array.isArray(response.rankings)) {
+          response.rankings.forEach((optionId: number, idx: number) => {
+            if (optionPoints.hasOwnProperty(optionId)) {
+              const scoreToAdd = Math.max(poll.maxSelections - idx, 1);
+              optionPoints[optionId] += scoreToAdd;
+            }
+          });
+        }
+      });
+    } else if (poll.maxSelections > 1 && poll.responses) {
+      Object.values(poll.responses).forEach((response: any) => {
+        if (Array.isArray(response.selectedOptions)) {
+          response.selectedOptions.forEach((optionId: number) => {
+            if (optionPoints.hasOwnProperty(optionId)) {
+              optionPoints[optionId] += 1;
+            }
+          });
+        }
+      });
+    } else if (poll.responses) {
+      Object.values(poll.responses).forEach((response: any) => {
+        if (typeof response.optionText === 'string') {
+          const option = poll.options.find((opt: any) => opt.text === response.optionText);
+          if (option) {
+            optionPoints[option.id] += 1;
+          }
+        }
+      });
+    }
+
+    return [...poll.options].map((option: any) => ({
+      ...option,
+      calculatedPoints: optionPoints[option.id] || 0,
+    })).sort((a: any, b: any) => b.calculatedPoints - a.calculatedPoints);
+  }
+
   // --- Render ---
   if (!authState.isAuthorized) return null;
 
@@ -528,34 +573,35 @@ const PollCreator: React.FC = () => {
                             <div className="space-y-4">
                               {poll.rankedVoting ? (
                                 // Sort options by score descending
-                                [...poll.options]
-                                  .sort((a, b) => (b.score || 0) - (a.score || 0))
-                                  .map((option: any, idx: number) => {
-                                    const maxScore = Math.max(...poll.options.map((opt: any) => opt.score || 0));
-                                    return (
-                                      <div key={option.id} className={`bg-slate-600/50 rounded-lg p-4 border border-slate-500/50 ${option.score === maxScore && maxScore > 0 ? 'border-yellow-400' : ''}`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-white font-medium truncate flex-1 mr-4">
-                                            {option.text}
-                                            {option.score === maxScore && maxScore > 0 && (
-                                              <span className="ml-2 text-yellow-300 font-bold">(Winner)</span>
-                                            )}
-                                          </span>
-                                          <div className="flex items-center gap-3 text-sm">
-                                            <span className="text-blue-300 font-semibold">
-                                              {option.score || 0} pts
+                                (() => {
+                                  const sortedOptions = getSortedOptionsByPoints(poll);
+                                  const maxPoints = Math.max(...sortedOptions.map((opt: any) => opt.calculatedPoints));
+                                  return sortedOptions.map((option: any, idx: number) => (
+                                    <div key={option.id} className={`bg-slate-600/50 rounded-lg p-4 border border-slate-500/50 ${option.calculatedPoints === maxPoints && maxPoints > 0 ? 'border-yellow-400' : ''}`}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-white font-medium truncate flex-1 mr-4">
+                                          {option.text}
+                                          {option.calculatedPoints === maxPoints && maxPoints > 0 && (
+                                            <span className="ml-2 text-yellow-300 font-bold flex items-center gap-1">
+                                              <span>🏆</span> Winner
                                             </span>
-                                          </div>
-                                        </div>
-                                        <div className="w-full bg-slate-700 rounded-full h-2.5">
-                                          <div
-                                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out"
-                                            style={{ width: `${maxScore ? (option.score || 0) / maxScore * 100 : 0}%` }}
-                                          />
+                                          )}
+                                        </span>
+                                        <div className="flex items-center gap-3 text-sm">
+                                          <span className="text-blue-300 font-semibold">
+                                            {option.calculatedPoints} pts
+                                          </span>
                                         </div>
                                       </div>
-                                    );
-                                  })
+                                      <div className="w-full bg-slate-700 rounded-full h-2.5">
+                                        <div
+                                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                          style={{ width: `${maxPoints ? (option.calculatedPoints) / maxPoints * 100 : 0}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  ));
+                                })()
                               ) : (
                                 // ...existing vote distribution for non-ranked polls...
                                 poll.options.map((option: any) => {

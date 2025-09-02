@@ -47,43 +47,16 @@ const getDraftTime = async (season: string): Promise<number | null> => {
 };
 
 const StandingsViewer = ({ topThree = false }: StandingsProps) => {
-  const [year, setYear] = useState<string>("2024");
+  const [year, setYear] = useState<string>("2025");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [currentSeason, setCurrentSeason] = useState<string>(String(new Date().getFullYear()));
-  const [draftTime2025, setDraftTime2025] = useState<number | null>(null);
-  const [canShow2025, setCanShow2025] = useState<boolean>(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    getCurrentSeason().then(season => {
-      if (isMounted) setCurrentSeason(season);
-    });
-    getDraftTime("2025").then(time => {
-      if (isMounted) setDraftTime2025(time);
-      if (time && Date.now() >= time) {
-        setCanShow2025(true);
-      } else {
-        setCanShow2025(false);
-      }
-    });
-    return () => { isMounted = false; };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchStandings() {
       setError(null);
       setLoading(true);
-
-      // Only allow 2025 standings if draft has happened
-      if (year === "2025" && draftTime2025 && Date.now() < draftTime2025) {
-        setTeams([]);
-        setError("Standings will be available after the draft.");
-        setLoading(false);
-        return;
-      }
 
       try {
         const response = await fetch(
@@ -123,11 +96,14 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             realManager: manager,
             rank,
             logo,
-            record // <-- Add record to parsed team
+            record
           });
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
+
+        // After parsed.sort((a, b) => a.rank - b.rank);
+        const allRanksNaN = teams.length > 0 && teams.every(t => isNaN(t.rank));
 
         if (isMounted) {
           setTeams(parsed);
@@ -144,7 +120,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
     fetchStandings();
     return () => { isMounted = false; };
-  }, [year, currentSeason, draftTime2025]);
+  }, [year]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setYear(e.target.value);
@@ -152,6 +128,9 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
   // Only show top 3 teams if topThree prop is true
   const displayTeams = topThree ? teams.slice(0, 3) : teams;
+
+  // FIX: Calculate allRanksNaN here, after teams are set
+  const allRanksNaN = teams.length > 0 && teams.every(t => isNaN(t.rank));
 
   if (topThree) {
     return (
@@ -269,18 +248,14 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
                   onChange={handleYearChange}
                   className="appearance-none bg-[#232323] text-emerald-100 border border-[#333] rounded-xl px-6 py-3 pr-12 font-medium text-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
+                  <option value="2025" className="text-emerald-100 bg-[#232323]">
+                    2025 Season
+                  </option>
                   {Array.from({ length: 2024 - 2017 + 1 }, (_, i) => (2024 - i).toString()).map((y) => (
                     <option key={y} value={y} className="text-emerald-100 bg-[#232323]">
                       {y} Season
                     </option>
                   ))}
-                  <option
-                    value="2025"
-                    className="text-emerald-100 bg-[#232323]"
-                    disabled={!canShow2025}
-                  >
-                    2025 Season {canShow2025 ? "" : "(after draft)"}
-                  </option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
                   <svg className="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,290 +287,346 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
           </div>
         )}
 
-        {/* Champion Spotlight - only for completed seasons */}
-        {!loading && !error && champion && year !== "2025" && (
+        {/* If all ranks are NaN (e.g. 2025 preseason), show all teams in a simple grid */}
+        {!loading && !error && allRanksNaN && (
           <div className="mb-12">
-            {/* Champion Card */}
-            <div className="relative bg-gradient-to-br from-yellow-900 via-yellow-800 to-amber-900 border-2 border-yellow-700 rounded-3xl shadow-2xl p-8 max-w-lg mx-auto transform hover:scale-105 transition-all duration-300 overflow-hidden">
-              {/* Trophy in top left */}
-              <div className="absolute top-4 left-4 z-20">
-                <Image
-                  src={getTrophyUrl(1, year) ?? ""}
-                  alt="Champion Trophy"
-                  width={96}
-                  height={96}
-                  className="mx-auto"
-                />
-              </div>
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-700 to-yellow-900 p-2 shadow-2xl mb-4">
-                  <Image
-                    src={champion.logo}
-                    alt={`${champion.name} logo`}
-                    width={112}
-                    height={112}
-                    className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
-                  />
-                </div>
-                <Link
-                  href={`/roster?year=${year}&teamId=${champion.id}`}
-                  className="text-2xl font-bold text-yellow-300 mb-2 underline hover:text-yellow-200 transition-colors"
+            <h2 className="text-2xl font-bold text-emerald-200 mb-4 text-center">Teams</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+              {teams.map(team => (
+                <div
+                  key={team.id}
+                  className="relative bg-[#232323] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-700 overflow-hidden p-6 text-center"
                 >
-                  {champion.name}
-                </Link>
-                <div className="text-yellow-200 text-lg font-normal mt-1">{champion.record}</div>
-                <p className="text-yellow-200 font-medium">
-                  Champion:{" "}
+                  {/* Team Logo */}
+                  <div className="mx-auto mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-lg mx-auto">
+                      <Image
+                        src={team.logo}
+                        alt={`${team.name} logo`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  {/* Team Name (clickable) */}
                   <Link
-                    href={`/manager?name=${encodeURIComponent(champion.realManager)}`}
-                    className="font-bold text-yellow-100 underline hover:text-emerald-300 transition"
+                    href={`/roster?year=${year}&teamId=${team.id}`}
+                    className="block text-lg font-bold text-emerald-200 underline hover:text-emerald-100 transition mb-1"
                   >
-                    {champion.manager}
+                    {team.name}
                   </Link>
-                </p>
-              </div>
-            </div>
-
-            {/* Runner-up & Third Place Cards */}
-            <div className="flex flex-col sm:flex-row justify-center gap-8 mt-8">
-              {/* Runner-up (2nd place) */}
-              {teams[1] && (
-                <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-2 border-slate-700 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
-                  {/* Trophy in top left */}
-                  <div className="absolute top-4 left-4 z-20">
-                    <Image
-                      src={getTrophyUrl(2, year) ?? ""}
-                      alt="Runner-up Trophy"
-                      width={84}
-                      height={84}
-                      className="mx-auto"
-                    />
-                  </div>
-                  <div className="relative z-10 flex flex-col items-center text-center">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 p-2 shadow-xl mb-2">
-                      <Image
-                        src={teams[1].logo}
-                        alt={`${teams[1].name} logo`}
-                        width={80}
-                        height={80}
-                        className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
-                      />
-                    </div>
+                  <div className="text-emerald-400 text-base font-normal mt-1">{team.record}</div>
+                  {/* Manager Name (clickable) */}
+                  <p className="text-emerald-400 font-medium mb-2">
+                    <span className="text-emerald-300">Manager:</span>{" "}
                     <Link
-                      href={`/roster?year=${year}&teamId=${teams[1].id}`}
-                      className="text-xl font-bold text-emerald-200 mb-1 underline hover:text-emerald-100 transition-colors"
+                      href={`/manager?name=${encodeURIComponent(team.realManager)}`}
+                      className="underline text-emerald-200 hover:text-emerald-100 transition"
                     >
-                      {teams[1].name}
+                      {team.manager}
                     </Link>
-                    <div className="text-emerald-400 text-base font-normal mt-1">{teams[1].record}</div>
-                    <p className="text-emerald-300 font-medium">
-                      Runner-up:{" "}
-                      <Link
-                        href={`/manager?name=${encodeURIComponent(teams[1].realManager)}`}
-                        className="font-bold underline text-emerald-100 hover:text-yellow-200 transition"
-                      >
-                        {teams[1].manager}
-                      </Link>
-                    </p>
-                  </div>
+                  </p>
                 </div>
-              )}
-
-              {/* Third Place (3rd place) */}
-              {teams[2] && (
-                <div className="relative bg-gradient-to-br from-amber-900 via-yellow-900 to-yellow-800 border-2 border-amber-700 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
-                  {/* Trophy in top left */}
-                  <div className="absolute top-4 left-4 z-20">
-                    <Image
-                      src={getTrophyUrl(3, year) ?? ""}
-                      alt="Third Place Trophy"
-                      width={84}
-                      height={84}
-                      className="mx-auto"
-                    />
-                  </div>
-                  <div className="relative z-10 flex flex-col items-center text-center">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-700 to-yellow-900 p-2 shadow-xl mb-2">
-                      <Image
-                        src={teams[2].logo}
-                        alt={`${teams[2].name} logo`}
-                        width={80}
-                        height={80}
-                        className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
-                      />
-                    </div>
-                    <Link
-                      href={`/roster?year=${year}&teamId=${teams[2].id}`}
-                      className="text-xl font-bold text-yellow-200 mb-1 underline hover:text-yellow-100 transition-colors"
-                    >
-                      {teams[2].name}
-                    </Link>
-                    <div className="text-yellow-200 text-base font-normal mt-1">{teams[2].record}</div>
-                    <p className="text-yellow-200 font-medium">
-                      Third Place:{" "}
-                      <Link
-                        href={`/manager?name=${encodeURIComponent(teams[2].realManager)}`}
-                        className="font-bold underline text-yellow-100 hover:text-emerald-300 transition"
-                      >
-                        {teams[2].manager}
-                      </Link>
-                    </p>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* Teams Grid */}
-        {!loading && !error && (() => {
-          // Exclude top 3 for completed seasons
-          const gridTeams = year === "2025" ? teams : teams.slice(3);
-          const playoffs = gridTeams.filter(team => team.rank <= 6);
-          const eliminated = gridTeams.filter(team => team.rank > 6);
+        {/* Existing champion/playoff/eliminated logic for other years */}
+        {!loading && !error && !allRanksNaN && (() => {
+          const champion = teams[0];
+          const others = teams.slice(1);
 
           return (
             <>
-              {/* Playoffs Section */}
-              {playoffs.length > 0 && (
-                <div className="mb-10">
-                  <h2 className="text-2xl font-bold text-emerald-200 mb-4 text-center">Playoff Teams</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
-                    {playoffs.map(team => (
-                      <div
-                        key={team.id}
-                        className="relative bg-[#232323] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-700 overflow-hidden p-6 text-center"
+              {/* Champion Spotlight - only for completed seasons */}
+              {champion && year !== "2025" && (
+                <div className="mb-12">
+                  {/* Champion Card */}
+                  <div className="relative bg-gradient-to-br from-yellow-900 via-yellow-800 to-amber-900 border-2 border-yellow-700 rounded-3xl shadow-2xl p-8 max-w-lg mx-auto transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    {/* Trophy in top left */}
+                    <div className="absolute top-4 left-4 z-20">
+                      <Image
+                        src={getTrophyUrl(1, year) ?? ""}
+                        alt="Champion Trophy"
+                        width={96}
+                        height={96}
+                        className="mx-auto"
+                      />
+                    </div>
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-700 to-yellow-900 p-2 shadow-2xl mb-4">
+                        <Image
+                          src={champion.logo}
+                          alt={`${champion.name} logo`}
+                          width={112}
+                          height={112}
+                          className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
+                        />
+                      </div>
+                      <Link
+                        href={`/roster?year=${year}&teamId=${champion.id}`}
+                        className="text-2xl font-bold text-yellow-300 mb-2 underline hover:text-yellow-200 transition-colors"
                       >
-                        {/* Rank Badge */}
-                        <div className="absolute top-4 left-4 z-10">
-                          <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg
-                            ${team.rank === 2
-                              ? "bg-gradient-to-r from-slate-700 to-slate-900 text-emerald-100"
-                              : team.rank === 3
-                                ? "bg-gradient-to-r from-amber-700 to-yellow-900 text-yellow-100"
-                                : "bg-gradient-to-r from-emerald-700 to-emerald-900 text-emerald-100"
-                          }`}>
-                            #{team.rank}
-                          </span>
+                        {champion.name}
+                      </Link>
+                      <div className="text-yellow-200 text-lg font-normal mt-1">{champion.record}</div>
+                      <p className="text-yellow-200 font-medium">
+                        Champion:{" "}
+                        <Link
+                          href={`/manager?name=${encodeURIComponent(champion.realManager)}`}
+                          className="font-bold text-yellow-100 underline hover:text-emerald-300 transition"
+                        >
+                          {champion.manager}
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Runner-up & Third Place Cards */}
+                  <div className="flex flex-col sm:flex-row justify-center gap-8 mt-8">
+                    {/* Runner-up (2nd place) */}
+                    {teams[1] && (
+                      <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-2 border-slate-700 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                        {/* Trophy in top left */}
+                        <div className="absolute top-4 left-4 z-20">
+                          <Image
+                            src={getTrophyUrl(2, year) ?? ""}
+                            alt="Runner-up Trophy"
+                            width={84}
+                            height={84}
+                            className="mx-auto"
+                          />
                         </div>
-                        {/* Team Logo */}
-                        <div className="mx-auto mb-4">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-lg mx-auto">
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 p-2 shadow-xl mb-2">
                             <Image
-                              src={team.logo}
-                              alt={`${team.name} logo`}
+                              src={teams[1].logo}
+                              alt={`${teams[1].name} logo`}
                               width={80}
                               height={80}
-                              className="w-full h-full rounded-full object-cover"
+                              className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
                             />
                           </div>
-                        </div>
-                        {/* Team Name (clickable) */}
-                        <Link
-                          href={`/roster?year=${year}&teamId=${team.id}`}
-                          className="block text-lg font-bold text-emerald-200 underline hover:text-emerald-100 transition mb-1"
-                        >
-                          {team.name}
-                        </Link>
-                        <div className="text-emerald-400 text-base font-normal mt-1">{team.record}</div>
-                        {/* Manager Name (clickable) */}
-                        <p className="text-emerald-400 font-medium mb-2">
-                          <span className="text-emerald-300">Manager:</span>{" "}
                           <Link
-                            href={`/manager?name=${encodeURIComponent(team.realManager)}`}
-                            className="underline text-emerald-200 hover:text-emerald-100 transition"
+                            href={`/roster?year=${year}&teamId=${teams[1].id}`}
+                            className="text-xl font-bold text-emerald-200 mb-1 underline hover:text-emerald-100 transition-colors"
                           >
-                            {team.manager}
+                            {teams[1].name}
                           </Link>
-                        </p>
-                        {/* Playoff Badge */}
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
-                          ${team.rank === 2
-                            ? "bg-slate-800 text-emerald-100 border border-slate-700"
-                            : team.rank === 3
-                              ? "bg-amber-900 text-yellow-100 border border-amber-700"
-                              : "bg-emerald-900 text-emerald-100 border border-emerald-700"
-                        }`}>
-                          {team.rank === 2
-                            ? "🥈 Runner-up"
-                            : team.rank === 3
-                              ? "🥉 Third Place"
-                              : `Playoffs (#${team.rank})`
-                          }
-                        </span>
+                          <div className="text-emerald-400 text-base font-normal mt-1">{teams[1].record}</div>
+                          <p className="text-emerald-300 font-medium">
+                            Runner-up:{" "}
+                            <Link
+                              href={`/manager?name=${encodeURIComponent(teams[1].realManager)}`}
+                              className="font-bold underline text-emerald-100 hover:text-yellow-200 transition"
+                            >
+                              {teams[1].manager}
+                            </Link>
+                          </p>
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Third Place (3rd place) */}
+                    {teams[2] && (
+                      <div className="relative bg-gradient-to-br from-amber-900 via-yellow-900 to-yellow-800 border-2 border-amber-700 rounded-2xl shadow-xl p-6 w-full max-w-md mx-auto sm:mx-0 transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                        {/* Trophy in top left */}
+                        <div className="absolute top-4 left-4 z-20">
+                          <Image
+                            src={getTrophyUrl(3, year) ?? ""}
+                            alt="Third Place Trophy"
+                            width={84}
+                            height={84}
+                            className="mx-auto"
+                          />
+                        </div>
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-700 to-yellow-900 p-2 shadow-xl mb-2">
+                            <Image
+                              src={teams[2].logo}
+                              alt={`${teams[2].name} logo`}
+                              width={80}
+                              height={80}
+                              className="w-full h-full rounded-full object-cover border-4 border-[#232323] shadow-lg"
+                            />
+                          </div>
+                          <Link
+                            href={`/roster?year=${year}&teamId=${teams[2].id}`}
+                            className="text-xl font-bold text-yellow-200 mb-1 underline hover:text-yellow-100 transition-colors"
+                          >
+                            {teams[2].name}
+                          </Link>
+                          <div className="text-yellow-200 text-base font-normal mt-1">{teams[2].record}</div>
+                          <p className="text-yellow-200 font-medium">
+                            Third Place:{" "}
+                            <Link
+                              href={`/manager?name=${encodeURIComponent(teams[2].realManager)}`}
+                              className="font-bold underline text-yellow-100 hover:text-emerald-300 transition"
+                            >
+                              {teams[2].manager}
+                            </Link>
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Eliminated Section */}
-              {eliminated.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-bold text-red-400 mb-4 text-center">Eliminated Teams</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
-                    {eliminated.map(team => (
-                      <div
-                        key={team.id}
-                        className="relative bg-[#232323] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-red-700 overflow-hidden p-6 text-center"
-                      >
-                        {/* Rank Badge */}
-                        <div className="absolute top-4 left-4 z-10">
-                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg bg-gradient-to-r from-red-700 to-red-900 text-red-100">
-                            #{team.rank}
-                          </span>
+              {/* Teams Grid */}
+              {!loading && !error && (() => {
+                // Exclude top 3 for completed seasons
+                const gridTeams = year === "2025" ? teams : teams.slice(3);
+                const playoffs = gridTeams.filter(team => team.rank <= 6);
+                const eliminated = gridTeams.filter(team => team.rank > 6);
+
+                return (
+                  <>
+                    {/* Playoffs Section */}
+                    {playoffs.length > 0 && (
+                      <div className="mb-10">
+                        <h2 className="text-2xl font-bold text-emerald-200 mb-4 text-center">Playoff Teams</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+                          {playoffs.map(team => (
+                            <div
+                              key={team.id}
+                              className="relative bg-[#232323] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-700 overflow-hidden p-6 text-center"
+                            >
+                              {/* Rank Badge */}
+                              <div className="absolute top-4 left-4 z-10">
+                                <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg
+                                  ${team.rank === 2
+                                    ? "bg-gradient-to-r from-slate-700 to-slate-900 text-emerald-100"
+                                    : team.rank === 3
+                                      ? "bg-gradient-to-r from-amber-700 to-yellow-900 text-yellow-100"
+                                      : "bg-gradient-to-r from-emerald-700 to-emerald-900 text-emerald-100"
+                              }`}>
+                                  #{team.rank}
+                                </span>
+                              </div>
+                              {/* Team Logo */}
+                              <div className="mx-auto mb-4">
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-lg mx-auto">
+                                  <Image
+                                    src={team.logo}
+                                    alt={`${team.name} logo`}
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                              {/* Team Name (clickable) */}
+                              <Link
+                                href={`/roster?year=${year}&teamId=${team.id}`}
+                                className="block text-lg font-bold text-emerald-200 underline hover:text-emerald-100 transition mb-1"
+                              >
+                                {team.name}
+                              </Link>
+                              <div className="text-emerald-400 text-base font-normal mt-1">{team.record}</div>
+                              {/* Manager Name (clickable) */}
+                              <p className="text-emerald-400 font-medium mb-2">
+                                <span className="text-emerald-300">Manager:</span>{" "}
+                                <Link
+                                  href={`/manager?name=${encodeURIComponent(team.realManager)}`}
+                                  className="underline text-emerald-200 hover:text-emerald-100 transition"
+                                >
+                                  {team.manager}
+                                </Link>
+                              </p>
+                              {/* Playoff Badge */}
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
+                                ${team.rank === 2
+                                  ? "bg-slate-800 text-emerald-100 border border-slate-700"
+                                  : team.rank === 3
+                                    ? "bg-amber-900 text-yellow-100 border border-amber-700"
+                                    : "bg-emerald-900 text-emerald-100 border border-emerald-700"
+                              }`}>
+                                {team.rank === 2
+                                  ? "🥈 Runner-up"
+                                  : team.rank === 3
+                                    ? "🥉 Third Place"
+                                    : `Playoffs (#${team.rank})`
+                                }
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        {/* Team Logo */}
-                        <div className="mx-auto mb-4">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-lg mx-auto">
-                            <Image
-                              src={team.logo}
-                              alt={`${team.name} logo`}
-                              width={80}
-                              height={80}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        {/* Team Name (clickable) */}
-                        <Link
-                          href={`/roster?year=${year}&teamId=${team.id}`}
-                          className="block text-lg font-bold text-red-300 underline hover:text-red-100 transition mb-1"
-                        >
-                          {team.name}
-                        </Link>
-                        <div className="text-red-400 text-base font-normal mt-1">{team.record}</div>
-                        {/* Manager Name (clickable) */}
-                        <p className="text-red-400 font-medium mb-2">
-                          <span className="text-red-300">Manager:</span>{" "}
-                          <Link
-                            href={`/manager?name=${encodeURIComponent(team.realManager)}`}
-                            className="underline text-red-200 hover:text-emerald-300 transition"
-                          >
-                            {team.manager}
-                          </Link>
-                        </p>
-                        {/* Eliminated Badge */}
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-900 text-red-100 border border-red-700">
-                          Eliminated (#{team.rank})
-                        </span>
                       </div>
-                    ))}
-                  </div>
+                    )}
+
+                    {/* Eliminated Section */}
+                    {eliminated.length > 0 && (
+                      <div>
+                        <h2 className="text-2xl font-bold text-red-400 mb-4 text-center">Eliminated Teams</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+                          {eliminated.map(team => (
+                            <div
+                              key={team.id}
+                              className="relative bg-[#232323] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-red-700 overflow-hidden p-6 text-center"
+                            >
+                              {/* Rank Badge */}
+                              <div className="absolute top-4 left-4 z-10">
+                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg bg-gradient-to-r from-red-700 to-red-900 text-red-100">
+                                  #{team.rank}
+                                </span>
+                              </div>
+                              {/* Team Logo */}
+                              <div className="mx-auto mb-4">
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-lg mx-auto">
+                                  <Image
+                                    src={team.logo}
+                                    alt={`${team.name} logo`}
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                              {/* Team Name (clickable) */}
+                              <Link
+                                href={`/roster?year=${year}&teamId=${team.id}`}
+                                className="block text-lg font-bold text-red-300 underline hover:text-red-100 transition mb-1"
+                              >
+                                {team.name}
+                              </Link>
+                              <div className="text-red-400 text-base font-normal mt-1">{team.record}</div>
+                              {/* Manager Name (clickable) */}
+                              <p className="text-red-400 font-medium mb-2">
+                                <span className="text-red-300">Manager:</span>{" "}
+                                <Link
+                                  href={`/manager?name=${encodeURIComponent(team.realManager)}`}
+                                  className="underline text-red-200 hover:text-emerald-300 transition"
+                                >
+                                  {team.manager}
+                                </Link>
+                              </p>
+                              {/* Eliminated Badge */}
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-900 text-red-100 border border-red-700">
+                                Eliminated (#{team.rank})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Empty State */}
+              {!loading && !error && (!teams || teams.length === 0) && (!others || others.length === 0) && (
+                <div className="text-center py-20">
+                  <div className="text-6xl mb-4">🏈</div>
+                  <h3 className="text-2xl font-semibold text-emerald-200 mb-2">No Standings Available</h3>
+                  <p className="text-emerald-400">Unable to load standings for the {year} season.</p>
                 </div>
               )}
             </>
           );
         })()}
-
-        {/* Empty State */}
-        {!loading && !error && (!teams || teams.length === 0) && (!others || others.length === 0) && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🏈</div>
-            <h3 className="text-2xl font-semibold text-emerald-200 mb-2">No Standings Available</h3>
-            <p className="text-emerald-400">Unable to load standings for the {year} season.</p>
-          </div>
-        )}
       </div>
     </div >
   );

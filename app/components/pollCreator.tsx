@@ -248,6 +248,15 @@ const PollCreator: React.FC = () => {
       text,
       votes: editingPoll.options[idx]?.votes || 0,
     }));
+
+    // If marking as expired, set expirationDate to now
+    let expirationDate = editingPoll.expirationDate || null;
+    if (editForm.isExpired && !editingPoll.isExpired) {
+      expirationDate = new Date().toISOString();
+    } else if (!editForm.isExpired) {
+      expirationDate = null;
+    }
+
     await setDoc(doc(db, "Polls", editingPoll.id), {
       ...editingPoll,
       question: editForm.question,
@@ -257,6 +266,7 @@ const PollCreator: React.FC = () => {
       isExpired: !!editForm.isExpired,
       maxSelections: editForm.maxSelections,
       rankedVoting: editForm.rankedVoting,
+      expirationDate,
     });
     setEditingPoll(null);
   };

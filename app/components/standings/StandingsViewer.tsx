@@ -2,7 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 
-import { TeamEntry, StandingsProps, getDisplayManagerName } from "./utils/standingsUtils";
+import {
+  TeamEntry,
+  StandingsProps,
+  getDisplayManagerName,
+  getCachedTopThree,
+  setCachedTopThree,
+  getCachedStandings,
+  setCachedStandings
+} from "./utils/standingsUtils";
 
 import StandingsHeader from "./components/StandingsHeader";
 import LeadersStrip from "./components/LeadersStrip";
@@ -19,14 +27,36 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
   useEffect(() => {
     let isMounted = true;
+
+    // Only use cache for the current season (2025)
+    const isCurrentSeason = year === "2025";
+
+    if (isCurrentSeason && topThree) {
+      const cached = getCachedTopThree(year);
+      if (cached) {
+        setTeams(cached);
+        setLoading(false);
+        return;
+      }
+    } else if (isCurrentSeason && !topThree) {
+      const cached = getCachedStandings(year);
+      if (cached) {
+        setTeams(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
     async function fetchStandings() {
       setError(null);
       setLoading(true);
+
       try {
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
         );
         if (!response.ok) throw new Error("Failed to fetch standings");
+
         const json = await response.json();
 
         const rawTeams = json.fantasy_content.league[1].standings[0].teams;
@@ -37,6 +67,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
           const teamData = rawTeams[i.toString()].team;
           const metadata = teamData[0];
           const standings = teamData[2]?.team_standings;
+
           const id = metadata.find((item: any) => item.team_id)?.team_id ?? `${i + 1}`;
           const name = metadata.find((item: any) => item.name)?.name ?? "Unknown Team";
           const manager =
@@ -50,6 +81,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
           const losses = outcome.losses ?? 0;
           const ties = outcome.ties ?? 0;
           const record = `(${wins}-${losses}-${ties})`;
+
           parsed.push({
             id,
             name,
@@ -57,13 +89,24 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             realManager: manager,
             rank,
             logo,
-            record,
+            record
           });
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
 
-        if (isMounted) setTeams(parsed);
+        // Only cache for current season (2025)
+        if (isCurrentSeason && topThree) {
+          setCachedTopThree(year, parsed.slice(0, 3));
+          setTeams(parsed.slice(0, 3));
+        } else if (isCurrentSeason && !topThree) {
+          setCachedStandings(year, parsed);
+          setTeams(parsed);
+        } else if (topThree) {
+          setTeams(parsed.slice(0, 3));
+        } else {
+          setTeams(parsed);
+        }
       } catch (err: unknown) {
         let message = "An error occurred";
         if (err instanceof Error) message = err.message;
@@ -76,11 +119,10 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
     fetchStandings();
     return () => { isMounted = false; };
-  }, [year]);
+  }, [year, topThree]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value);
 
-  // Only show top 3 teams if topThree prop is true
   const allRanksNaN = teams.length > 0 && teams.every(t => isNaN(t.rank));
 
   if (topThree) {

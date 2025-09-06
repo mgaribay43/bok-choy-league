@@ -94,7 +94,7 @@ function EventsSlideshow({ events }: { events: Event[] }) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 pt-0">
-      <header className="text-center mb-6 mt-2">
+      <header className="text-center mb-6 mt-0">
         <a href="/events" className="inline-block">
           <h1 className="text-5xl font-extrabold text-emerald-200 tracking-tight hover:underline transition">
             Upcoming Events

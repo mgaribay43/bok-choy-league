@@ -32,8 +32,8 @@ export default function HomePage() {
       <MatchupsMarquee />
       <Polls ActivePolls={true} />
       <Standings topThree />
-      <Events eventsSlideshow />
       <Ices latestOnly />
+      <Events eventsSlideshow />
     </div>
   );
 }

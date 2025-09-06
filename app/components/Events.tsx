@@ -43,7 +43,9 @@ function EventsSlideshow({ events }: { events: Event[] }) {
   // Track manual change to reset timer
   const [timerKey, setTimerKey] = useState(0);
 
+  // Only run the interval if more than one event
   useEffect(() => {
+    if (events.length <= 1) return;
     const interval = setInterval(() => {
       setIsFading(true);
       setTimeout(() => {
@@ -54,16 +56,19 @@ function EventsSlideshow({ events }: { events: Event[] }) {
     return () => clearInterval(interval);
   }, [events.length, timerKey]);
 
-  // Swipe detection
+  // Swipe detection (only if more than one event)
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (events.length <= 1) return;
     setTouchStartX(e.changedTouches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (events.length <= 1) return;
     setTouchEndX(e.changedTouches[0].clientX);
   };
 
   const handleTouchEnd = () => {
+    if (events.length <= 1) return;
     if (touchStartX !== null && touchEndX !== null) {
       const distance = touchEndX - touchStartX;
       if (Math.abs(distance) > 50) {
@@ -108,10 +113,14 @@ function EventsSlideshow({ events }: { events: Event[] }) {
               src={event.image ? event.image : placeholderImage}
               alt={event.name}
               fill
-              className={`object-cover block absolute top-0 left-0 transition-opacity duration-700 ${isFading ? "opacity-0" : "opacity-100"}`}
+              className={`object-cover block absolute top-0 left-0 transition-opacity duration-700 ${
+                events.length > 1 && isFading ? "opacity-0" : "opacity-100"
+              }`}
               sizes="100vw"
             />
-            <div className={`absolute bottom-0 left-0 w-full bg-[#181818]/80 text-emerald-100 px-6 py-4 transition-opacity duration-700 ${isFading ? "opacity-0" : "opacity-100"}`}>
+            <div className={`absolute bottom-0 left-0 w-full bg-[#181818]/80 text-emerald-100 px-6 py-4 transition-opacity duration-700 ${
+              events.length > 1 && isFading ? "opacity-0" : "opacity-100"
+            }`}>
               <h2 className="text-2xl font-bold mb-1 text-emerald-200">{event.name}</h2>
               <p className="text-base mb-1">
                 <strong>Date:</strong> <span className="text-emerald-300">{event.date}</span>
@@ -134,24 +143,26 @@ function EventsSlideshow({ events }: { events: Event[] }) {
             </a>
           </div>
         </div>
-        <div className="flex justify-center mt-[-18px] mb-4">
-          <div className="flex gap-1">
-            {events.map((_, idx) => (
-              <button
-                key={idx}
-                className={`w-2 h-2 rounded-full ${idx === current ? "bg-emerald-600" : "bg-emerald-900"}`}
-                onClick={() => {
-                  setIsFading(true);
-                  setTimeout(() => {
-                    setCurrent(idx);
-                    setIsFading(false);
-                  }, 700);
-                }}
-                aria-label={`Go to event ${idx + 1}`}
-              />
-            ))}
+        {events.length > 1 && (
+          <div className="flex justify-center mt-[-18px] mb-4">
+            <div className="flex gap-1">
+              {events.map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`w-2 h-2 rounded-full ${idx === current ? "bg-emerald-600" : "bg-emerald-900"}`}
+                  onClick={() => {
+                    setIsFading(true);
+                    setTimeout(() => {
+                      setCurrent(idx);
+                      setIsFading(false);
+                    }, 700);
+                  }}
+                  aria-label={`Go to event ${idx + 1}`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

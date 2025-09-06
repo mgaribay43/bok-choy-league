@@ -107,7 +107,14 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
     // Fill form when entry selected
     useEffect(() => {
         if (!selectedId) return;
-        const ice = entries.find((entry: any) => entry.id === selectedId);
+        const [selWeek, selManager, selPlayer, selDate] = selectedId.split("|");
+        const ice = entries.find(
+            (entry: any) =>
+                entry.week === selWeek &&
+                entry.manager === selManager &&
+                entry.player === selPlayer &&
+                entry.date === selDate
+        );
         if (ice) {
             let date = ice.date || "";
             if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
@@ -138,17 +145,22 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 let entriesArr = docSnap.data().entries || [];
-                const idx = entriesArr.findIndex((entry: any) => entry.id === selectedId);
+                const [selWeek, selManager, selPlayer, selDate] = selectedId.split("|");
+                const idx = entriesArr.findIndex(
+                    (entry: any) =>
+                        entry.week === selWeek &&
+                        entry.manager === selManager &&
+                        entry.player === selPlayer &&
+                        entry.date === selDate
+                );
                 if (idx !== -1) {
                     entriesArr[idx] = { ...form };
                     await updateDoc(docRef, { entries: entriesArr });
                     setMessage("Ice entry updated!");
                     onClose();
                 } else {
-                    setMessage("No ice found with that ID.");
+                    setMessage("No ice found with that selection.");
                 }
-            } else {
-                setMessage("No data found for that year.");
             }
         } catch (err: any) {
             setMessage("Error saving ice data.");
@@ -205,7 +217,10 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                             >
                                 <option value="">-- Select --</option>
                                 {entries.map((entry: any) => (
-                                    <option key={entry.id} value={entry.id}>
+                                    <option
+                                        key={`${entry.week}|${entry.manager}|${entry.player}|${entry.date}`}
+                                        value={`${entry.week}|${entry.manager}|${entry.player}|${entry.date}`}
+                                    >
                                         {entry.week} | {entry.manager} | {entry.player}
                                     </option>
                                 ))}
@@ -424,7 +439,7 @@ export default function AddIces() {
         setMessage("");
 
         const { date, flavor, id, manager, player, week, year } = form;
-        if (!date || !flavor || !id || !manager || !player || !week || !year) {
+        if (!date || !flavor || !manager || !player || !week || !year) {
             setMessage("Please fill out all fields.");
             setSubmitting(false);
             return;
@@ -522,7 +537,6 @@ export default function AddIces() {
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         disabled={submitting}
-                                        required
                                     />
                                 </div>
                                 <div>

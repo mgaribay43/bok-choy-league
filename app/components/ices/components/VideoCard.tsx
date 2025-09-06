@@ -12,8 +12,14 @@ export default function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   const videoId = video.id?.trim() ?? "";
   const isExpanded = expandedVideo === videoId;
   return (
-    <div className="rounded-xl shadow-lg border border-[#444] flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-900"
-      style={{ backgroundColor: "#272828" }}
+    <div
+      className="rounded-xl shadow-lg border border-[#444] flex flex-col items-center p-4 transition-transform hover:-translate-y-1 hover:shadow-emerald-900"
+      style={{
+        backgroundColor: "#272828",
+        minHeight: 340,
+        width: "100%",
+        maxWidth: 400, // Changed from 520 to 400
+      }}
     >
       <div className="w-full mb-3">
         {/* Thumbnail or embedded video */}
@@ -31,7 +37,7 @@ export default function VideoCard({ video, expandedVideo, setExpandedVideo }: {
             />
           ) : (
             <iframe
-              width="100%"
+              width="400"
               height="220"
               src={`https://www.youtube.com/embed/${videoId}`}
               title={`Ice video: ${video.player}`}
@@ -42,7 +48,7 @@ export default function VideoCard({ video, expandedVideo, setExpandedVideo }: {
             ></iframe>
           )
         ) : (
-          <div className="w-full h-[175px] flex items-center justify-center bg-[#232323] rounded-lg text-emerald-400 font-bold text-xl">
+          <div className="w-full h-[220px] flex items-center justify-center bg-[#232323] rounded-lg text-emerald-400 font-bold text-xl">
             No Video
           </div>
         )}

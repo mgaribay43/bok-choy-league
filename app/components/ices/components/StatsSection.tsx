@@ -18,7 +18,9 @@ export default function StatsSection({
   managerWithMostConsecutiveWeeks,
   setCollapsedSeasons,
   mostIcesInSingleSeason,
+  mostIcesInSingleWeekAllTeams, // <-- use this prop only
 }: any) {
+
   return (
     <div className="w-full mb-6">
       <div className="bg-[#232323] rounded-lg p-3 sm:p-6 border border-[#333] w-full">
@@ -117,7 +119,7 @@ export default function StatsSection({
             {/* Most Ices in a Single Week Card */}
             <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
               <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
-                Most Ices in a Single Week
+                Most Times Iced in a Single Week
               </h3>
               <div className="space-y-2">
                 {(() => {
@@ -187,6 +189,50 @@ export default function StatsSection({
                     </div>
                   ));
                 })()}
+              </div>
+            </div>
+
+            {/* Most Ices in a Single Week (All Teams) Card */}
+            <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+              <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+                Most Ices in a Single Week
+              </h3>
+              <div className="space-y-2">
+                {(mostIcesInSingleWeekAllTeams ?? []).map((rec: any, index: number) => (
+                  <div key={rec.season + rec.week} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-pink-900 text-pink-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <button
+                        className="font-medium text-emerald-400 hover:text-emerald-300 hover:underline focus:outline-none text-left text-xs sm:text-sm"
+                        onClick={() => {
+                          setSelectedSeason(rec.season);
+                          setSelectedWeek(rec.week);
+                          setSelectedManager("All");
+                          setSelectedPlayer("All");
+                          setSelectedFlavor("All");
+                          scrollToSeason(rec.season);
+                          setCollapsedSeasons((prev: Record<string, boolean>) => {
+                            const expanded: Record<string, boolean> = {};
+                            Object.keys(prev).forEach(season => {
+                              expanded[season] = false;
+                            });
+                            return expanded;
+                          });
+                          setTimeout(scrollToVideos, 100);
+                        }}
+                      >
+                        <div className="truncate">
+                          <div className="font-medium">Week {rec.week}, {rec.season}</div>
+                        </div>
+                      </button>
+                    </div>
+                    <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                      {rec.count}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

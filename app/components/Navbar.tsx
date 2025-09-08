@@ -123,6 +123,15 @@ export default function Navbar() {
                           <span className="font-medium">Standings</span>
                         </Link>
                         <Link
+                          href="/matchups"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-cyan-900 rounded">
+                            <span className="text-xs">🤝</span>
+                          </div>
+                          <span className="font-medium">Matchups</span>
+                        </Link>
+                        <Link
                           href="/draft"
                           className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
                         >
@@ -235,6 +244,16 @@ export default function Navbar() {
                         <Trophy size={16} />
                       </div>
                       <span className="font-medium">Standings</span>
+                    </Link>
+                    <Link
+                      href="/matchups"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center bg-cyan-900 rounded">
+                        <span className="text-xs">🤝</span>
+                      </div>
+                      <span className="font-medium">Matchups</span>
                     </Link>
                     <Link
                       href="/draft"

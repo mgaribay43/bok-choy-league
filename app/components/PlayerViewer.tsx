@@ -50,6 +50,7 @@ function abbreviateStatName(name: string) {
         .replace(/Block/gi, "Blk")
         .replace(/Safety/gi, "Safe")
         .replace(/Kickoff and/gi, "Kick +")
+        .replace(/points/gi, "")
         .replace(/Recovery/gi, "Rec");
 }
 

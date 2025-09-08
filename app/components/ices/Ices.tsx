@@ -6,6 +6,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getCurrentWeek } from "./utils/getCurrentWeek";
 
 // Local splits
 import VideoCard from "./components/VideoCard";
@@ -13,7 +14,7 @@ import FiltersSection from "./components/FiltersSection";
 import StatsSection from "./components/StatsSection";
 import SeasonCollapse from "./components/SeasonCollapse";
 
-import { useFilters, useManagerWithMostConsecutiveWeeks, useManagerWithMostFlavors, useMostIcesInSingleSeason, useStats, useUniqueFlavors, IceVideo, useMostIcesInSingleWeekAllTeams } from "./hooks/hooks";
+import { useFilters, useManagerWithMostConsecutiveWeeks, useManagerWithMostFlavors, useMostIcesInSingleSeason, useStats, useUniqueFlavors, IceVideo, useMostIcesInSingleWeekAllTeams, useLongestActiveNoIceStreak, useLongestAllTimeNoIceStreaks } from "./hooks/hooks";
 import { getYear, sortSeasons } from "./utils/helpers";
 
 // =======================
@@ -94,6 +95,19 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const managerWithMostConsecutiveWeeksArr = useManagerWithMostConsecutiveWeeks(videos);
   const mostIcesInSingleSeason = useMostIcesInSingleSeason(videos);
   const mostIcesInSingleWeekAllTeams = useMostIcesInSingleWeekAllTeams(videos);
+  const currentSeason = getYear(new Date().toISOString().slice(0, 10));
+  const [currentWeek, setCurrentWeek] = useState<number>(17);
+
+  useEffect(() => {
+    async function fetchWeek() {
+      const week = await getCurrentWeek(currentSeason);
+      setCurrentWeek(week);
+    }
+    fetchWeek();
+  }, [currentSeason]);
+
+  const longestActiveNoIceStreak = useLongestActiveNoIceStreak(videos, currentSeason, currentWeek);
+  const longestAllTimeNoIceStreaks = useLongestAllTimeNoIceStreaks(videos, currentWeek);
 
   // --- Filtering Logic ---
   const filterVideo = (video: IceVideo) => {
@@ -210,6 +224,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     setCollapsedSeasons={setCollapsedSeasons}
                     mostIcesInSingleSeason={mostIcesInSingleSeason}
                     mostIcesInSingleWeekAllTeams={mostIcesInSingleWeekAllTeams}
+                    longestActiveNoIceStreak={longestActiveNoIceStreak}
+                    longestAllTimeNoIceStreaks={longestAllTimeNoIceStreaks}
                   />
                 </div>
               </div>

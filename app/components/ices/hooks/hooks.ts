@@ -227,3 +227,195 @@ export function useMostIcesInSingleWeekAllTeams(videos: IceVideo[]) {
   const weekArr = Object.values(weekCounts).sort((a, b) => b.count - a.count);
   return weekArr.slice(0, 3);
 }
+
+// =======================
+// Longest Active No-Ice Streak Calculation Hook
+// =======================
+export function useLongestActiveNoIceStreak(
+  videos: IceVideo[],
+  currentSeason: string,
+  currentWeek: number
+) {
+  const allSeasons = Array.from(new Set(videos.map(v => v.season))).filter(Boolean).sort();
+
+  // Build all season/week pairs for 17 weeks per season, but only up to the previous week for the current season
+  const allSeasonWeeks: { season: string; weekNum: number }[] = [];
+  allSeasons.forEach((season, idx) => {
+    if (season === currentSeason) {
+      if (currentWeek > 1) {
+        for (let weekNum = 1; weekNum < currentWeek; weekNum++) {
+          allSeasonWeeks.push({ season, weekNum });
+        }
+      } else if (currentWeek === 1 && idx > 0) {
+        // If current week is 1, include week 17 of previous season
+        const prevSeason = allSeasons[idx - 1];
+        if (prevSeason) {
+          for (let weekNum = 1; weekNum <= 17; weekNum++) {
+            allSeasonWeeks.push({ season: prevSeason, weekNum });
+          }
+        }
+      }
+    } else if (season && season < currentSeason) {
+      for (let weekNum = 1; weekNum <= 17; weekNum++) {
+        allSeasonWeeks.push({ season, weekNum });
+      }
+    }
+  });
+
+  // For each manager, build a Set of iced weeks as `${season}|${weekNum}` (only weeks 1-17)
+  const allManagers = Array.from(new Set(videos.map(v => v.manager).filter(Boolean)));
+  const icedWeeksByManager: Record<string, Set<string>> = {};
+  allManagers.forEach(manager => {
+    icedWeeksByManager[manager] = new Set(
+      videos
+        .filter(v =>
+          v.manager === manager &&
+          v.season &&
+          v.week &&
+          (() => {
+            const num = parseInt(v.week.replace(/[^\d]/g, ""), 10);
+            return num >= 1 && num <= 17;
+          })()
+        )
+        .map(v => v.week ? `${v.season}|${parseInt(v.week.replace(/[^\d]/g, ""), 10)}` : "")
+        .filter(Boolean)
+    );
+  });
+
+  // For each manager, find their longest *active* streak (ending at the last included week)
+  const streaks: {
+    manager: string;
+    streak: number;
+    start: { season: string; weekNum: number; weekStr: string };
+    end: { season: string; weekNum: number; weekStr: string };
+  }[] = [];
+
+  allManagers.forEach(manager => {
+    let currentStreak = 0;
+    let streakStart: { season: string; weekNum: number } | null = null;
+    let streakEnd: { season: string; weekNum: number } | null = null;
+
+    for (let i = 0; i < allSeasonWeeks.length; i++) {
+      const sw = allSeasonWeeks[i];
+      const key = `${sw.season}|${sw.weekNum}`;
+      if (!icedWeeksByManager[manager].has(key)) {
+        if (currentStreak === 0) streakStart = sw;
+        currentStreak++;
+        streakEnd = sw;
+      } else {
+        currentStreak = 0;
+        streakStart = null;
+        streakEnd = null;
+      }
+    }
+
+    // Only include if the streak ends at the last included week
+    if (
+      currentStreak > 0 &&
+      streakEnd &&
+      streakStart &&
+      (
+        // If current week > 1, streak must end at week currentWeek-1 of current season
+        (currentWeek > 1 && streakEnd.season === currentSeason && streakEnd.weekNum === currentWeek - 1) ||
+        // If current week == 1, streak must end at week 17 of previous season
+        (currentWeek === 1 && allSeasons.indexOf(currentSeason) > 0 &&
+          streakEnd.season === allSeasons[allSeasons.indexOf(currentSeason) - 1] && streakEnd.weekNum === 17)
+      )
+    ) {
+      streaks.push({
+        manager,
+        streak: currentStreak,
+        start: { ...streakStart, weekStr: `Week ${streakStart.weekNum}` },
+        end: { ...streakEnd, weekStr: `Week ${streakEnd.weekNum}` },
+      });
+    }
+  });
+
+  // Sort by streak descending, return top 3
+  return streaks.sort((a, b) => b.streak - a.streak).slice(0, 3);
+}
+
+// =======================
+// Longest Active All-Time No-Ice Streaks Calculation Hook
+// =======================
+export function useLongestAllTimeNoIceStreaks(videos: IceVideo[], currentWeek: number) {
+  // 1. Get all unique seasons
+  const allSeasons = Array.from(new Set(videos.map(v => v.season))).filter((s): s is string => typeof s === "string").sort();
+
+  // 2. Build all season/week pairs for 17 weeks per season, but only up to currentWeek for the current season
+  const allSeasonWeeks: { season: string; weekNum: number }[] = [];
+  allSeasons.forEach(season => {
+    const maxWeek = (season === allSeasons[allSeasons.length - 1]) ? currentWeek : 17;
+    for (let weekNum = 1; weekNum <= maxWeek; weekNum++) {
+      allSeasonWeeks.push({ season, weekNum });
+    }
+  });
+
+  // 3. For each manager, build a Set of iced weeks as `${season}|${weekNum}` (only weeks 1-17)
+  const allManagers = Array.from(new Set(videos.map(v => v.manager).filter(Boolean)));
+  const icedWeeksByManager: Record<string, Set<string>> = {};
+  allManagers.forEach(manager => {
+    icedWeeksByManager[manager] = new Set(
+      videos
+        .filter(v => 
+          v.manager === manager &&
+          v.season &&
+          v.week &&
+          (() => {
+            const num = parseInt(v.week.replace(/[^\d]/g, ""), 10);
+            return num >= 1 && num <= 17;
+          })()
+        )
+        .map(v => `${v.season}|${parseInt((v.week ?? "").replace(/[^\d]/g, ""), 10)}`)
+    );
+  });
+
+  // 4. For each manager, iterate through all weeks, tracking the longest streak
+  const streaks: {
+    manager: string;
+    streak: number;
+    start: { season: string; weekNum: number };
+    end: { season: string; weekNum: number };
+  }[] = [];
+
+  allManagers.forEach(manager => {
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let streakStart: { season: string; weekNum: number } | null = null;
+    let streakEnd: { season: string; weekNum: number } | null = null;
+    let bestStart: { season: string; weekNum: number } | null = null;
+    let bestEnd: { season: string; weekNum: number } | null = null;
+
+    allSeasonWeeks.forEach(sw => {
+      const key = `${sw.season}|${sw.weekNum}`;
+      if (!icedWeeksByManager[manager].has(key)) {
+        if (currentStreak === 0) streakStart = sw;
+        currentStreak++;
+        streakEnd = sw;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+          bestStart = streakStart!;
+          bestEnd = streakEnd!;
+        }
+      } else {
+        currentStreak = 0;
+        streakStart = null;
+        streakEnd = null;
+      }
+    });
+
+    if (maxStreak > 0 && bestStart && bestEnd) {
+      streaks.push({ manager, streak: maxStreak, start: bestStart, end: bestEnd });
+    }
+  });
+
+  // 5. Sort by streak descending, return top 3, and add weekStr for display
+  return streaks
+    .sort((a, b) => b.streak - a.streak)
+    .slice(0, 3)
+    .map(rec => ({
+      ...rec,
+      start: { ...rec.start, weekStr: `Week ${rec.start.weekNum}` },
+      end: { ...rec.end, weekStr: `Week ${rec.end.weekNum}` },
+    }));
+}

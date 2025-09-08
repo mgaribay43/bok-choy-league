@@ -5,7 +5,7 @@ import Ices from './components/ices/Ices';
 import Standings from './components/standings/StandingsViewer';
 import Events from './components/Events';
 import KeeperBanner from './components/KeeperMarquee';
-import MatchupsMarquee from './components/MatchupsMarquee';
+import MatchupsMarquee from './components/MatchupsViewer';
 import Polls from './components/Poll';
 
 export default function HomePage() {
@@ -29,7 +29,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* <KeeperBanner /> */}
-      <MatchupsMarquee />
+      <MatchupsMarquee Marquee/>
       <Polls ActivePolls={true} />
       <Standings topThree />
       <Ices latestOnly />

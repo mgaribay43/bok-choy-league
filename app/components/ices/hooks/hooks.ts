@@ -202,3 +202,28 @@ export function useMostIcesInSingleSeason(videos: IceVideo[]) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
 }
+
+// =======================
+// Most Ices in a Single Week All Teams Calculation Hook
+// =======================
+export function useMostIcesInSingleWeekAllTeams(videos: IceVideo[]) {
+  // Map: season|week -> count
+  const weekCounts: Record<string, { season: string; week: string; count: number }> = {};
+
+  videos.forEach(video => {
+    const season = video.season ?? getYear(video.date);
+    const week = video.week?.trim();
+    const playerCount = splitPlayers(video.player).length;
+    if (season && week) {
+      const key = `${season}|${week}`;
+      if (!weekCounts[key]) {
+        weekCounts[key] = { season, week, count: 0 };
+      }
+      weekCounts[key].count += playerCount;
+    }
+  });
+
+  // Convert to array and sort
+  const weekArr = Object.values(weekCounts).sort((a, b) => b.count - a.count);
+  return weekArr.slice(0, 3);
+}

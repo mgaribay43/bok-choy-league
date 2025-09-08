@@ -13,7 +13,7 @@ import FiltersSection from "./components/FiltersSection";
 import StatsSection from "./components/StatsSection";
 import SeasonCollapse from "./components/SeasonCollapse";
 
-import { useFilters, useManagerWithMostConsecutiveWeeks, useManagerWithMostFlavors, useMostIcesInSingleSeason, useStats, useUniqueFlavors, IceVideo } from "./hooks/hooks";
+import { useFilters, useManagerWithMostConsecutiveWeeks, useManagerWithMostFlavors, useMostIcesInSingleSeason, useStats, useUniqueFlavors, IceVideo, useMostIcesInSingleWeekAllTeams } from "./hooks/hooks";
 import { getYear, sortSeasons } from "./utils/helpers";
 
 // =======================
@@ -93,6 +93,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const managerWithMostFlavors = useManagerWithMostFlavors(videos);
   const managerWithMostConsecutiveWeeksArr = useManagerWithMostConsecutiveWeeks(videos);
   const mostIcesInSingleSeason = useMostIcesInSingleSeason(videos);
+  const mostIcesInSingleWeekAllTeams = useMostIcesInSingleWeekAllTeams(videos);
 
   // --- Filtering Logic ---
   const filterVideo = (video: IceVideo) => {
@@ -208,6 +209,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                     managerWithMostConsecutiveWeeks={managerWithMostConsecutiveWeeksArr}
                     setCollapsedSeasons={setCollapsedSeasons}
                     mostIcesInSingleSeason={mostIcesInSingleSeason}
+                    mostIcesInSingleWeekAllTeams={mostIcesInSingleWeekAllTeams}
                   />
                 </div>
               </div>

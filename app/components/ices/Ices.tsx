@@ -8,7 +8,6 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getCurrentWeek } from "./utils/getCurrentWeek";
 
-// Local splits
 import VideoCard from "./components/VideoCard";
 import FiltersSection from "./components/FiltersSection";
 import StatsSection from "./components/StatsSection";
@@ -42,6 +41,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const [showPenaltyOnly, setShowPenaltyOnly] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [latestIndex, setLatestIndex] = useState(0);
 
   // Refs for scrolling
   const videosSectionRef = useRef<HTMLDivElement>(null);
@@ -59,9 +59,9 @@ export default function Ices({ latestOnly = false }: IcesProps) {
           const data = doc.data();
           // If the document has an 'entries' array (year doc), flatten it
           if (Array.isArray(data.entries)) {
-            data.entries.forEach((video: IceVideo) => {
+            data.entries.forEach((video: IceVideo, idx: number) => {
               if (video.date) {
-                allVideos.push({ ...video, season: doc.id });
+                allVideos.push({ ...video, season: doc.id, entryIndex: idx });
               }
             });
           } else {
@@ -122,16 +122,36 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   };
 
   let filteredVideos = videos.filter(filterVideo);
+
+  // --- Latest Only Logic ---
+  let latestVideos: IceVideo[] = [];
   if (latestOnly && filteredVideos.length > 0) {
-    filteredVideos = filteredVideos.sort((a, b) => {
-      const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
-      const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
-      return dateB - dateA;
-    }).slice(0, 1);
+    // Sort by date descending, then by entryIndex descending (latest in Firestore array is latest)
+    const sorted = filteredVideos
+      .slice()
+      .sort((a, b) => {
+        const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
+        const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        // If same date, use entryIndex (higher is later)
+        return (b.entryIndex ?? 0) - (a.entryIndex ?? 0);
+      });
+    const latestDate = sorted[0]?.date;
+    // Find the latest entryIndex for the latest date
+    const latestEntries = sorted.filter(v => v.date === latestDate);
+    const maxIndex = Math.max(...latestEntries.map(v => v.entryIndex ?? 0));
+    const latestVideo = latestEntries.find(v => (v.entryIndex ?? 0) === maxIndex);
+    // Only show the latest one
+    latestVideos = latestVideo ? [latestVideo] : [];
   }
 
+  // Reset latestIndex if latestVideos changes
+  useEffect(() => {
+    setLatestIndex(0);
+  }, [latestVideos.length, latestVideos[0]?.date]);
+
   // For rendering
-  const renderVideos = latestOnly ? filteredVideos : videos.filter(filterVideo);
+  const renderVideos = latestOnly ? latestVideos : videos.filter(filterVideo);
 
   // --- Group videos by season ---
   const videosBySeason: Record<string, IceVideo[]> = {};
@@ -278,9 +298,13 @@ export default function Ices({ latestOnly = false }: IcesProps) {
           ) : renderVideos.length === 0 ? (
             <p className="text-center text-slate-500 text-lg mt-10">No videos found for this filter.</p>
           ) : latestOnly ? (
-            renderVideos.map((video, idx) => (
-              <VideoCard key={(video.id?.trim() || "") + idx} video={video} expandedVideo={expandedVideo} setExpandedVideo={setExpandedVideo} />
-            ))
+            <>
+              <VideoCard
+                video={latestVideos[latestIndex]}
+                expandedVideo={expandedVideo}
+                setExpandedVideo={setExpandedVideo}
+              />
+            </>
           ) : (
             <div className="w-full">
               {/* Render videos grouped by season */}

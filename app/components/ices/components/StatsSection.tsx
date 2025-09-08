@@ -19,6 +19,8 @@ export default function StatsSection({
   setCollapsedSeasons,
   mostIcesInSingleSeason,
   mostIcesInSingleWeekAllTeams, // <-- use this prop only
+  longestActiveNoIceStreak,
+  longestAllTimeNoIceStreaks,
 }: any) {
 
   return (
@@ -411,6 +413,62 @@ export default function StatsSection({
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Longest Active No Ice Streak Card */}
+          <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+            <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+              Longest Active No Ice Streak
+            </h3>
+            <div className="space-y-2">
+              {(longestActiveNoIceStreak ?? []).map((rec: any, index: number) => (
+                <div key={rec.manager + rec.streak} className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-cyan-900 text-cyan-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-emerald-400">{rec.manager}</span>
+                    </div>
+                    {rec.start && rec.end && (
+                      <div className="text-xs text-emerald-300 ml-8">
+                        {rec.start.weekStr} {rec.start.season} - {rec.end.weekStr} {rec.end.season}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                    {rec.streak} week{rec.streak === 1 ? "" : "s"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Longest All-Time No Ice Streaks Card */}
+          <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
+            <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
+              Longest All-Time No Ice Streaks
+            </h3>
+            <div className="space-y-2">
+              {(longestAllTimeNoIceStreaks ?? []).map((rec: any, index: number) => (
+                <div key={rec.manager + rec.streak} className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-cyan-900 text-cyan-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-emerald-400">{rec.manager}</span>
+                    </div>
+                    <div className="text-xs text-emerald-300 ml-8">
+                      {rec.start.weekStr} {rec.start.season} - {rec.end.weekStr} {rec.end.season}
+                    </div>
+                  </div>
+                  <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                    {rec.streak} week{rec.streak === 1 ? "" : "s"}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 

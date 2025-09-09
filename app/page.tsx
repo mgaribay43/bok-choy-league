@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Ices from './components/ices/Ices';
-import Standings from './components/standings/StandingsViewer';
+import Standings from './components/standings/newStandings';
 import Events from './components/Events';
 import KeeperBanner from './components/KeeperMarquee';
 import MatchupsMarquee from './components/MatchupsViewer';

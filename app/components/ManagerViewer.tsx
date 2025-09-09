@@ -18,6 +18,7 @@ import {
   Tooltip,
   Legend
 } from "chart.js";
+import { getDisplayManagerName } from "./globalUtils/getManagerNames";
 
 // --- Firestore imports ---
 import { collection, getDocs } from "firebase/firestore";
@@ -100,16 +101,6 @@ function useBodyScrollLock(isLocked: boolean) {
 }
 
 // ===== Helpers =====
-function getDisplayManagerName(name: string) {
-  if (name === "Jacob") return "Harris";
-  if (name === "jake.hughes275") return "Hughes";
-  if (name === "johnny5david") return "Johnny";
-  if (name === "Zachary") return "Zach";
-  if (name === "Michael") return "Mike";
-  if (name === "tanner") return "Tanner";
-  return name;
-}
-
 function getFeloTierImage(tier?: string) {
   if (!tier) return undefined;
   const t = tier.trim().toLowerCase();

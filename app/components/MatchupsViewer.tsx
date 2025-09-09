@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Marquee from "react-fast-marquee";
 import { useRouter } from "next/navigation";
+import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 
 interface Matchup {
   team1: string;
@@ -292,15 +293,12 @@ interface MatchupsViewerProps {
 
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
-  const [currentWeek, setCurrentWeek] = useState<number>(() => {
-    const savedWeek = localStorage.getItem("currentWeek");
-    return savedWeek ? Number(savedWeek) : 1;
-  });
+  const [currentWeek, setCurrentWeek] = useState<number>(1);
   const [maxWeek, setMaxWeek] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
-  const [viewWeek, setViewWeek] = useState<number | null>(null); // <-- add viewWeek state
+  const [viewWeek, setViewWeek] = useState<number | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -495,9 +493,20 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     }
   };
 
-  // On mount, always load the correct week (for both main and marquee)
+  // On mount, fetch the current week from the global util
   useEffect(() => {
-    fetchMatchups();
+    async function fetchInitialWeek() {
+      try {
+        const season = new Date().getFullYear().toString();
+        const week = await getCurrentWeek(season);
+        setCurrentWeek(week);
+        localStorage.setItem("currentWeek", String(week));
+        fetchMatchups(week);
+      } catch {
+        fetchMatchups(1);
+      }
+    }
+    fetchInitialWeek();
     // eslint-disable-next-line
   }, []);
 

@@ -246,33 +246,26 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       if (updateOnlyScores) {
         setMatchups((prevMatchups) => {
           if (!prevMatchups.length) return formattedMatchups;
-          let changed = false;
-          const updated = prevMatchups.map((old, i) => {
-            const fresh = formattedMatchups[i];
-            if (
-              old.displayValue1 !== fresh.displayValue1 ||
-              old.displayValue2 !== fresh.displayValue2 ||
-              old.winPct1 !== fresh.winPct1 ||
-              old.winPct2 !== fresh.winPct2 ||
-              old.winnerOnTop !== fresh.winnerOnTop ||
-              old.projected1 !== fresh.projected1 ||
-              old.projected2 !== fresh.projected2
-            ) {
-              changed = true;
-              return {
-                ...old,
-                displayValue1: fresh.displayValue1,
-                displayValue2: fresh.displayValue2,
-                winPct1: fresh.winPct1,
-                winPct2: fresh.winPct2,
-                winnerOnTop: fresh.winnerOnTop,
-                projected1: fresh.projected1,
-                projected2: fresh.projected2,
-              };
-            }
-            return old;
+
+          // Always create a new array to ensure React detects the change
+          const updated = formattedMatchups.map((fresh, i) => {
+            const old = prevMatchups[i];
+            if (!old) return fresh; // Handle case where lengths differ
+
+            // Update only the fields that can change during polling
+            return {
+              ...old,
+              displayValue1: fresh.displayValue1,
+              displayValue2: fresh.displayValue2,
+              winPct1: fresh.winPct1,
+              winPct2: fresh.winPct2,
+              winnerOnTop: fresh.winnerOnTop,
+              projected1: fresh.projected1,
+              projected2: fresh.projected2,
+            };
           });
-          return changed ? updated : prevMatchups;
+
+          return updated;
         });
       } else {
         setMatchups(formattedMatchups);

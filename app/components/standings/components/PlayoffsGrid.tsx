@@ -8,9 +8,11 @@ import { TeamEntry } from "../utils/standingsUtils";
 export default function PlayoffsGrid({
   year,
   teams,
+  seasonComplete, // <-- Add this prop
 }: {
   year: string;
   teams: TeamEntry[];
+  seasonComplete?: boolean; // <-- Add this prop type
 }) {
   return (
     <div className="mb-10">
@@ -24,11 +26,13 @@ export default function PlayoffsGrid({
             {/* Rank Badge */}
             <div className="absolute top-4 left-4 z-10">
               <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shadow-lg
-                ${team.rank === 2
-                  ? "bg-gradient-to-r from-slate-700 to-slate-900 text-emerald-100"
-                  : team.rank === 3
-                    ? "bg-gradient-to-r from-amber-700 to-yellow-900 text-yellow-100"
-                    : "bg-gradient-to-r from-emerald-700 to-emerald-900 text-emerald-100"
+                ${team.rank === 1
+                  ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900"
+                  : team.rank === 2
+                    ? "bg-gradient-to-r from-slate-700 to-slate-900 text-emerald-100"
+                    : team.rank === 3
+                      ? "bg-gradient-to-r from-amber-700 to-yellow-900 text-yellow-100"
+                      : "bg-gradient-to-r from-emerald-700 to-emerald-900 text-emerald-100"
               }`}>
                 #{team.rank}
               </span>
@@ -63,21 +67,23 @@ export default function PlayoffsGrid({
                 {team.manager}
               </Link>
             </p>
-            {/* Badge */}
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
-              ${team.rank === 2
-                ? "bg-slate-800 text-emerald-100 border border-slate-700"
-                : team.rank === 3
-                  ? "bg-amber-900 text-yellow-100 border border-amber-700"
-                  : "bg-emerald-900 text-emerald-100 border border-emerald-700"
-            }`}>
-              {team.rank === 2
-                ? "🥈 Runner-up"
-                : team.rank === 3
-                  ? "🥉 Third Place"
-                  : `Playoffs (#${team.rank})`
-              }
-            </span>
+            {/* Badge - only show if season is complete */}
+            {seasonComplete && (
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
+                ${team.rank === 2
+                  ? "bg-slate-800 text-emerald-100 border border-slate-700"
+                  : team.rank === 3
+                    ? "bg-amber-900 text-yellow-100 border border-amber-700"
+                    : "bg-emerald-900 text-emerald-100 border border-emerald-700"
+              }`}>
+                {team.rank === 2
+                  ? "🥈 Runner-up"
+                  : team.rank === 3
+                    ? "🥉 Third Place"
+                    : `Playoffs (#${team.rank})`
+                }
+              </span>
+            )}
           </div>
         ))}
       </div>

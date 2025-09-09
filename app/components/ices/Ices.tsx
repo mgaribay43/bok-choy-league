@@ -6,7 +6,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 import { getFirestore, collection, getDocs } from "firebase/firestore";
-import { getCurrentWeek } from "./utils/getCurrentWeek";
+import { getCurrentWeek } from "../globalUtils/getCurrentWeek";
 
 import VideoCard from "./components/VideoCard";
 import FiltersSection from "./components/FiltersSection";

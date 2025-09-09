@@ -578,7 +578,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     margin: "10px 0 0 0",
                   }}
                 >
-                  {/* Team 1 (left, purple) */}
+                  {/* Team 1 (left) */}
                   <div
                     style={{
                       position: "absolute",
@@ -586,13 +586,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                       top: 0,
                       height: "100%",
                       width: `${m.winPct1}%`,
-                      background: "#6f49e0ff",
+                      background:
+                        (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
                       borderTopLeftRadius: 8,
                       borderBottomLeftRadius: 8,
                       transition: "width 0.4s",
                     }}
                   />
-                  {/* Team 2 (right, blue) */}
+                  {/* Team 2 (right) */}
                   <div
                     style={{
                       position: "absolute",
@@ -600,7 +601,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                       top: 0,
                       height: "100%",
                       width: `${m.winPct2}%`,
-                      background: "#8b96f1ff",
+                      background:
+                        (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
                       borderTopRightRadius: 8,
                       borderBottomRightRadius: 8,
                       transition: "width 0.4s",
@@ -984,7 +986,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                       margin: "10px 0 0 0",
                     }}
                   >
-                    {/* Team 1 (left, purple) */}
+                    {/* Team 1 (left) */}
                     <div
                       style={{
                         position: "absolute",
@@ -992,13 +994,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                         top: 0,
                         height: "100%",
                         width: `${m.winPct1}%`,
-                        background: "#6f49e0ff",
+                        background:
+                          (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
                         borderTopLeftRadius: 8,
                         borderBottomLeftRadius: 8,
                         transition: "width 0.4s",
                       }}
                     />
-                    {/* Team 2 (right, blue) */}
+                    {/* Team 2 (right) */}
                     <div
                       style={{
                         position: "absolute",
@@ -1006,7 +1009,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                         top: 0,
                         height: "100%",
                         width: `${m.winPct2}%`,
-                        background: "#8b96f1ff",
+                        background:
+                          (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
                         borderTopRightRadius: 8,
                         borderBottomRightRadius: 8,
                         transition: "width 0.4s",

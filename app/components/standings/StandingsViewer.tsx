@@ -11,6 +11,7 @@ import {
   getCachedStandings,
   setCachedStandings
 } from "./utils/standingsUtils";
+import { getCurrentSeason } from "../globalUtils/getCurrentSeason";
 
 import StandingsHeader from "./components/StandingsHeader";
 import LeadersStrip from "./components/LeadersStrip";
@@ -20,16 +21,33 @@ import PlayoffsGrid from "./components/PlayoffsGrid";
 import EliminatedGrid from "./components/EliminatedGrid";
 
 const StandingsViewer = ({ topThree = false }: StandingsProps) => {
-  const [year, setYear] = useState<string>("2025");
+  const [year, setYear] = useState<string>("");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Fetch current season on mount
   useEffect(() => {
     let isMounted = true;
+    async function fetchSeason() {
+      try {
+        const season = await getCurrentSeason();
+        if (isMounted) setYear(season);
+      } catch (err) {
+        if (isMounted) setYear(new Date().getFullYear().toString());
+      }
+    }
+    fetchSeason();
+    return () => { isMounted = false; };
+  }, []);
 
-    // Only use cache for the current season (2025)
-    const isCurrentSeason = year === "2025";
+  useEffect(() => {
+    if (!year) return;
+    let isMounted = true;
+
+    // Only use cache for the current season
+    const currentYear = new Date().getFullYear().toString();
+    const isCurrentSeason = year === currentYear;
 
     if (isCurrentSeason && topThree) {
       const cached = getCachedTopThree(year);
@@ -95,7 +113,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
 
         parsed.sort((a, b) => a.rank - b.rank);
 
-        // Only cache for current season (2025)
+        // Only cache for current season
         if (isCurrentSeason && topThree) {
           setCachedTopThree(year, parsed.slice(0, 3));
           setTeams(parsed.slice(0, 3));
@@ -166,7 +184,7 @@ const StandingsViewer = ({ topThree = false }: StandingsProps) => {
             <ChampionSpotlight year={year} teams={teams} />
 
             {(() => {
-              const gridTeams = year === "2025" ? teams : teams.slice(3);
+              const gridTeams = year === new Date().getFullYear().toString() ? teams : teams.slice(3);
               const playoffs = gridTeams.filter(team => team.rank <= 6);
               const eliminated = gridTeams.filter(team => team.rank > 6);
               return (

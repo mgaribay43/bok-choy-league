@@ -2,6 +2,7 @@
 
 import PollCreator from '@/app/components/pollCreator/PollCreator';
 import IceCreator from '@/app/components/addIces';
+import WinProbCharts from '@/app/components/WinProbabilityTracker';
 
 export default function AdminPage() {
     return (
@@ -24,6 +25,7 @@ export default function AdminPage() {
                     </div>
                 </section>
             </div>
+            <WinProbCharts />
         </div>
     );
 }

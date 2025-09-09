@@ -21,22 +21,270 @@ interface Matchup {
 }
 
 const TEAM_AVATARS: Record<string, string> = {};
-
 const getAvatar = (teamName: string) =>
   TEAM_AVATARS[teamName] ||
-  "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // fallback avatar
+  "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-function getGreenShade(pct: number) {
-  // pct: 0-100
-  // 0% = #bbf7d0 (light), 100% = #22c55e (dark)
-  const light = [187, 247, 208]; // #bbf7d0
-  const dark = [34, 197, 94];   // #22c55e
-  const t = Math.max(0, Math.min(1, pct / 100));
-  const r = Math.round(light[0] + (dark[0] - light[0]) * t);
-  const g = Math.round(light[1] + (dark[1] - light[1]) * t);
-  const b = Math.round(light[2] + (dark[2] - light[2]) * t);
-  return `rgb(${r},${g},${b})`;
-}
+const ScoreBox = ({
+  value,
+  projected,
+  highlight,
+  align = "right",
+}: {
+  value: string;
+  projected?: string;
+  highlight: "win" | "lose" | "tie";
+  align?: "right" | "left";
+}) => (
+  <div
+    style={{
+      fontWeight: 800,
+      fontSize: 36,
+      color:
+        highlight === "win"
+          ? "#22c55e"
+          : highlight === "lose"
+          ? "#dc2626"
+          : "#e5e7eb",
+      minWidth: 60,
+      textAlign: align,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: align === "right" ? "flex-end" : "flex-start",
+    }}
+  >
+    {value}
+    {projected && (
+      <span
+        style={{
+          fontWeight: 400,
+          fontSize: 13,
+          color: "#a7a7a7",
+          marginTop: 2,
+        }}
+      >
+        proj: {Number(projected).toFixed(2)}
+      </span>
+    )}
+  </div>
+);
+
+const AvatarBox = ({
+  src,
+  alt,
+  record,
+}: {
+  src?: string;
+  alt: string;
+  record: string;
+}) => (
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <img
+      src={src}
+      alt={alt}
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        objectFit: "cover",
+        border: "none",
+        background: "#18191b",
+      }}
+    />
+    <span
+      style={{
+        fontSize: 13,
+        color: "#a7a7a7",
+        fontWeight: 600,
+        marginTop: 2,
+        letterSpacing: 0.5,
+      }}
+    >
+      {record}
+    </span>
+  </div>
+);
+
+const WinBar = ({
+  pct1,
+  pct2,
+}: {
+  pct1?: number;
+  pct2?: number;
+}) => (
+  <div style={{ background: "#23252b", marginTop: 8 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        fontWeight: 700,
+        fontSize: 16,
+        padding: "0 22px",
+      }}
+    >
+      <span style={{ color: (pct1 ?? 0) >= (pct2 ?? 0) ? "#22c55e" : "#dc2626" }}>
+        {Math.round(pct1 ?? 0)}%
+      </span>
+      <span style={{ color: "#a7a7a7", fontWeight: 600, fontSize: 15, letterSpacing: 1 }}>
+        Win %
+      </span>
+      <span style={{ color: (pct2 ?? 0) > (pct1 ?? 0) ? "#22c55e" : "#dc2626" }}>
+        {Math.round(pct2 ?? 0)}%
+      </span>
+    </div>
+    <div
+      style={{
+        position: "relative",
+        height: 8,
+        background: "#18191b",
+        borderRadius: 8,
+        margin: "10px 0 0 0",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          height: "100%",
+          width: `${pct1}%`,
+          background: (pct1 ?? 0) >= (pct2 ?? 0) ? "#6f49e0ff" : "#8b96f1ff",
+          borderTopLeftRadius: 8,
+          borderBottomLeftRadius: 8,
+          transition: "width 0.4s",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          height: "100%",
+          width: `${pct2}%`,
+          background: (pct2 ?? 0) > (pct1 ?? 0) ? "#6f49e0ff" : "#8b96f1ff",
+          borderTopRightRadius: 8,
+          borderBottomRightRadius: 8,
+          transition: "width 0.4s",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: `${pct1}%`,
+          top: -1,
+          height: "calc(100% + 2px)",
+          width: 3,
+          background: "#23252b",
+          borderRadius: 2,
+          zIndex: 2,
+          transform: "translateX(-1.5px)",
+        }}
+      />
+    </div>
+  </div>
+);
+
+const MatchupCard = ({
+  m,
+  showNames = false,
+  style = {},
+}: {
+  m: Matchup;
+  showNames?: boolean;
+  style?: React.CSSProperties;
+}) => {
+  const win1 = Number(m.displayValue1) > Number(m.displayValue2);
+  const win2 = Number(m.displayValue2) > Number(m.displayValue1);
+  return (
+    <div
+      style={{
+        background: "#23252b",
+        borderRadius: 16,
+        margin: "24px auto",
+        padding: 0,
+        boxShadow: "0 2px 12px 0 #000",
+        border: "2px solid #232323",
+        maxWidth: 540,
+        position: "relative",
+        overflow: "hidden",
+        ...style,
+      }}
+    >
+      {showNames && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "22px 18px 0 18px",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 18,
+              color: "#e5e7eb",
+              textAlign: "left",
+              flex: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              minWidth: 0,
+              maxWidth: "48%",
+            }}
+          >
+            {m.team1}
+          </div>
+          <div style={{ width: 18 }} />
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 18,
+              color: "#e5e7eb",
+              textAlign: "right",
+              flex: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              minWidth: 0,
+              maxWidth: "48%",
+            }}
+          >
+            {m.team2}
+          </div>
+        </div>
+      )}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: showNames ? "0 18px 0 18px" : "22px 18px 0 18px",
+          marginTop: showNames ? 10 : 0,
+          marginBottom: 8,
+        }}
+      >
+        <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
+        <ScoreBox
+          value={m.displayValue1}
+          projected={m.projected1}
+          highlight={win1 ? "win" : win2 ? "lose" : "tie"}
+          align="right"
+        />
+        <div style={{ fontWeight: 700, fontSize: 28, color: "#6b7280", margin: "0 4px" }}>/</div>
+        <ScoreBox
+          value={m.displayValue2}
+          projected={m.projected2}
+          highlight={win2 ? "win" : win1 ? "lose" : "tie"}
+          align="left"
+        />
+        <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
+      </div>
+      <WinBar pct1={m.winPct1} pct2={m.winPct2} />
+    </div>
+  );
+};
 
 interface MatchupsViewerProps {
   Marquee?: boolean;
@@ -45,43 +293,39 @@ interface MatchupsViewerProps {
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
   const [currentWeek, setCurrentWeek] = useState<number>(() => {
-    // Initialize currentWeek from localStorage or default to 1
     const savedWeek = localStorage.getItem("currentWeek");
     return savedWeek ? Number(savedWeek) : 1;
   });
   const [maxWeek, setMaxWeek] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
-  const [isWeekFinished, setIsWeekFinished] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [viewWeek, setViewWeek] = useState<number | null>(null); // <-- add viewWeek state
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    // Save the currentWeek to localStorage whenever it changes
-    localStorage.setItem("currentWeek", String(currentWeek));
-  }, [currentWeek]);
+  // Track last status to detect change to 'postevent'
+  const lastStatusRef = useRef<string | null>(null);
 
-  // Helper for EST Wednesday 10am
-  function isAfterWednesday10amEST() {
-    const now = new Date();
-    const estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-    return estNow.getDay() > 3 || (estNow.getDay() === 3 && estNow.getHours() >= 10);
-  }
-
-  // Fetch matchups and standings
-  const fetchMatchups = async (weekOverride?: number, updateOnlyScores = false) => {
+  // Helper to fetch and handle week advancement
+  const fetchMatchups = async (
+    weekOverride?: number,
+    updateOnlyScores = false,
+    useViewWeek = false
+  ) => {
     if (!updateOnlyScores) setLoading(true);
     try {
-      let weekParam = weekOverride ?? currentWeek;
-      if (!updateOnlyScores) setCurrentWeek(weekParam);
+      // Always use weekOverride if provided, otherwise fall back to currentWeek
+      const weekParam = typeof weekOverride === "number"
+        ? weekOverride
+        : currentWeek;
+
+      if (!updateOnlyScores && !useViewWeek) setCurrentWeek(weekParam);
 
       const response = await fetch(
         `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=2025&week=${weekParam}`
       );
       const data = await response.json();
-
       const scoreboard = data?.fantasy_content?.league?.[1]?.scoreboard?.["0"];
       const maxW =
         Number(
@@ -89,35 +333,24 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         ) || 17;
       setMaxWeek(maxW);
 
-      // --- Week status logic ---
-      // Use status from scoreboard for polling, and week_end for completion
       const status = scoreboard?.status;
-      const weekEndStr = scoreboard?.week_end; // e.g. "2025-09-15"
-      let weekIsOver = false;
-      if (weekEndStr) {
-        const now = new Date();
-        const weekEnd = new Date(weekEndStr + "T23:59:59-05:00"); // Yahoo times are EST/EDT
-        weekIsOver = now > weekEnd;
-      }
-      setIsWeekFinished(weekIsOver);
-
-      // Only poll for scoring updates if status is "midevent"
       setIsMatchupStarted(status === "midevent");
 
-      // --- Default to next week if previous week is over and it's the initial load ---
+      // Only auto-advance currentWeek if not viewing a different week
       if (
-        !updateOnlyScores &&
-        initialLoad &&
+        !useViewWeek &&
+        lastStatusRef.current !== null &&
+        lastStatusRef.current !== "postevent" &&
         status === "postevent" &&
         weekParam < maxW
       ) {
-        setInitialLoad(false);
+        lastStatusRef.current = status;
         setCurrentWeek(weekParam + 1);
-        // Refetch for next week, but don't setInitialLoad again
-        fetchMatchups(weekParam + 1, false);
+        localStorage.setItem("currentWeek", String(weekParam + 1));
+        fetchMatchups(weekParam + 1, false, false);
         return;
       }
-      setInitialLoad(false);
+      lastStatusRef.current = status;
 
       const matchupsData = scoreboard?.matchups;
       if (!matchupsData) {
@@ -126,7 +359,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         return;
       }
 
-      // Standings for records (only needed for full reload, not polling)
       let records: Record<string, string> = {};
       if (!updateOnlyScores) {
         const standingsRes = await fetch(
@@ -135,7 +367,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         const standingsJson = await standingsRes.json();
         const teamsObj =
           standingsJson?.fantasy_content?.league?.[1]?.standings?.[0]?.teams || {};
-
         Object.values(teamsObj).forEach((teamObj: any) => {
           const teamArr = teamObj?.team;
           if (!teamArr) return;
@@ -151,7 +382,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         });
       }
 
-      // Transform the data into the Matchup format
       const formattedMatchups = Object.values(matchupsData)
         .filter(
           (matchup: any) =>
@@ -160,26 +390,21 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             matchup.matchup["0"] &&
             matchup.matchup["0"].teams
         )
-        .map((matchup: any, idx: number) => {
+        .map((matchup: any) => {
           const teams = matchup.matchup["0"].teams;
           const team1 = teams["0"].team;
           const team2 = teams["1"].team;
-
           const started = matchup.matchup.status !== "preevent";
-
           const team1Name =
             team1?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 1";
           const team2Name =
             team2?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 2";
-
           const team1Score = started
             ? parseFloat(team1?.[1]?.team_points?.total || "0")
             : 0;
           const team2Score = started
             ? parseFloat(team2?.[1]?.team_points?.total || "0")
             : 0;
-
-          // Extract team logo URLs from team_logos array
           const team1Logo =
             team1?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
               ?.team_logo?.url ||
@@ -188,10 +413,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             team2?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
               ?.team_logo?.url ||
             "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
-          // Winner on top if week is finished and scores are available
-          const isFinished =
-            scoreboard?.is_finished === 1;
+          const isFinished = scoreboard?.is_finished === 1;
           let winnerOnTop = false;
           let t1 = team1Name,
             t2 = team2Name,
@@ -201,7 +423,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             r2 = records[team2Name],
             a1 = team1Logo,
             a2 = team2Logo;
-
           if (isFinished && started && team1Score !== team2Score) {
             if (team2Score > team1Score) {
               [t1, t2, s1, s2, r1, r2, a1, a2] = [
@@ -217,10 +438,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             }
             winnerOnTop = true;
           }
-
           const team1WinProbRaw = team1?.[1]?.win_probability;
           const team2WinProbRaw = team2?.[1]?.win_probability;
-          // Do NOT round the win percentages for the bar
           const team1WinPct =
             typeof team1WinProbRaw === "number"
               ? team1WinProbRaw * 100
@@ -229,11 +448,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             typeof team2WinProbRaw === "number"
               ? team2WinProbRaw * 100
               : 0;
-
-          // Always show projected points, even if week hasn't started
           const team1Proj = team1?.[1]?.team_projected_points?.total || "";
           const team2Proj = team2?.[1]?.team_projected_points?.total || "";
-
           return {
             team1: t1,
             team2: t2,
@@ -251,17 +467,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           };
         });
 
-      // Only update scores, win percentages, projections, and winnerOnTop if changed (for polling)
       if (updateOnlyScores) {
         setMatchups((prevMatchups) => {
           if (!prevMatchups.length) return formattedMatchups;
-
-          // Always create a new array to ensure React detects the change
-          const updated = formattedMatchups.map((fresh, i) => {
+          return formattedMatchups.map((fresh, i) => {
             const old = prevMatchups[i];
-            if (!old) return fresh; // Handle case where lengths differ
-
-            // Update only the fields that can change during polling
+            if (!old) return fresh;
             return {
               ...old,
               displayValue1: fresh.displayValue1,
@@ -273,28 +484,26 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
               projected2: fresh.projected2,
             };
           });
-
-          return updated;
         });
       } else {
         setMatchups(formattedMatchups);
       }
-    } catch (error) {
+    } catch {
       if (!updateOnlyScores) setMatchups([]);
     } finally {
       if (!updateOnlyScores) setLoading(false);
     }
   };
 
+  // On mount, always load the correct week (for both main and marquee)
   useEffect(() => {
     fetchMatchups();
     // eslint-disable-next-line
   }, []);
 
-  // Polling logic (background, only update scores)
   useEffect(() => {
     if (isMatchupStarted) {
-      pollingRef.current = setInterval(() => fetchMatchups(currentWeek, true), 15000);
+      pollingRef.current = setInterval(() => fetchMatchups(undefined, true), 15000);
     } else if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
@@ -307,62 +516,52 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     };
   }, [isMatchupStarted, currentWeek]);
 
-  // Week navigation
   const handlePrevWeek = () => {
-    if (currentWeek > 1) {
-      const newWeek = currentWeek - 1;
-      setCurrentWeek(newWeek);
-      localStorage.setItem("currentWeek", String(newWeek)); // Save the updated week
-      fetchMatchups(newWeek);
-    }
-  };
-  const handleNextWeek = () => {
-    if (currentWeek < maxWeek) {
-      const newWeek = currentWeek + 1;
-      setCurrentWeek(newWeek);
-      localStorage.setItem("currentWeek", String(newWeek)); // Save the updated week
-      fetchMatchups(newWeek);
+    const week = (viewWeek !== null ? viewWeek : currentWeek) - 1;
+    if (week >= 1) {
+      setViewWeek(week);
+      fetchMatchups(week, false, true);
     }
   };
 
-  // Close dropdown on outside click
+  const handleNextWeek = () => {
+    const week = (viewWeek !== null ? viewWeek : currentWeek) + 1;
+    if (week <= maxWeek) {
+      setViewWeek(week);
+      fetchMatchups(week, false, true);
+    }
+  };
+
+  const handleWeekDropdown = (w: number) => {
+    setWeekDropdownOpen(false);
+    setViewWeek(w);
+    fetchMatchups(w, false, true);
+  };
+
+  // If user navigates away from week navigation, reset viewWeek to null (show currentWeek)
   useEffect(() => {
-    if (!weekDropdownOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".week-dropdown")) setWeekDropdownOpen(false);
-    };
-    window.addEventListener("mousedown", handleClick);
-    return () => window.removeEventListener("mousedown", handleClick);
-  }, [weekDropdownOpen]);
+    if (!weekDropdownOpen && viewWeek !== null) {
+      // Optionally, you can reset viewWeek to null when dropdown closes
+      // setViewWeek(null);
+    }
+  }, [weekDropdownOpen, viewWeek]);
 
   if (useMarquee) {
-    // Dynamically determine the max card width based on the longest card content
-    // We'll use the length of the score/projection/record strings for both teams
-    const getCardContentLength = (m: Matchup) => {
-      // Only count the visible content in the marquee: avatars, scores, projections, win % bar
-      // We'll use the length of displayValue1/2, projected1/2, record1/2
-      return (
-        (m.displayValue1?.length || 0) +
-        (m.displayValue2?.length || 0) +
-        (m.projected1?.length || 0) +
-        (m.projected2?.length || 0) +
-        (m.record1?.length || 0) +
-        (m.record2?.length || 0)
-      );
-    };
+    const getCardContentLength = (m: Matchup) =>
+      (m.displayValue1?.length || 0) +
+      (m.displayValue2?.length || 0) +
+      (m.projected1?.length || 0) +
+      (m.projected2?.length || 0) +
+      (m.record1?.length || 0) +
+      (m.record2?.length || 0);
 
     const maxContentLength = matchups.reduce(
       (max, m) => Math.max(max, getCardContentLength(m)),
       0
     );
-
-    // Set a base width and add extra width per character over a threshold
     const baseWidth = 300;
     const widthPerChar = 8;
     const cardWidth = baseWidth + Math.max(0, maxContentLength - 20) * widthPerChar;
-
-    // Repeat the matchups array to fill the marquee and avoid flashing
     const repeatedMatchups = [...matchups, ...matchups, ...matchups];
 
     return (
@@ -380,256 +579,26 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           {repeatedMatchups.map((m, idx) => (
             <div
               key={`${m.team1}-${m.team2}-${idx}`}
-              style={{
-                background: "#23252b",
-                borderRadius: 16,
-                margin: "24px 20px",
-                padding: "0",
-                boxShadow: "0 2px 12px 0 #000",
-                border: "2px solid #232323",
-                width: cardWidth,
-                minWidth: cardWidth,
-                maxWidth: cardWidth,
-                position: "relative",
-                overflow: "hidden",
-                display: "inline-block",
-                verticalAlign: "top",
-              }}
+              style={{ display: "inline-block", marginRight: 32 }}
             >
-              {/* Middle row: Avatars and scores (NO TEAM NAMES) */}
-              <div
+              <MatchupCard
+                m={m}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "22px 18px 0 18px",
-                  marginTop: 0,
-                  marginBottom: 8,
+                  width: cardWidth,
+                  minWidth: cardWidth,
+                  maxWidth: cardWidth,
+                  display: "inline-block",
+                  verticalAlign: "top",
                 }}
-              >
-                {/* Team 1 Avatar and Record */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <img
-                    src={m.avatar1}
-                    alt={m.team1}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "none",
-                      background: "#18191b",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "#a7a7a7",
-                      fontWeight: 600,
-                      marginTop: 2,
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {m.record1}
-                  </span>
-                </div>
-                {/* Team 1 Score */}
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 36,
-                    color:
-                      Number(m.displayValue1) > Number(m.displayValue2)
-                        ? "#22c55e"
-                        : Number(m.displayValue1) < Number(m.displayValue2)
-                            ? "#dc2626"
-                            : "#e5e7eb", // default color if tied
-                    minWidth: 60,
-                    textAlign: "right",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                  }}
-                >
-                  {m.displayValue1}
-                  {m.projected1 && (
-                    <span
-                      style={{
-                        fontWeight: 400,
-                        fontSize: 13,
-                        color: "#a7a7a7",
-                        marginTop: 2,
-                      }}
-                    >
-                      proj: {Number(m.projected1).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                {/* Divider */}
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 28,
-                    color: "#6b7280",
-                    margin: "0 4px",
-                  }}
-                >
-                  /
-                </div>
-                {/* Team 2 Score */}
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 36,
-                    color:
-                      Number(m.displayValue2) > Number(m.displayValue1)
-                        ? "#22c55e"
-                        : Number(m.displayValue2) < Number(m.displayValue1)
-                            ? "#dc2626"
-                            : "#e5e7eb", // default color if tied
-                    minWidth: 60,
-                    textAlign: "left",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  {m.displayValue2}
-                  {m.projected2 && (
-                    <span
-                      style={{
-                        fontWeight: 400,
-                        fontSize: 13,
-                        color: "#a7a7a7",
-                        marginTop: 2,
-                      }}
-                    >
-                      proj: {Number(m.projected2).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                {/* Team 2 Avatar and Record */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <img
-                    src={m.avatar2}
-                    alt={m.team2}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "none",
-                      background: "#18191b",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "#a7a7a7",
-                      fontWeight: 600,
-                      marginTop: 2,
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {m.record2}
-                  </span>
-                </div>
-              </div>
-              {/* Bottom row: Win % bar and numbers */}
-              <div
-                style={{
-                  background: "#23252b",
-                  padding: "0 0 0 0",
-                  marginTop: 8,
-                  marginBottom: 0,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    color: "#dc2626",
-                    padding: "0 22px",
-                  }}
-                >
-                  <span style={{ color: (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#22c55e" : "#dc2626" }}>{Math.round(m.winPct1 ?? 0)}%</span>
-                  <span
-                    style={{
-                      color: "#a7a7a7",
-                      fontWeight: 600,
-                      fontSize: 15,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    Win %
-                  </span>
-                  <span style={{ color: (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#22c55e" : "#dc2626" }}>{Math.round(m.winPct2 ?? 0)}%</span>
-                </div>
-                {/* Win % Bar */}
-                <div
-                  style={{
-                    position: "relative",
-                    height: 8,
-                    background: "#18191b",
-                    borderRadius: 8,
-                    margin: "10px 0 0 0",
-                  }}
-                >
-                  {/* Team 1 (left) */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      height: "100%",
-                      width: `${m.winPct1}%`,
-                      background:
-                        (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
-                      borderTopLeftRadius: 8,
-                      borderBottomLeftRadius: 8,
-                      transition: "width 0.4s",
-                    }}
-                  />
-                  {/* Team 2 (right) */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                      height: "100%",
-                      width: `${m.winPct2}%`,
-                      background:
-                        (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
-                      borderTopRightRadius: 8,
-                      borderBottomRightRadius: 8,
-                      transition: "width 0.4s",
-                    }}
-                  />
-                  {/* Divider marker */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${m.winPct1}%`,
-                      top: -1,
-                      height: "calc(100% + 2px)",
-                      width: 3,
-                      background: "#23252b",
-                      borderRadius: 2,
-                      zIndex: 2,
-                      transform: "translateX(-1.5px)",
-                    }}
-                  />
-                </div>
-              </div>
+              />
             </div>
           ))}
         </Marquee>
       </div>
     );
   }
+
+  const weekToShow = viewWeek !== null ? viewWeek : currentWeek;
 
   return (
     <div style={{ background: "#0f0f0f", minHeight: "100vh", color: "#fff" }}>
@@ -639,7 +608,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             All Matchups
           </h1>
           <div className="text-base text-emerald-400">
-            The Bok Choy League &bull; Week {currentWeek}
+            The Bok Choy League &bull; Week {weekToShow}
           </div>
         </header>
         <div
@@ -653,15 +622,15 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         >
           <button
             onClick={handlePrevWeek}
-            disabled={currentWeek <= 1}
+            disabled={weekToShow <= 1}
             style={{
               background: "none",
               border: "none",
               color: "#a7f3d0",
               fontSize: 28,
-              cursor: currentWeek > 1 ? "pointer" : "not-allowed",
+              cursor: weekToShow > 1 ? "pointer" : "not-allowed",
               marginRight: 12,
-              opacity: currentWeek > 1 ? 1 : 0.5,
+              opacity: weekToShow > 1 ? 1 : 0.5,
             }}
             aria-label="Previous Week"
           >
@@ -693,7 +662,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
               aria-haspopup="listbox"
               aria-expanded={weekDropdownOpen}
             >
-              Week {currentWeek}
+              Week {weekToShow}
             </span>
             {weekDropdownOpen && (
               <div
@@ -717,24 +686,19 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     key={w}
                     style={{
                       padding: "8px 18px",
-                      color: w === currentWeek ? "#22c55e" : "#fff",
-                      background: w === currentWeek ? "#166534" : "transparent",
-                      fontWeight: w === currentWeek ? 700 : 400,
+                      color: w === weekToShow ? "#22c55e" : "#fff",
+                      background: w === weekToShow ? "#166534" : "transparent",
+                      fontWeight: w === weekToShow ? 700 : 400,
                       fontSize: 17,
-                      cursor: w === currentWeek ? "default" : "pointer",
+                      cursor: w === weekToShow ? "default" : "pointer",
                       borderRadius: 8,
                       margin: "2px 4px",
                       transition: "background 0.15s",
                     }}
-                    onClick={() => {
-                      if (w !== currentWeek) {
-                        setWeekDropdownOpen(false);
-                        fetchMatchups(w);
-                      }
-                    }}
+                    onClick={() => handleWeekDropdown(w)}
                     tabIndex={0}
                     role="option"
-                    aria-selected={w === currentWeek}
+                    aria-selected={w === weekToShow}
                   >
                     Week {w}
                   </div>
@@ -744,15 +708,15 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           </div>
           <button
             onClick={handleNextWeek}
-            disabled={currentWeek >= maxWeek}
+            disabled={weekToShow >= maxWeek}
             style={{
               background: "none",
               border: "none",
               color: "#a7f3d0",
               fontSize: 28,
-              cursor: currentWeek < maxWeek ? "pointer" : "not-allowed",
+              cursor: weekToShow < maxWeek ? "pointer" : "not-allowed",
               marginLeft: 12,
-              opacity: currentWeek < maxWeek ? 1 : 0.5,
+              opacity: weekToShow < maxWeek ? 1 : 0.5,
             }}
             aria-label="Next Week"
           >
@@ -766,275 +730,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             Loading matchups...
           </div>
         ) : (
-          matchups.map((m, idx) => {
-            // Responsive: use window width or a media query hook for production
-            // For this example, use CSS classes for mobile/desktop
-            const win1 = Number(m.displayValue1) > Number(m.displayValue2);
-            const win2 = Number(m.displayValue2) > Number(m.displayValue1);
-
-            return (
-              <div
-                key={idx}
-                style={{
-                  background: "#23252b",
-                  borderRadius: 16,
-                  margin: "24px auto",
-                  padding: "0",
-                  boxShadow: "0 2px 12px 0 #000",
-                  border: "2px solid #232323",
-                  maxWidth: 540,
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Top row: Team names */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "22px 18px 0 18px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: 18,
-                      color: "#e5e7eb",
-                      textAlign: "left",
-                      flex: 1,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                      maxWidth: "48%",
-                    }}
-                  >
-                    {m.team1}
-                  </div>
-                  <div style={{ width: 18 }} />
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: 18,
-                      color: "#e5e7eb",
-                      textAlign: "right",
-                      flex: 1,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      minWidth: 0,
-                      maxWidth: "48%",
-                    }}
-                  >
-                    {m.team2}
-                  </div>
-                </div>
-                {/* Middle row: Avatars and scores */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0 18px 0 18px",
-                    marginTop: 10,
-                    marginBottom: 8,
-                  }}
-                >
-                  {/* Team 1 Avatar */}
-                  <img
-                    src={m.avatar1}
-                    alt={m.team1}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "none",
-                      background: "#18191b",
-                    }}
-                  />
-                  {/* Team 1 Score */}
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 36,
-                      color:
-                        Number(m.displayValue1) > Number(m.displayValue2)
-                          ? "#22c55e"
-                          : Number(m.displayValue1) < Number(m.displayValue2)
-                              ? "#dc2626"
-                              : "#e5e7eb",
-                      minWidth: 60,
-                      textAlign: "right",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                    }}
-                  >
-                    {m.displayValue1}
-                    {m.projected1 && (
-                      <span
-                        style={{
-                          fontWeight: 400,
-                          fontSize: 13,
-                          color: "#a7a7a7",
-                          marginTop: 2,
-                        }}
-                      >
-                        proj: {Number(m.projected1).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {/* Divider */}
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 28,
-                      color: "#6b7280",
-                      margin: "0 4px",
-                    }}
-                  >
-                    /
-                  </div>
-                  {/* Team 2 Score */}
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 36,
-                      color:
-                        Number(m.displayValue2) > Number(m.displayValue1)
-                          ? "#22c55e"
-                          : Number(m.displayValue2) < Number(m.displayValue1)
-                            ? "#dc2626"
-                            : "#e5e7eb", // default color if tied
-                      minWidth: 60,
-                      textAlign: "left",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    {m.displayValue2}
-                    {m.projected2 && (
-                      <span
-                        style={{
-                          fontWeight: 400,
-                          fontSize: 13,
-                          color: "#a7a7a7",
-                          marginTop: 2,
-                        }}
-                      >
-                        proj: {Number(m.projected2).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {/* Team 2 Avatar */}
-                  <img
-                    src={m.avatar2}
-                    alt={m.team2}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "none",
-                      background: "#18191b",
-                    }}
-                  />
-                </div>
-                {/* Bottom row: Win % bar and numbers */}
-                <div
-                  style={{
-                    background: "#23252b",
-                    padding: "0 0 0 0",
-                    marginTop: 8,
-                    marginBottom: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontWeight: 700,
-                      fontSize: 16,
-                      color: "#dc2626",
-                      padding: "0 22px",
-                    }}
-                  >
-                    <span style={{ color: (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#22c55e" : "#dc2626" }}>{Math.round(m.winPct1 ?? 0)}%</span>
-                    <span
-                      style={{
-                        color: "#a7a7a7",
-                        fontWeight: 600,
-                        fontSize: 15,
-                        letterSpacing: 1,
-                      }}
-                    >
-                      Win %
-                    </span>
-                    <span style={{ color: (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#22c55e" : "#dc2626" }}>{Math.round(m.winPct2 ?? 0)}%</span>
-                  </div>
-                  {/* Win % Bar */}
-                  <div
-                    style={{
-                      position: "relative",
-                      height: 8,
-                      background: "#18191b",
-                      borderRadius: 8,
-                      margin: "10px 0 0 0",
-                    }}
-                  >
-                    {/* Team 1 (left) */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        height: "100%",
-                        width: `${m.winPct1}%`,
-                        background:
-                          (m.winPct1 ?? 0) >= (m.winPct2 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
-                        borderTopLeftRadius: 8,
-                        borderBottomLeftRadius: 8,
-                        transition: "width 0.4s",
-                      }}
-                    />
-                    {/* Team 2 (right) */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: 0,
-                        top: 0,
-                        height: "100%",
-                        width: `${m.winPct2}%`,
-                        background:
-                          (m.winPct2 ?? 0) > (m.winPct1 ?? 0) ? "#6f49e0ff" : "#8b96f1ff", // Darker purple for higher percentage
-                        borderTopRightRadius: 8,
-                        borderBottomRightRadius: 8,
-                        transition: "width 0.4s",
-                      }}
-                    />
-                    {/* Divider marker */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: `${m.winPct1}%`,
-                        top: -1,
-                        height: "calc(100% + 2px)",
-                        width: 3,
-                        background: "#23252b",
-                        borderRadius: 2,
-                        zIndex: 2,
-                        transform: "translateX(-1.5px)",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          matchups.map((m, idx) => <MatchupCard key={idx} m={m} showNames />)
         )}
       </div>
     </div>

@@ -44,7 +44,11 @@ interface MatchupsViewerProps {
 
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
-  const [currentWeek, setCurrentWeek] = useState<number>(1);
+  const [currentWeek, setCurrentWeek] = useState<number>(() => {
+    // Initialize currentWeek from localStorage or default to 1
+    const savedWeek = localStorage.getItem("currentWeek");
+    return savedWeek ? Number(savedWeek) : 1;
+  });
   const [maxWeek, setMaxWeek] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
@@ -53,6 +57,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [initialLoad, setInitialLoad] = useState(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Save the currentWeek to localStorage whenever it changes
+    localStorage.setItem("currentWeek", String(currentWeek));
+  }, [currentWeek]);
 
   // Helper for EST Wednesday 10am
   function isAfterWednesday10amEST() {
@@ -300,10 +309,20 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
   // Week navigation
   const handlePrevWeek = () => {
-    if (currentWeek > 1) fetchMatchups(currentWeek - 1);
+    if (currentWeek > 1) {
+      const newWeek = currentWeek - 1;
+      setCurrentWeek(newWeek);
+      localStorage.setItem("currentWeek", String(newWeek)); // Save the updated week
+      fetchMatchups(newWeek);
+    }
   };
   const handleNextWeek = () => {
-    if (currentWeek < maxWeek) fetchMatchups(currentWeek + 1);
+    if (currentWeek < maxWeek) {
+      const newWeek = currentWeek + 1;
+      setCurrentWeek(newWeek);
+      localStorage.setItem("currentWeek", String(newWeek)); // Save the updated week
+      fetchMatchups(newWeek);
+    }
   };
 
   // Close dropdown on outside click

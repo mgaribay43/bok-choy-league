@@ -14,17 +14,17 @@ function isNFLGameWindow() {
   const easternHour = easternTime.getHours();
   const day = easternTime.getDay(); // 0=Sunday, 1=Monday, ..., 4=Thursday, 6=Saturday
 
-  // Thursday Night: Thursday 8pm–11:59pm (day 4, 20–23) and Friday 12am–1am (day 5, 0–1)
+  // Thursday Night: Thursday 8pm–11:59pm (day 4, 20–23) and Friday 12am (day 5, 0)
   if ((day === 4 && easternHour >= 20 && easternHour <= 23) ||
-      (day === 5 && easternHour >= 0 && easternHour <= 1)) return true;
+      (day === 5 && easternHour === 0)) return true;
 
-  // Sunday: Sunday 1pm–11:59pm (day 0, 13–23) and Monday 12am–1am (day 1, 0–1)
+  // Sunday: Sunday 1pm–11:59pm (day 0, 13–23) and Monday 12am (day 1, 0)
   if ((day === 0 && easternHour >= 13 && easternHour <= 23) ||
-      (day === 1 && easternHour >= 0 && easternHour <= 1)) return true;
+      (day === 1 && easternHour === 0)) return true;
 
-  // Monday Night: Monday 8pm–11:59pm (day 1, 20–23) and Tuesday 12am–1am (day 2, 0–1)
+  // Monday Night: Monday 8pm–11:59pm (day 1, 20–23) and Tuesday 12am (day 2, 0)
   if ((day === 1 && easternHour >= 20 && easternHour <= 23) ||
-      (day === 2 && easternHour >= 0 && easternHour <= 1)) return true;
+      (day === 2 && easternHour === 0)) return true;
 
   return false;
 }

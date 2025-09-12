@@ -125,9 +125,16 @@ export const pollWinProbabilities = onSchedule(
         }
       } catch {}
 
-      // Always store points regardless of matchup status (since week is midevent)
+      // Format the current time in EST
       const now = new Date();
-      const timeLabel = now.toLocaleTimeString();
+      const timeLabel = now.toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+      // Always store points regardless of matchup status (since week is midevent)
       const newPoints = [...prevPoints, { time: timeLabel, team1Pct, team2Pct }];
       await matchupDocRef.set(
         {

@@ -6,10 +6,13 @@ import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 // Helper: Returns true if now is likely during NFL games (Eastern Time)
 function isNFLGameWindow() {
   const now = new Date();
-  const utcHour = now.getUTCHours();
-  // Eastern is UTC-4 during DST, UTC-5 otherwise. We'll use UTC-4 for NFL season.
-  const easternHour = (utcHour - 4 + 24) % 24;
-  const day = now.getUTCDay(); // 0=Sunday, 1=Monday, ..., 4=Thursday, 6=Saturday
+
+  // Get Eastern Time dynamically using Intl.DateTimeFormat
+  const easternTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" })
+  );
+  const easternHour = easternTime.getHours();
+  const day = easternTime.getDay(); // 0=Sunday, 1=Monday, ..., 4=Thursday, 6=Saturday
 
   // Thursday Night: Thursday 8pm–11:59pm (day 4, 20–23) and Friday 12am–1am (day 5, 0–1)
   if ((day === 4 && easternHour >= 20 && easternHour <= 23) ||
@@ -28,7 +31,7 @@ function isNFLGameWindow() {
 
 export const pollWinProbabilities = onSchedule(
   {
-    schedule: "every 1 minutes",
+    schedule: "every 5 minutes", // Change polling interval to every 5 minutes
     region: "us-central1",
     timeoutSeconds: 60,
     memory: "256MiB",

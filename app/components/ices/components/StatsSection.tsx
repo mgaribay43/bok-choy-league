@@ -419,7 +419,7 @@ export default function StatsSection({
           {/* Longest Active No Ice Streak Card */}
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
             <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
-              Longest Active No Ice Streak
+              Longest No Ice Streak (Active)
             </h3>
             <div className="space-y-2">
               {(longestActiveNoIceStreak ?? []).map((rec: any, index: number) => (
@@ -448,7 +448,7 @@ export default function StatsSection({
           {/* Longest All-Time No Ice Streaks Card */}
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
             <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
-              Longest All-Time No Ice Streaks
+              Longest No Ice Streaks (All-Time)
             </h3>
             <div className="space-y-2">
               {(longestAllTimeNoIceStreaks ?? []).map((rec: any, index: number) => (

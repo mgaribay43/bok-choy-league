@@ -49,6 +49,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
         player: "",
         week: "",
         year: year,
+        penalty24: false, // NEW
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -85,6 +86,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
             player: "",
             week: "",
             year: year,
+            penalty24: false, // NEW
         });
         const fetchEntries = async () => {
             try {
@@ -129,6 +131,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                 player: ice.player || "",
                 week: ice.week || "",
                 year,
+                penalty24: !!ice["24_hr_penalty"], // NEW
             });
             setMessage("");
         }
@@ -154,7 +157,16 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                         entry.date === selDate
                 );
                 if (idx !== -1) {
-                    entriesArr[idx] = { ...form };
+                    // Build clean entry (do not store year in entry)
+                    entriesArr[idx] = {
+                        date: form.date,
+                        flavor: form.flavor,
+                        id: form.id,
+                        manager: form.manager,
+                        player: form.player,
+                        week: form.week,
+                        "24_hr_penalty": !!form.penalty24, // NEW
+                    };
                     await updateDoc(docRef, { entries: entriesArr });
                     setMessage("Ice entry updated!");
                     onClose();
@@ -314,7 +326,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 name="week"
                                 value={form.week}
                                 onChange={e => setForm({ ...form, week: e.target.value })}
-                                className="w-full px-4 py-2 mb-6 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 mb-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
                                 disabled={loading || !selectedId}
                                 required
                             >
@@ -326,6 +338,22 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 ))}
                             </select>
                         </div>
+
+                        {/* NEW: 24-hour penalty checkbox */}
+                        <div className="flex items-center gap-3">
+                            <input
+                                id="penalty24-edit"
+                                type="checkbox"
+                                className="h-5 w-5 rounded border-slate-500 text-emerald-500 focus:ring-emerald-500"
+                                checked={!!form.penalty24}
+                                onChange={e => setForm({ ...form, penalty24: e.target.checked })}
+                                disabled={loading || !selectedId}
+                            />
+                            <label htmlFor="penalty24-edit" className="text-emerald-300 font-medium">
+                                24-hour penalty ice
+                            </label>
+                        </div>
+
                         {message && <div className="text-red-400 mt-2">{message}</div>}
                     </form>
                 </div>
@@ -376,6 +404,7 @@ export default function AddIces() {
         player: "",
         week: "",
         year: new Date().getFullYear().toString(),
+        penalty24: false, // NEW
     });
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
@@ -429,6 +458,7 @@ export default function AddIces() {
             player: "",
             week: "",
             year: new Date().getFullYear().toString(),
+            penalty24: false, // NEW
         });
         setMessage(""); // Clear message when closing
     };
@@ -438,7 +468,7 @@ export default function AddIces() {
         setSubmitting(true);
         setMessage("");
 
-        const { date, flavor, id, manager, player, week, year } = form;
+        const { date, flavor, id, manager, player, week, year, penalty24 } = form;
         if (!date || !flavor || !manager || !player || !week || !year) {
             setMessage("Please fill out all fields.");
             setSubmitting(false);
@@ -449,7 +479,15 @@ export default function AddIces() {
             const db = getFirestore();
             const docRef = doc(db, "Ices", year);
             await updateDoc(docRef, {
-                entries: arrayUnion({ date, flavor, id, manager, player, week }),
+                entries: arrayUnion({
+                    date,
+                    flavor,
+                    id,
+                    manager,
+                    player,
+                    week,
+                    "24_hr_penalty": !!penalty24, // NEW
+                }),
             });
             setMessage("Ice entry added!");
             handleClose();
@@ -580,7 +618,7 @@ export default function AddIces() {
                                         name="week"
                                         value={form.week}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 mb-6 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        className="w-full px-4 py-2 mb-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         disabled={submitting}
                                         required
                                     >
@@ -592,6 +630,22 @@ export default function AddIces() {
                                         ))}
                                     </select>
                                 </div>
+
+                                {/* NEW: 24-hour penalty checkbox */}
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        id="penalty24-add"
+                                        type="checkbox"
+                                        className="h-5 w-5 rounded border-slate-500 text-emerald-500 focus:ring-emerald-500"
+                                        checked={!!form.penalty24}
+                                        onChange={e => setForm({ ...form, penalty24: e.target.checked })}
+                                        disabled={submitting}
+                                    />
+                                    <label htmlFor="penalty24-add" className="text-emerald-300 font-medium">
+                                        24-hour penalty ice
+                                    </label>
+                                </div>
+
                                 {message && <div className="text-red-400 mt-2">{message}</div>}
                             </form>
                         </div>

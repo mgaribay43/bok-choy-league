@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import Marquee from "react-fast-marquee";
 import { useRouter } from "next/navigation";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
+import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 
 interface Matchup {
   team1: string;
@@ -26,6 +28,55 @@ const getAvatar = (teamName: string) =>
   TEAM_AVATARS[teamName] ||
   "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
+// Auto-shrink text to fit one line without truncation
+const AutoFitText: React.FC<{
+  text: string;
+  max: number; // max font size in px
+  min: number; // min font size in px
+  weight?: number;
+  color?: string;
+  align?: "left" | "right" | "center";
+}> = ({ text, max, min, weight = 600, color = "#e5e7eb", align = "left" }) => {
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState(max);
+
+  useEffect(() => {
+    const el = spanRef.current;
+    const parent = containerRef.current;
+    if (!el || !parent) return;
+    let s = max;
+    el.style.fontSize = `${s}px`;
+    el.style.whiteSpace = "nowrap";
+
+    // Shrink until it fits or we hit min
+    while (s > min && el.scrollWidth > parent.clientWidth) {
+      s -= 1;
+      el.style.fontSize = `${s}px`;
+    }
+    setSize(s);
+  }, [text, max, min]);
+
+  return (
+    <div ref={containerRef} style={{ width: "100%", minWidth: 0 }}>
+      <span
+        ref={spanRef}
+        style={{
+          display: "block",
+          fontWeight: weight,
+          fontSize: size,
+          color,
+          lineHeight: 1.1,
+          whiteSpace: "nowrap",
+          textAlign: align,
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+};
+
 const ScoreBox = ({
   value,
   projected,
@@ -40,18 +91,19 @@ const ScoreBox = ({
   <div
     style={{
       fontWeight: 800,
-      fontSize: 36,
+      fontSize: "clamp(20px, 6.5vw, 36px)", // responsive, smaller on narrow screens
       color:
         highlight === "win"
           ? "#22c55e"
           : highlight === "lose"
           ? "#dc2626"
           : "#e5e7eb",
-      minWidth: 60,
+      minWidth: "clamp(52px, 16vw, 84px)", // reserve width for scores
       textAlign: align,
       display: "flex",
       flexDirection: "column",
       alignItems: align === "right" ? "flex-end" : "flex-start",
+      lineHeight: 1.05,
     }}
   >
     {value}
@@ -59,9 +111,10 @@ const ScoreBox = ({
       <span
         style={{
           fontWeight: 400,
-          fontSize: 13,
+          fontSize: "clamp(11px, 3.2vw, 13px)",
           color: "#a7a7a7",
           marginTop: 2,
+          whiteSpace: "nowrap",
         }}
       >
         proj: {Number(projected).toFixed(2)}
@@ -70,6 +123,7 @@ const ScoreBox = ({
   </div>
 );
 
+// Records: remove parentheses and force one line
 const AvatarBox = ({
   src,
   alt,
@@ -78,33 +132,38 @@ const AvatarBox = ({
   src?: string;
   alt: string;
   record: string;
-}) => (
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-    <img
-      src={src}
-      alt={alt}
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: "50%",
-        objectFit: "cover",
-        border: "none",
-        background: "#18191b",
-      }}
-    />
-    <span
-      style={{
-        fontSize: 13,
-        color: "#a7a7a7",
-        fontWeight: 600,
-        marginTop: 2,
-        letterSpacing: 0.5,
-      }}
-    >
-      {record}
-    </span>
-  </div>
-);
+}) => {
+  const cleanRecord = (record || "").replace(/[()]/g, ""); // no parentheses
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          objectFit: "cover",
+          border: "none",
+          background: "#18191b",
+        }}
+      />
+      <span
+        style={{
+          fontSize: 13,
+          color: "#a7a7a7",
+          fontWeight: 600,
+          marginTop: 2,
+          letterSpacing: 0.5,
+          whiteSpace: "nowrap",         // always one line
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {cleanRecord}
+      </span>
+    </div>
+  );
+};
 
 const WinBar = ({
   pct1,
@@ -186,17 +245,26 @@ const WinBar = ({
   </div>
 );
 
+type MatchupCardProps = {
+  m: Matchup;
+  showNames?: boolean;
+  style?: React.CSSProperties;
+  onOpenChart?: (m: Matchup) => void;
+  hasChart?: boolean;
+  showChartIcon?: boolean; // NEW
+};
+
 const MatchupCard = ({
   m,
   showNames = false,
   style = {},
-}: {
-  m: Matchup;
-  showNames?: boolean;
-  style?: React.CSSProperties;
-}) => {
+  onOpenChart,
+  hasChart = true,
+  showChartIcon = true, // NEW (default shows icon)
+}: MatchupCardProps) => {
   const win1 = Number(m.displayValue1) > Number(m.displayValue2);
   const win2 = Number(m.displayValue2) > Number(m.displayValue1);
+
   return (
     <div
       style={{
@@ -212,58 +280,78 @@ const MatchupCard = ({
         ...style,
       }}
     >
+      {/* Top bar: chart icon ABOVE team names (hidden on marquee) */}
+      {showChartIcon && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            padding: "10px 10px 0 10px",
+            pointerEvents: "none",
+          }}
+        >
+          <button
+            onClick={() => hasChart && onOpenChart?.(m)}
+            aria-label={hasChart ? "Open win probability chart" : "No chart data yet"}
+            title={hasChart ? "Open win probability chart" : "No chart data yet"}
+            disabled={!hasChart}
+            style={{
+              background: "#0f1117",
+              border: "1px solid #3a3d45",
+              color: hasChart ? "#e5e7eb" : "#6b7280",
+              borderRadius: 10,
+              padding: "8px 10px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: hasChart ? "pointer" : "not-allowed",
+              pointerEvents: "auto",
+              opacity: hasChart ? 1 : 0.45,
+            }}
+          >
+            {/* icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 3v18h18" />
+              <path d="M19 9l-5 5-4-4-4 4" />
+              <circle cx="19" cy="9" r="1.5" />
+              <circle cx="14" cy="14" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="6" cy="14" r="1.5" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {showNames && (
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            padding: "22px 18px 0 18px",
+            alignItems: "flex-start",
+            padding: "10px 18px 0 18px", // full width; no right reserve needed
+            gap: 8,
           }}
         >
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 18,
-              color: "#e5e7eb",
-              textAlign: "left",
-              flex: 1,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              minWidth: 0,
-              maxWidth: "48%",
-            }}
-          >
-            {m.team1}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
           </div>
-          <div style={{ width: 18 }} />
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 18,
-              color: "#e5e7eb",
-              textAlign: "right",
-              flex: 1,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              minWidth: 0,
-              maxWidth: "48%",
-            }}
-          >
-            {m.team2}
+          <div style={{ width: 12 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
           </div>
         </div>
       )}
+
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: showNames ? "0 18px 0 18px" : "22px 18px 0 18px",
-          marginTop: showNames ? 10 : 0,
+          padding: showNames ? "4px 18px 0 18px" : "18px 18px 0 18px", // no right reserve
+          marginTop: showNames ? 6 : 0,
           marginBottom: 8,
+          gap: 8,
         }}
       >
         <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
@@ -273,7 +361,7 @@ const MatchupCard = ({
           highlight={win1 ? "win" : win2 ? "lose" : "tie"}
           align="right"
         />
-        <div style={{ fontWeight: 700, fontSize: 28, color: "#6b7280", margin: "0 4px" }}>/</div>
+        <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>/</div>
         <ScoreBox
           value={m.displayValue2}
           projected={m.projected2}
@@ -282,6 +370,7 @@ const MatchupCard = ({
         />
         <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
       </div>
+
       <WinBar pct1={m.winPct1} pct2={m.winPct2} />
     </div>
   );
@@ -299,6 +388,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
   const [viewWeek, setViewWeek] = useState<number | null>(null);
+  const [chartOpen, setChartOpen] = useState(false);
+  const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
+  const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -555,6 +647,38 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     }
   }, [weekDropdownOpen, viewWeek]);
 
+  // Normalize a matchup key (order-independent)
+  const pairKey = (a: string, b: string) =>
+    [a?.toLowerCase().trim(), b?.toLowerCase().trim()].sort().join(" | ");
+
+  // Fetch which matchups have WinProbabilities in Firestore for the current season/week
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const db = getFirestore();
+        const snap = await getDocs(collection(db, "WinProbabilities"));
+        const seasonYear = String(new Date().getFullYear());
+        const set = new Set<string>();
+        snap.forEach((docSnap) => {
+          const d: any = docSnap.data();
+          // Guard against missing fields
+          const hasPoints = Array.isArray(d.points) && d.points.length > 0;
+          const wk = Number(d.week);
+          const seasonOk = String(d.season) === seasonYear;
+          if (!seasonOk || wk !== (viewWeek !== null ? viewWeek : currentWeek) || !hasPoints) return;
+          const t1 = d.team1?.name ?? d.team1;
+          const t2 = d.team2?.name ?? d.team2;
+          if (t1 && t2) set.add(pairKey(t1, t2));
+        });
+        setWpAvailableKeys(set);
+      } catch {
+        setWpAvailableKeys(new Set());
+      }
+    };
+    fetchAvailability();
+    // eslint-disable-next-line
+  }, [currentWeek, viewWeek]);
+
   if (useMarquee) {
     const getCardContentLength = (m: Matchup) =>
       (m.displayValue1?.length || 0) +
@@ -585,23 +709,27 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         }}
       >
         <Marquee gradient={false} speed={60} pauseOnHover pauseOnClick>
-          {repeatedMatchups.map((m, idx) => (
-            <div
-              key={`${m.team1}-${m.team2}-${idx}`}
-              style={{ display: "inline-block", marginRight: 32 }}
-            >
-              <MatchupCard
-                m={m}
-                style={{
-                  width: cardWidth,
-                  minWidth: cardWidth,
-                  maxWidth: cardWidth,
-                  display: "inline-block",
-                  verticalAlign: "top",
-                }}
-              />
-            </div>
-          ))}
+          {repeatedMatchups.map((m, idx) => {
+            const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
+            return (
+              <div key={`${m.team1}-${m.team2}-${idx}`} style={{ display: "inline-block", marginRight: 32 }}>
+                <MatchupCard
+                  m={m}
+                  style={{ width: cardWidth, minWidth: cardWidth, maxWidth: cardWidth, display: "inline-block", verticalAlign: "top" }}
+                  hasChart={hasChart}
+                  showChartIcon={false} // HIDE icon on marquee cards
+                  onOpenChart={(mm) => {
+                    if (!hasChart) return;
+                    setChartSel({
+                      team1: { name: mm.team1, logo: getAvatar(mm.team1) },
+                      team2: { name: mm.team2, logo: getAvatar(mm.team2) },
+                    });
+                    setChartOpen(true);
+                  }}
+                />
+              </div>
+            );
+          })}
         </Marquee>
       </div>
     );
@@ -739,9 +867,36 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             Loading matchups...
           </div>
         ) : (
-          matchups.map((m, idx) => <MatchupCard key={idx} m={m} showNames />)
+          matchups.map((m, idx) => {
+            const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
+            return (
+              <MatchupCard
+                key={idx}
+                m={m}
+                showNames
+                hasChart={hasChart}
+                onOpenChart={(mm) => {
+                  if (!hasChart) return;
+                  setChartSel({
+                    team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
+                    team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
+                  });
+                  setChartOpen(true);
+                }}
+              />
+            );
+          })
         )}
       </div>
+      {chartOpen && chartSel && (
+        <WinProbChartModal
+          isOpen={chartOpen}
+          onClose={() => setChartOpen(false)}
+          selected={chartSel}
+          season={String(new Date().getFullYear())}
+          week={weekToShow}
+        />
+      )}
     </div>
   );
 };

@@ -3,44 +3,39 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
-// Helper: Returns true if now is likely during NFL games (Eastern Time)
-function isNFLGameWindow() {
-  const now = new Date();
+// Helper: Returns true if an NFL game is live using TheSportsDB
+async function isNFLGameLive_TheSportsDB() {
+  const API_KEY = "123";
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const url = `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsday.php?d=${today}&s=American%20Football`;
 
-  // Get Eastern Time dynamically using Intl.DateTimeFormat
-  const easternTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/New_York" })
-  );
-  const easternHour = easternTime.getHours();
-  const day = easternTime.getDay(); // 0=Sunday, 1=Monday, ..., 4=Thursday, 6=Saturday
-
-  // Thursday Night: Thursday 8pm–11:59pm (day 4, 20–23) and Friday 12am (day 5, 0)
-  if ((day === 4 && easternHour >= 20 && easternHour <= 23) ||
-      (day === 5 && easternHour === 0)) return true;
-
-  // Sunday: Sunday 1pm–11:59pm (day 0, 13–23) and Monday 12am (day 1, 0)
-  if ((day === 0 && easternHour >= 13 && easternHour <= 23) ||
-      (day === 1 && easternHour === 0)) return true;
-
-  // Monday Night: Monday 8pm–11:59pm (day 1, 20–23) and Tuesday 12am (day 2, 0)
-  if ((day === 1 && easternHour >= 20 && easternHour <= 23) ||
-      (day === 2 && easternHour === 0)) return true;
-
-  return false;
+  try {
+    const res = await fetch(url);
+    const data: any = await res.json();
+    // TheSportsDB marks live games with strStatus === "Live"
+    const liveGames = (data.events || []).filter(
+      (event: any) => event.strStatus === "Live"
+    );
+    return liveGames.length > 0;
+  } catch (err) {
+    console.error("Error checking NFL live status:", err);
+    return false;
+  }
 }
 
 export const pollWinProbabilities = onSchedule(
   {
-    schedule: "every 5 minutes", // Change polling interval to every 5 minutes
+    schedule: "every 5 minutes",
     region: "us-central1",
     timeoutSeconds: 60,
     memory: "256MiB",
     invoker: "public",
   },
   async (event: ScheduledEvent) => {
-    // Only poll if it's likely during NFL games
-    if (!isNFLGameWindow()) {
-      console.log("Not during NFL game window, skipping polling.");
+    // Only poll if an NFL game is live according to TheSportsDB
+    const isLive = await isNFLGameLive_TheSportsDB();
+    if (!isLive) {
+      console.log("No NFL games are live according to TheSportsDB, skipping polling.");
       return;
     }
 
@@ -125,13 +120,15 @@ export const pollWinProbabilities = onSchedule(
         }
       } catch {}
 
-      // Format the current time in EST
+      // Format the current time in EST with single-digit hour if needed
       const now = new Date();
       const timeLabel = now.toLocaleString("en-US", {
         timeZone: "America/New_York",
-        hour: "2-digit",
+        weekday: "short",
+        hour: "numeric",
         minute: "2-digit",
         second: "2-digit",
+        hour12: true,
       });
 
       // Always store points regardless of matchup status (since week is midevent)

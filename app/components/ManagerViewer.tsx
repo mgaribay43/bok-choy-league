@@ -20,10 +20,10 @@ import {
 } from "chart.js";
 import { getDisplayManagerName } from "./globalUtils/getManagerNames";
 import { getCurrentSeason } from "./globalUtils/getCurrentSeason";
-
-// --- Firestore imports ---
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase"; // <-- update path if needed
+// NEW: needed for active no-ice streak
+import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 
 if (typeof window !== "undefined") {
   ReactModal.setAppElement(document.body);
@@ -265,6 +265,14 @@ export default function ManagerViewer() {
       const displayName = getDisplayManagerName(managerName);
 
       try {
+        // get current week for active streak calculation
+        let curWeek = 17;
+        try {
+          curWeek = await getCurrentWeek(currentSeason);
+        } catch {
+          curWeek = 17;
+        }
+
         const snap = await getDocs(collection(db, "Ices"));
         type Cnt = Record<string, number>;
 
@@ -299,8 +307,8 @@ export default function ManagerViewer() {
               weekMgrCnt[key] ||= {};
               weekMgrCnt[key][mgr] = (weekMgrCnt[key][mgr] || 0) + playersInEntry;
 
-              // Track week numbers for consecutive calculations
-              const wNum = parseInt(weekStr, 10);
+              // FIX: parse "Week X" correctly
+              const wNum = parseInt(weekStr.replace(/[^\d]/g, ""), 10);
               if (!isNaN(wNum)) {
                 mgrSeasonWeeks[mgr] ||= {};
                 mgrSeasonWeeks[mgr][season] ||= new Set<number>();
@@ -407,6 +415,120 @@ export default function ManagerViewer() {
           }
         }
 
+        // 7) Longest Active No Ice Streak (ends at last included week)
+        // Build season/weeks timeline up to last included week
+        const seasonsAsc = Object.keys(seasonMgrCnt).sort();
+        let lastSeason = currentSeason;
+        let lastWeekNum = curWeek > 1 ? curWeek - 1 : 17;
+        if (curWeek === 1) {
+          const idx = seasonsAsc.indexOf(currentSeason);
+          if (idx > 0) lastSeason = seasonsAsc[idx - 1];
+          else lastSeason = seasonsAsc[seasonsAsc.length - 1] || currentSeason;
+          lastWeekNum = 17;
+        }
+        const allSeasonWeeks: { season: string; weekNum: number }[] = [];
+        seasonsAsc.forEach(season => {
+          if (season < lastSeason) {
+            for (let w = 1; w <= 17; w++) allSeasonWeeks.push({ season, weekNum: w });
+          } else if (season === lastSeason) {
+            for (let w = 1; w <= lastWeekNum; w++) allSeasonWeeks.push({ season, weekNum: w });
+          }
+        });
+
+        // Build iced weeks set per manager from weekMgrCnt
+        const icedWeeksByManager: Record<string, Set<string>> = {};
+        const allMgrs = new Set<string>(Object.keys(totalByMgr));
+        for (const [key, m] of Object.entries(weekMgrCnt)) {
+          const [season, weekStr] = key.split("|");
+          const wNum = parseInt(weekStr.replace(/[^\d]/g, ""), 10);
+          if (!wNum || wNum < 1 || wNum > 17) continue;
+          for (const [mgr, cnt] of Object.entries(m)) {
+            if (cnt > 0) {
+              allMgrs.add(mgr);
+              icedWeeksByManager[mgr] ||= new Set();
+              icedWeeksByManager[mgr].add(`${season}|${wNum}`);
+            }
+          }
+        }
+
+        let bestActive = 0;
+        let bestActiveOwners: { mgr: string; start: { season: string; weekNum: number }, end: { season: string; weekNum: number } }[] = [];
+        for (const mgr of allMgrs) {
+          let cur = 0;
+          let s: { season: string; weekNum: number } | null = null;
+          let e: { season: string; weekNum: number } | null = null;
+          for (const sw of allSeasonWeeks) {
+            const key = `${sw.season}|${sw.weekNum}`;
+            const iced = icedWeeksByManager[mgr]?.has(key);
+            if (!iced) {
+              if (cur === 0) s = sw;
+              cur++;
+              e = sw;
+            } else {
+              cur = 0; s = null; e = null;
+            }
+          }
+          // active streak must end at the last included week
+          if (
+            cur > 0 &&
+            e &&
+            ((e.season === lastSeason && e.weekNum === lastWeekNum))
+          ) {
+            if (cur > bestActive) {
+              bestActive = cur;
+              bestActiveOwners = [{ mgr, start: s!, end: e }];
+            } else if (cur === bestActive) {
+              bestActiveOwners.push({ mgr, start: s!, end: e });
+            }
+          }
+        }
+
+        // NEW: Longest No Ice Streak (All-Time)
+        // Build timeline through all seasons up to current week for the latest season
+        const allTimeSeasonsAsc = Object.keys(seasonMgrCnt).sort();
+        const latestSeason = allTimeSeasonsAsc[allTimeSeasonsAsc.length - 1] || currentSeason;
+        const allTimeSeasonWeeks: { season: string; weekNum: number }[] = [];
+        allTimeSeasonsAsc.forEach(season => {
+          const maxWeek = season === latestSeason ? curWeek : 17;
+          for (let w = 1; w <= maxWeek; w++) allTimeSeasonWeeks.push({ season, weekNum: w });
+        });
+
+        // icedWeeksByManager already built above for active; reuse it. If not present, build minimal default.
+        // Compute longest all-time per manager
+        let bestAllTime = 0;
+        let bestAllTimeOwners: { mgr: string; start: { season: string; weekNum: number }, end: { season: string; weekNum: number } }[] = [];
+        const allManagersSet = new Set<string>(Object.keys(totalByMgr));
+        for (const mgr of allManagersSet) {
+          let maxStreak = 0, cur = 0;
+          let s: { season: string; weekNum: number } | null = null;
+          let e: { season: string; weekNum: number } | null = null;
+          let bestS: { season: string; weekNum: number } | null = null;
+          let bestE: { season: string; weekNum: number } | null = null;
+
+          for (const sw of allTimeSeasonWeeks) {
+            const key = `${sw.season}|${sw.weekNum}`;
+            const iced = icedWeeksByManager[mgr]?.has(key);
+            if (!iced) {
+              if (cur === 0) s = sw;
+              cur++; e = sw;
+              if (cur > maxStreak) {
+                maxStreak = cur; bestS = s; bestE = e;
+              }
+            } else {
+              cur = 0; s = null; e = null;
+            }
+          }
+
+          if (maxStreak > 0 && bestS && bestE) {
+            if (maxStreak > bestAllTime) {
+              bestAllTime = maxStreak;
+              bestAllTimeOwners = [{ mgr, start: bestS, end: bestE }];
+            } else if (maxStreak === bestAllTime) {
+              bestAllTimeOwners.push({ mgr, start: bestS, end: bestE });
+            }
+          }
+        }
+
         // Collect records owned by this manager (ties included)
         const owned: string[] = [];
 
@@ -429,13 +551,31 @@ export default function ManagerViewer() {
           .filter(o => o.mgr === displayName && bestStreak > 1)
           .forEach(o => owned.push(`Most Consecutive Weeks • ${bestStreak} (Week ${o.start}–${o.end}, ${o.season})`));
 
+        // NEW: Longest Active No Ice Streak
+        bestActiveOwners
+          .filter(o => o.mgr === displayName && bestActive > 0)
+          .forEach(o => {
+            const startLabel = `Week ${o.start.weekNum} ${o.start.season}`;
+            const endLabel = `Week ${o.end.weekNum}, ${o.end.season}`;
+            owned.push(`Longest Active No Ice Streak • ${bestActive} (${startLabel}–${endLabel})`);
+          });
+
+        // NEW: Longest No Ice Streak (All-Time)
+        bestAllTimeOwners
+          .filter(o => o.mgr === displayName && bestAllTime > 0)
+          .forEach(o => {
+            const startLabel = `Week ${o.start.weekNum} ${o.start.season}`;
+            const endLabel = `Week ${o.end.weekNum}, ${o.end.season}`;
+            owned.push(`Longest No Ice Streak (All-Time) • ${bestAllTime} (${startLabel}–${endLabel})`);
+          });
+
         if (alive) setRecordsHeld(Array.from(new Set(owned)));
       } catch {
         if (alive) setRecordsHeld([]);
       }
     })();
     return () => { alive = false; };
-  }, [managerName]);
+  }, [managerName, currentSeason]);
 
   useEffect(() => {
     async function fetchDraftTimes() {

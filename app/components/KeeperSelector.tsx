@@ -5,6 +5,8 @@ import Image from "next/image";
 import yahooDefImagesJson from "../data/yahooDefImages.json";
 import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
 import dynamic from "next/dynamic";
+import { getCurrentSeason } from "./globalUtils/getCurrentSeason";
+import { isPostdraft } from "./globalUtils/getDraftStatus";
 const PlayerViewer = dynamic(() => import("./PlayerViewer"), { ssr: false });
 
 type KeeperYearData = { Teams: { TeamID: string; keeper: string; }[] };
@@ -39,9 +41,9 @@ interface Team {
 const yahooDefImages: Record<string, { hash: string; img: string; folder?: string; pxFolder?: string }> = yahooDefImagesJson;
 
 export default function KeepersPage() {
-  const currentYear = String(new Date().getFullYear());
-  const availableYears = ["2025", "2024"]; // More recent years first
-  const [selectedYear, setSelectedYear] = useState<string>(currentYear);
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>(""); // start empty to avoid flash
+  const [yearsLoading, setYearsLoading] = useState(true);       // NEW
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,38 @@ export default function KeepersPage() {
     fetchKeepersFromFirestore();
   }, []);
 
+  // Build the season list using current season + draft status (show next season if postdraft)
   useEffect(() => {
+    async function buildYears() {
+      setYearsLoading(true);
+      try {
+        const currentSeasonStr = await getCurrentSeason();
+        const currentSeason = Number(currentSeasonStr) || new Date().getFullYear();
+        const currentIsPostdraft = await isPostdraft(currentSeasonStr);
+        const latest = currentIsPostdraft ? currentSeason + 1 : currentSeason;
+
+        const start = 2024;
+        const years: string[] = [];
+        for (let y = latest; y >= start; y--) years.push(String(y));
+
+        setAvailableYears(years);
+        if (years.length) setSelectedYear(years[0]); // first visible season
+      } catch {
+        const fallbackCurrent = new Date().getFullYear();
+        const years: string[] = [];
+        for (let y = fallbackCurrent; y >= 2024; y--) years.push(String(y));
+        setAvailableYears(years);
+        if (years.length) setSelectedYear(years[0]);
+      } finally {
+        setYearsLoading(false);
+      }
+    }
+    buildYears();
+  }, []);
+
+  // Fetch keepers only after selectedYear is known
+  useEffect(() => {
+    if (!selectedYear) return; // guard against initial render
     const fetchKeepers = async () => {
       setLoading(true);
       setError(null);
@@ -226,54 +259,56 @@ export default function KeepersPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-[#0f0f0f] min-h-screen">
-      {/* Year Selector - Optimized for mobile */}
-      <div className="flex justify-center mb-4 relative">
-        <div
-          className="inline-block relative"
-          onMouseEnter={() => setDropdownOpen(true)}
-          onMouseLeave={() => setDropdownOpen(false)}
-        >
-          <button
-            className="text-2xl sm:text-4xl font-extrabold text-emerald-200 text-center mb-4 px-3 sm:px-4 py-2 bg-[#232323] border border-[#333] rounded-lg focus:outline-none flex items-center gap-2"
-            aria-haspopup="listbox"
-            aria-expanded={dropdownOpen}
-            onClick={() => setDropdownOpen((open) => !open)}
+      {/* Year Selector */}
+      {!yearsLoading && (
+        <div className="flex justify-center mb-4 relative">
+          <div
+            className="inline-block relative"
+            onMouseEnter={() => setDropdownOpen(true)}
+            onMouseLeave={() => setDropdownOpen(false)}
           >
-            {selectedYear} Keepers
-            <svg
-              className={`w-5 h-5 sm:w-7 sm:h-7 text-emerald-200 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
+            <button
+              className="text-2xl sm:text-4xl font-extrabold text-emerald-200 text-center mb-4 px-3 sm:px-4 py-2 bg-[#232323] border border-[#333] rounded-lg focus:outline-none flex items-center gap-2"
+              aria-haspopup="listbox"
+              aria-expanded={dropdownOpen}
+              onClick={() => setDropdownOpen((open) => !open)}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          <ul
-            className={`absolute left-1/2 -translate-x-1/2 mt-0 w-32 bg-[#232323] border border-[#333] rounded-lg shadow-lg z-10 transition-all duration-200
-              ${dropdownOpen ? "block" : "hidden"}`}
-            style={{ top: "100%" }}
-            role="listbox"
-          >
-            {availableYears.map((year) => (
-              <li
-                key={year}
-                className={`px-4 py-2 cursor-pointer hover:bg-emerald-900 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-emerald-200 bg-[#0f0f0f]" : "text-emerald-100"}`}
-                onClick={() => {
-                  setSelectedYear(year);
-                  setSelectedTeamId(null);
-                  setDropdownOpen(false); // close dropdown
-                }}
-                role="option"
-                aria-selected={year === selectedYear}
+              {selectedYear} Keepers
+              <svg
+                className={`w-5 h-5 sm:w-7 sm:h-7 text-emerald-200 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
               >
-                {year}
-              </li>
-            ))}
-          </ul>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <ul
+              className={`absolute left-1/2 -translate-x-1/2 mt-0 w-32 bg-[#232323] border border-[#333] rounded-lg shadow-lg z-10 transition-all duration-200
+                ${dropdownOpen ? "block" : "hidden"}`}
+              style={{ top: "100%" }}
+              role="listbox"
+            >
+              {availableYears.map((year) => (
+                <li
+                  key={year}
+                  className={`px-4 py-2 cursor-pointer hover:bg-emerald-900 text-center first:rounded-t-lg last:rounded-b-lg ${year === selectedYear ? "font-bold text-emerald-200 bg-[#0f0f0f]" : "text-emerald-100"}`}
+                  onClick={() => {
+                    setSelectedYear(year);
+                    setSelectedTeamId(null);
+                    setDropdownOpen(false); // close dropdown
+                  }}
+                  role="option"
+                  aria-selected={year === selectedYear}
+                >
+                  {year}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
 
       <p className="mb-6 sm:mb-8 text-center text-sm sm:text-base px-2 text-emerald-300">
         Use this tool to help determine the player you wish to keep next season
@@ -403,11 +438,11 @@ export default function KeepersPage() {
                               })()
                             }
                             alt={player.name}
-                            width={40}
-                            height={40}
-                            className={`sm:w-12 sm:h-12 rounded-full flex-shrink-0 ${player.position === "DEF" ? "bg-[#232323]" : "object-cover bg-[#232323]"}`}
+                            width={64}
+                            height={64}
+                            className={`w-16 h-16 sm:w-16 sm:h-16 flex-shrink-0 ${player.position === "DEF" ? "" : "object-cover"}`}
                             style={player.position === "DEF"
-                              ? { objectFit: "contain", padding: "6px" }
+                              ? { objectFit: "contain" }
                               : undefined
                             }
                             unoptimized={false}
@@ -517,11 +552,11 @@ export default function KeepersPage() {
                               })()
                             }
                             alt={player.name}
-                            width={40}
-                            height={40}
-                            className={`sm:w-12 sm:h-12 rounded-full flex-shrink-0 ${player.position === "DEF" ? "bg-[#232323]" : "object-cover bg-[#232323]"}`}
+                            width={64}
+                            height={64}
+                            className={`w-16 h-16 sm:w-16 sm:h-16 flex-shrink-0 ${player.position === "DEF" ? "" : "object-cover"}`}
                             style={player.position === "DEF"
-                              ? { objectFit: "contain",}
+                              ? { objectFit: "contain" }
                               : undefined
                             }
                             unoptimized={false}

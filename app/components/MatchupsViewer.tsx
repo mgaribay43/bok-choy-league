@@ -391,6 +391,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartOpen, setChartOpen] = useState(false);
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
+  const [initializing, setInitializing] = useState(true); // NEW: hide controls on first load
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -593,9 +594,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         const week = await getCurrentWeek(season);
         setCurrentWeek(week);
         localStorage.setItem("currentWeek", String(week));
-        fetchMatchups(week);
+        await fetchMatchups(week);        // await initial load
       } catch {
-        fetchMatchups(1);
+        await fetchMatchups(1);           // await fallback
+      } finally {
+        setInitializing(false);           // show controls after first load
       }
     }
     fetchInitialWeek();
@@ -745,122 +748,127 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             All Matchups
           </h1>
           <div className="text-base text-emerald-400">
-            The Bok Choy League &bull; Week {weekToShow}
+            The Bok Choy League &bull; Week {viewWeek !== null ? viewWeek : currentWeek}
           </div>
         </header>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-            position: "relative",
-          }}
-        >
-          <button
-            onClick={handlePrevWeek}
-            disabled={weekToShow <= 1}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#a7f3d0",
-              fontSize: 28,
-              cursor: weekToShow > 1 ? "pointer" : "not-allowed",
-              marginRight: 12,
-              opacity: weekToShow > 1 ? 1 : 0.5,
-            }}
-            aria-label="Previous Week"
-          >
-            &#60;
-          </button>
+
+        {/* Hide week selector while initializing (first load) */}
+        {!initializing && (
           <div
-            className="week-dropdown"
             style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
               position: "relative",
-              display: "inline-block",
-              margin: "0 8px",
             }}
           >
-            <span
+            <button
+              onClick={handlePrevWeek}
+              disabled={weekToShow <= 1}
               style={{
-                fontSize: 20,
-                fontWeight: 600,
-                background: "#232323",
-                borderRadius: 12,
-                padding: "4px 18px",
+                background: "none",
+                border: "none",
                 color: "#a7f3d0",
-                border: "1px solid #444",
-                cursor: "pointer",
-                userSelect: "none",
-                display: "inline-block",
+                fontSize: 28,
+                cursor: weekToShow > 1 ? "pointer" : "not-allowed",
+                marginRight: 12,
+                opacity: weekToShow > 1 ? 1 : 0.5,
               }}
-              onClick={() => setWeekDropdownOpen((open) => !open)}
-              tabIndex={0}
-              aria-haspopup="listbox"
-              aria-expanded={weekDropdownOpen}
+              aria-label="Previous Week"
             >
-              Week {weekToShow}
-            </span>
-            {weekDropdownOpen && (
-              <div
+              &#60;
+            </button>
+            <div
+              className="week-dropdown"
+              style={{
+                position: "relative",
+                display: "inline-block",
+                margin: "0 8px",
+              }}
+            >
+              <span
                 style={{
-                  position: "absolute",
-                  left: 0,
-                  top: "110%",
+                  fontSize: 20,
+                  fontWeight: 600,
                   background: "#232323",
+                  borderRadius: 12,
+                  padding: "4px 18px",
+                  color: "#a7f3d0",
                   border: "1px solid #444",
-                  borderRadius: 10,
-                  zIndex: 10,
-                  minWidth: 120,
-                  boxShadow: "0 2px 8px #000a",
-                  padding: "4px 0",
-                  maxHeight: 260,
-                  overflowY: "auto",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  display: "inline-block",
                 }}
+                onClick={() => setWeekDropdownOpen((open) => !open)}
+                tabIndex={0}
+                aria-haspopup="listbox"
+                aria-expanded={weekDropdownOpen}
               >
-                {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => (
-                  <div
-                    key={w}
-                    style={{
-                      padding: "8px 18px",
-                      color: w === weekToShow ? "#22c55e" : "#fff",
-                      background: w === weekToShow ? "#166534" : "transparent",
-                      fontWeight: w === weekToShow ? 700 : 400,
-                      fontSize: 17,
-                      cursor: w === weekToShow ? "default" : "pointer",
-                      borderRadius: 8,
-                      margin: "2px 4px",
-                      transition: "background 0.15s",
-                    }}
-                    onClick={() => handleWeekDropdown(w)}
-                    tabIndex={0}
-                    role="option"
-                    aria-selected={w === weekToShow}
-                  >
-                    Week {w}
-                  </div>
-                ))}
-              </div>
-            )}
+                Week {weekToShow}
+              </span>
+              {weekDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "110%",
+                    background: "#232323",
+                    border: "1px solid #444",
+                    borderRadius: 10,
+                    zIndex: 10,
+                    minWidth: 120,
+                    boxShadow: "0 2px 8px #000a",
+                    padding: "4px 0",
+                    maxHeight: 260,
+                    overflowY: "auto",
+                  }}
+                >
+                  {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => (
+                    <div
+                      key={w}
+                      style={{
+                        padding: "8px 18px",
+                        color: w === weekToShow ? "#22c55e" : "#fff",
+                        background: w === weekToShow ? "#166534" : "transparent",
+                        fontWeight: w === weekToShow ? 700 : 400,
+                        fontSize: 17,
+                        cursor: w === weekToShow ? "default" : "pointer",
+                        borderRadius: 8,
+                        margin: "2px 4px",
+                        transition: "background 0.15s",
+                      }}
+                      onClick={() => handleWeekDropdown(w)}
+                      tabIndex={0}
+                      role="option"
+                      aria-selected={w === weekToShow}
+                    >
+                      Week {w}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleNextWeek}
+              disabled={weekToShow >= maxWeek}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#a7f3d0",
+                fontSize: 28,
+                cursor: weekToShow < maxWeek ? "pointer" : "not-allowed",
+                marginLeft: 12,
+                opacity: weekToShow < maxWeek ? 1 : 0.5,
+              }}
+              aria-label="Next Week"
+            >
+              &#62;
+            </button>
           </div>
-          <button
-            onClick={handleNextWeek}
-            disabled={weekToShow >= maxWeek}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#a7f3d0",
-              fontSize: 28,
-              cursor: weekToShow < maxWeek ? "pointer" : "not-allowed",
-              marginLeft: 12,
-              opacity: weekToShow < maxWeek ? 1 : 0.5,
-            }}
-            aria-label="Next Week"
-          >
-            &#62;
-          </button>
-        </div>
+        )}
       </div>
+
       <div style={{ padding: "0 0 32px 0" }}>
         {loading ? (
           <div style={{ textAlign: "center", marginTop: 40, color: "#a7f3d0" }}>
@@ -894,7 +902,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           onClose={() => setChartOpen(false)}
           selected={chartSel}
           season={String(new Date().getFullYear())}
-          week={weekToShow}
+          week={viewWeek !== null ? viewWeek : currentWeek}
         />
       )}
     </div>

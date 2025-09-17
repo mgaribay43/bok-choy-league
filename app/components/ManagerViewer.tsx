@@ -49,6 +49,7 @@ type IceEntry = {
   manager?: string;
   player?: string; // "A+B" or "A"
   week?: string;
+  season?: string; // some entries may include it; otherwise inferred from doc id
 };
 
 const managerNames = [
@@ -173,6 +174,7 @@ export default function ManagerViewer() {
   const [cachedManagerData, setCachedManagerData] = useState<Record<string, { tier?: string; score?: number }>>({});
   const [showFeloModal, setShowFeloModal] = useState(false);
   const [currentSeason, setCurrentSeason] = useState<string>(String(new Date().getFullYear()));
+  const [recordsHeld, setRecordsHeld] = useState<string[]>([]); // NEW
 
   // Lock background scroll when modal is open
   useBodyScrollLock(showFeloModal);
@@ -250,6 +252,186 @@ export default function ManagerViewer() {
         if (alive) setIcesCount(n);
       } catch {
         if (alive) setIcesCount(0);
+      }
+    })();
+    return () => { alive = false; };
+  }, [managerName]);
+
+  // NEW: Compute league records and note which ones this manager owns (ties count as owning)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!managerName) return;
+      const displayName = getDisplayManagerName(managerName);
+
+      try {
+        const snap = await getDocs(collection(db, "Ices"));
+        type Cnt = Record<string, number>;
+
+        const totalByMgr: Cnt = {};
+        const seasonMgrCnt: Record<string, Cnt> = {};
+        const weekMgrCnt: Record<string, Cnt> = {}; // key: `${season}|${week}` -> { manager: count }
+        const mgrFlavorSets: Record<string, Set<string>> = {};
+        const mgrSeasonWeeks: Record<string, Record<string, Set<number>>> = {}; // manager -> season -> weeks set
+
+        snap.forEach(doc => {
+          const season = doc.id;
+          const data = doc.data() as { entries?: IceEntry[] };
+          const entries = Array.isArray(data.entries) ? data.entries : [];
+          for (const ice of entries) {
+            const mgr = (ice.manager || "").trim();
+            if (!mgr) continue;
+
+            const playerStr = (ice.player || "").trim();
+            const playersInEntry = playerStr ? Math.max(1, playerStr.split("+").length) : 1;
+
+            // Totals
+            totalByMgr[mgr] = (totalByMgr[mgr] || 0) + playersInEntry;
+
+            // Per-season
+            seasonMgrCnt[season] ||= {};
+            seasonMgrCnt[season][mgr] = (seasonMgrCnt[season][mgr] || 0) + playersInEntry;
+
+            // Per-week
+            const weekStr = (ice.week ?? "").toString().trim();
+            if (weekStr) {
+              const key = `${season}|${weekStr}`;
+              weekMgrCnt[key] ||= {};
+              weekMgrCnt[key][mgr] = (weekMgrCnt[key][mgr] || 0) + playersInEntry;
+
+              // Track week numbers for consecutive calculations
+              const wNum = parseInt(weekStr, 10);
+              if (!isNaN(wNum)) {
+                mgrSeasonWeeks[mgr] ||= {};
+                mgrSeasonWeeks[mgr][season] ||= new Set<number>();
+                mgrSeasonWeeks[mgr][season]!.add(wNum);
+              }
+            }
+
+            // Flavors
+            const flavor = (ice.flavor || "").trim();
+            if (flavor && flavor.toLowerCase() !== "standard") {
+              mgrFlavorSets[mgr] ||= new Set<string>();
+              mgrFlavorSets[mgr].add(flavor);
+            }
+          }
+        });
+
+        // Helpers
+        const maxInMap = (m: Cnt) => {
+          const entries = Object.entries(m);
+          if (!entries.length) return { max: 0, owners: [] as string[] };
+          const max = Math.max(...entries.map(([, v]) => v));
+          const owners = entries.filter(([, v]) => v === max).map(([k]) => k);
+          return { max, owners };
+        };
+
+        // 1) Most Iced Managers (total)
+        const mostIced = maxInMap(totalByMgr);
+
+        // 2) Least Iced Managers (min > 0)
+        const totalsPos = Object.fromEntries(
+          Object.entries(totalByMgr).filter(([, v]) => v > 0)
+        ) as Cnt;
+        const min = (() => {
+          const vals = Object.values(totalsPos);
+          return vals.length ? Math.min(...vals) : 0;
+        })();
+        const leastOwners = Object.entries(totalsPos)
+          .filter(([, v]) => v === min)
+          .map(([k]) => k);
+
+        // 3) Most Ices in a Single Season
+        let bestSeasonCount = 0;
+        let bestSeasonOwners: { mgr: string; season: string }[] = [];
+        for (const [season, m] of Object.entries(seasonMgrCnt)) {
+          const { max, owners } = maxInMap(m);
+          if (max > bestSeasonCount) {
+            bestSeasonCount = max;
+            bestSeasonOwners = owners.map(mgr => ({ mgr, season }));
+          } else if (max === bestSeasonCount) {
+            bestSeasonOwners.push(...owners.map(mgr => ({ mgr, season })));
+          }
+        }
+
+        // 4) Most Ices in a Single Week (per manager)
+        let bestWeekCount = 0;
+        let bestWeekOwners: { mgr: string; season: string; week: string }[] = [];
+        for (const [key, m] of Object.entries(weekMgrCnt)) {
+          const [season, week] = key.split("|");
+          const { max, owners } = maxInMap(m);
+          if (max > bestWeekCount) {
+            bestWeekCount = max;
+            bestWeekOwners = owners.map(mgr => ({ mgr, season, week }));
+          } else if (max === bestWeekCount) {
+            bestWeekOwners.push(...owners.map(mgr => ({ mgr, season, week })));
+          }
+        }
+
+        // 5) Most Unique Flavors Consumed
+        const mgrFlavorCounts: Cnt = {};
+        Object.entries(mgrFlavorSets).forEach(([mgr, set]) => {
+          mgrFlavorCounts[mgr] = set.size;
+        });
+        const mostFlavors = maxInMap(mgrFlavorCounts);
+
+        // 6) Most Consecutive Weeks (within a season)
+        function longestRun(nums: number[]) {
+          nums.sort((a, b) => a - b);
+          let best = 0, cur = 0, start = nums[0], bestStart = nums[0], bestEnd = nums[0];
+          for (let i = 0; i < nums.length; i++) {
+            if (i === 0 || nums[i] === nums[i - 1] + 1) {
+              cur = (i === 0 ? 1 : cur + 1);
+            } else {
+              if (cur > best) { best = cur; bestStart = start; bestEnd = nums[i - 1]; }
+              cur = 1; start = nums[i];
+            }
+          }
+          if (cur > best) { best = cur; bestStart = start; bestEnd = nums[nums.length - 1]; }
+          return { len: best, start: bestStart, end: bestEnd };
+        }
+
+        let bestStreak = 0;
+        let bestStreakOwners: { mgr: string; season: string; start: number; end: number }[] = [];
+        for (const [mgr, seasons] of Object.entries(mgrSeasonWeeks)) {
+          for (const [season, set] of Object.entries(seasons)) {
+            const weeks = Array.from(set);
+            if (weeks.length === 0) continue;
+            const { len, start, end } = longestRun(weeks);
+            if (len > bestStreak) {
+              bestStreak = len;
+              bestStreakOwners = [{ mgr, season, start, end }];
+            } else if (len === bestStreak) {
+              bestStreakOwners.push({ mgr, season, start, end });
+            }
+          }
+        }
+
+        // Collect records owned by this manager (ties included)
+        const owned: string[] = [];
+
+        if (mostIced.owners.includes(displayName) && mostIced.max > 0) {
+          owned.push(`Most Iced Manager • ${mostIced.max}`);
+        }
+        if (leastOwners.includes(displayName) && min > 0) {
+          owned.push(`Least Iced Manager • ${min}`);
+        }
+        bestSeasonOwners
+          .filter(o => o.mgr === displayName)
+          .forEach(o => owned.push(`Most Ices in a Single Season • ${bestSeasonCount} (${o.season})`));
+        bestWeekOwners
+          .filter(o => o.mgr === displayName)
+          .forEach(o => owned.push(`Most Ices in a Single Week • ${bestWeekCount} (Week ${o.week}, ${o.season})`));
+        if (mostFlavors.owners.includes(displayName) && mostFlavors.max > 0) {
+          owned.push(`Most Unique Flavors Consumed • ${mostFlavors.max}`);
+        }
+        bestStreakOwners
+          .filter(o => o.mgr === displayName && bestStreak > 1)
+          .forEach(o => owned.push(`Most Consecutive Weeks • ${bestStreak} (Week ${o.start}–${o.end}, ${o.season})`));
+
+        if (alive) setRecordsHeld(Array.from(new Set(owned)));
+      } catch {
+        if (alive) setRecordsHeld([]);
       }
     })();
     return () => { alive = false; };
@@ -546,6 +728,18 @@ export default function ManagerViewer() {
             {getDisplayManagerName(managerName!)}
           </h1>
         </div>
+
+        {/* NEW: League Records Held */}
+        {recordsHeld.length > 0 && (
+          <div className="mb-6 bg-[#1a1a1a] rounded-lg p-4 border border-[#444]">
+            <h3 className="text-emerald-400 font-semibold text-center mb-2">League Records Held</h3>
+            <ul className="flex flex-col gap-1">
+              {recordsHeld.map((txt, i) => (
+                <li key={i} className="text-sm text-emerald-200 text-center">{txt}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Trophy Case Section */}
         {hasTrophies && (

@@ -318,7 +318,7 @@ export default function ManagerViewer() {
 
             // Flavors
             const flavor = (ice.flavor || "").trim();
-            if (flavor && flavor.toLowerCase() !== "standard") {
+            if (flavor) { // include "Standard" now
               mgrFlavorSets[mgr] ||= new Set<string>();
               mgrFlavorSets[mgr].add(flavor);
             }

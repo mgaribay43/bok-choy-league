@@ -1,4 +1,5 @@
 import { getBottomN, getTopN, getUnique, getYear, splitPlayers } from "../utils/helpers";
+import { useMemo } from "react";
 
 export type IceVideo = {
   id: string;
@@ -81,26 +82,32 @@ export function useUniqueFlavors(videos: IceVideo[]) {
 // Manager with Most Flavors Calculation Hook
 // =======================
 export function useManagerWithMostFlavors(videos: IceVideo[]): { manager: string; flavorCount: number; flavors: string[] }[] {
-  const managerFlavorCount: Record<string, Set<string>> = {};
+  return useMemo(() => {
+    const byManager = new Map<string, { keys: Set<string>; display: Map<string, string> }>();
 
-  videos.forEach(video => {
-    const manager = video.manager?.trim();
-    const flavor = video.flavor?.trim();
-    if (manager && flavor) {
-      if (!managerFlavorCount[manager]) {
-        managerFlavorCount[manager] = new Set();
-      }
-      managerFlavorCount[manager].add(flavor);
+    for (const v of videos) {
+      const manager = (v.manager || "").trim();
+      const flavorRaw = (v.flavor || "").trim();
+      if (!manager || !flavorRaw) continue; // count only if a flavor is present (now includes "Standard")
+
+      const key = flavorRaw.toLowerCase();
+      if (!byManager.has(manager)) byManager.set(manager, { keys: new Set(), display: new Map() });
+      const bucket = byManager.get(manager)!;
+
+      bucket.keys.add(key);
+      if (!bucket.display.has(key)) bucket.display.set(key, flavorRaw); // keep first-cased label
     }
-  });
 
-  const maxFlavorCount = Math.max(...Object.values(managerFlavorCount).map(flavors => flavors.size));
+    const rows = Array.from(byManager.entries()).map(([manager, { keys, display }]) => ({
+      manager,
+      flavorCount: keys.size,
+      flavors: Array.from(keys).map(k => display.get(k) || k),
+    }));
 
-  const managersWithMostFlavors = Object.entries(managerFlavorCount)
-    .filter(([, flavors]) => flavors.size === maxFlavorCount)
-    .map(([manager, flavors]) => ({ manager, flavorCount: flavors.size, flavors: Array.from(flavors) }));
-
-  return managersWithMostFlavors;
+    // Sort: most flavors desc, then alpha
+    rows.sort((a, b) => b.flavorCount - a.flavorCount || a.manager.localeCompare(b.manager));
+    return rows;
+  }, [videos]);
 }
 
 // =======================

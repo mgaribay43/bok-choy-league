@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getCurrentSeason } from "../globalUtils/getCurrentSeason";
 import { getDisplayManagerName, getInternalManagerName } from "../globalUtils/getManagerNames";
 import Link from "next/link";
@@ -123,13 +123,75 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     };
   }, [year]);
 
-  // Generate year options (most recent first)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = [];
-  for (let y = currentYear; y >= START_YEAR; y--) {
-    yearOptions.push(y.toString());
-  }
+  // --- Sorting state ---
+  type SortKey =
+    | "rank"
+    | "team"
+    | "manager"
+    | "record"
+    | "pointsFor"
+    | "pointsAgainst"
+    | "pointDiff"
+    | "winPct";
+  const [sortKey, setSortKey] = useState<SortKey>("rank");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  const changeSort = (key: SortKey) => {
+    setSortDir((prev) => (key === sortKey ? (prev === "asc" ? "desc" : "asc") : key === "rank" ? "asc" : "desc"));
+    setSortKey(key);
+  };
+
+  const parseRecordPct = (record: string) => {
+    const [w = "0", l = "0", t = "0"] = record.split("-");
+    const wins = Number(w) || 0;
+    const losses = Number(l) || 0;
+    const ties = Number(t) || 0;
+    const gp = wins + losses + ties;
+    return gp > 0 ? (wins + 0.5 * ties) / gp : 0;
+  };
+
+  const sortedTeams = useMemo(() => {
+    const arr = [...teams];
+    arr.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "team":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "manager":
+          cmp = a.manager.localeCompare(b.manager);
+          break;
+        case "record":
+          cmp = parseRecordPct(a.record) - parseRecordPct(b.record);
+          break;
+        case "pointsFor":
+          cmp = a.pointsFor - b.pointsFor;
+          break;
+        case "pointsAgainst":
+          cmp = a.pointsAgainst - b.pointsAgainst;
+          break;
+        case "pointDiff":
+          cmp = a.pointDiff - b.pointDiff;
+          break;
+        case "winPct":
+          cmp = parseFloat(a.winPct) - parseFloat(b.winPct);
+          break;
+        case "rank":
+        default:
+          cmp = a.rank - b.rank;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [teams, sortKey, sortDir]);
+
+  // Reset sort when year changes (optional)
+  useEffect(() => {
+    setSortKey("rank");
+    setSortDir("asc");
+  }, [year]);
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -140,6 +202,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="text-center py-12">
@@ -152,6 +215,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     );
   }
 
+  // Top 3 teams (podium)
   if (topThree) {
     const podium = teams.slice(0, 3);
     const colors = [
@@ -191,8 +255,31 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     );
   }
 
+  // Helper to render sort arrow
+  const arrow = (key: SortKey) =>
+    sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+
+  // Mobile sort options
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: "rank", label: "Rank" },
+    { key: "team", label: "Team" },
+    { key: "manager", label: "Manager" },
+    { key: "record", label: "Record" },
+    { key: "pointsFor", label: "PF" },
+    { key: "pointsAgainst", label: "PA" },
+    { key: "pointDiff", label: "+/-" },
+    { key: "winPct", label: "Pct" },
+  ];
+
+  // Generate year options from START_YEAR to current year
+  const yearOptions = Array.from(
+    { length: new Date().getFullYear() - START_YEAR + 1 },
+    (_, i) => (START_YEAR + i).toString()
+  );
+
   return (
     <div className="max-w-5xl mx-auto p-4">
+      {/* Year selection and header */}
       <div className="flex justify-center mb-6">
         <label htmlFor="year-select" className="mr-2 text-emerald-400 font-semibold">
           Season:
@@ -210,27 +297,153 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
           ))}
         </select>
       </div>
+
       <h2 className="text-5xl font-bold mb-8 text-center text-[#a7f3d0]">
         {year} League Standings
       </h2>
-      <div className="overflow-x-auto">
+
+      {/* Mobile controls: sort dropdown + direction toggle */}
+      <div className="sm:hidden flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <label htmlFor="mobile-sort" className="text-emerald-300 text-sm">Sort:</label>
+          <select
+            id="mobile-sort"
+            className="bg-[#181818] border border-emerald-700 rounded px-2 py-1 text-emerald-400 text-sm"
+            value={sortKey}
+            onChange={(e) => changeSort(e.target.value as SortKey)}
+          >
+            {sortOptions.map((o) => (
+              <option key={o.key} value={o.key}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <button
+          className="text-xs px-2 py-1 rounded bg-[#222] border border-[#2a2a2a] text-emerald-300"
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          title="Toggle sort direction"
+        >
+          {sortDir === "asc" ? "Asc ▲" : "Desc ▼"}
+        </button>
+      </div>
+
+      {/* Mobile list (smaller screens) */}
+      <div className="sm:hidden space-y-3">
+        {sortedTeams.map((team) => (
+          <div key={team.id} className="bg-[#181818] border border-[#262626] rounded-xl p-3 shadow-sm">
+            {/* Top row: rank, team, win% */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="shrink-0">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#121212] border border-[#2a2a2a] text-emerald-400 font-bold">
+                    {team.rank}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <img src={team.logo} alt={team.name} className="w-8 h-8 rounded-full shrink-0" />
+                  <Link
+                    href={`/roster?teamId=${encodeURIComponent(team.id)}&year=${encodeURIComponent(year)}`}
+                    className="text-emerald-200 hover:text-emerald-300 underline truncate"
+                    title={team.name}
+                  >
+                    {team.name}
+                  </Link>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-emerald-300">Pct</div>
+                <div className="text-emerald-400 font-mono">{team.winPct}</div>
+              </div>
+            </div>
+
+            {/* Manager + Record */}
+            <div className="mt-2 flex items-center justify-between">
+              <Link
+                href={`/manager?name=${encodeURIComponent(getInternalManagerName(team.manager))}`}
+                className="text-emerald-300 hover:text-emerald-200 underline text-sm"
+              >
+                {getDisplayManagerName(team.manager)}
+              </Link>
+              <div className="text-green-400 font-mono text-sm">{team.record}</div>
+            </div>
+
+            {/* PF / PA / +/- */}
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">PF</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.pointsFor.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">PA</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.pointsAgainst.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">+/-</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop/tablet table (sm and up) */}
+      <div className="hidden sm:block overflow-x-auto mt-2">
         <table className="min-w-full bg-[#181818] rounded-lg shadow">
           <thead>
             <tr>
-              <th className="py-2 px-3 text-emerald-400 text-center">Rank</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">Team</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">Manager</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">Record</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">PF</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">PA</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">+/-</th>
-              <th className="py-2 px-3 text-emerald-400 text-center">Win %</th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("rank")}
+              >
+                Rank{arrow("rank")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("team")}
+              >
+                Team{arrow("team")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("manager")}
+              >
+                Manager{arrow("manager")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("record")}
+              >
+                Record{arrow("record")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("pointsFor")}
+              >
+                PF{arrow("pointsFor")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("pointsAgainst")}
+              >
+                PA{arrow("pointsAgainst")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("pointDiff")}
+              >
+                +/-{arrow("pointDiff")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("winPct")}
+              >
+                Pct{arrow("winPct")}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {teams.map((team) => (
+            {sortedTeams.map((team) => (
               <tr key={team.id} className="border-b border-[#222] hover:bg-[#222]">
-                <td className="py-2 px-3 font-bold text-emerald-400 text-cen1ter">{team.rank}</td>
+                <td className="py-2 px-3 font-bold text-emerald-400 text-center">{team.rank}</td>
                 <td className="py-2 px-3 text-emerald-400 text-left">
                   <div className="flex items-center gap-2">
                     <img src={team.logo} alt={team.name} className="w-8 h-8 rounded-full" />

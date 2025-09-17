@@ -19,6 +19,7 @@ import {
   Legend
 } from "chart.js";
 import { getDisplayManagerName } from "./globalUtils/getManagerNames";
+import { getCurrentSeason } from "./globalUtils/getCurrentSeason";
 
 // --- Firestore imports ---
 import { collection, getDocs } from "firebase/firestore";
@@ -171,11 +172,21 @@ export default function ManagerViewer() {
   const [draftTimes, setDraftTimes] = useState<Record<string, number>>({});
   const [cachedManagerData, setCachedManagerData] = useState<Record<string, { tier?: string; score?: number }>>({});
   const [showFeloModal, setShowFeloModal] = useState(false);
+  const [currentSeason, setCurrentSeason] = useState<string>(String(new Date().getFullYear()));
 
   // Lock background scroll when modal is open
   useBodyScrollLock(showFeloModal);
 
-  const currentYear = String(new Date().getFullYear());
+  useEffect(() => {
+    (async () => {
+      try {
+        const season = await getCurrentSeason();
+        if (season) setCurrentSeason(String(season));
+      } catch {
+        // keep fallback Year
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     async function fetchAllTeams() {
@@ -410,7 +421,7 @@ export default function ManagerViewer() {
     team => team.manager?.toLowerCase() === managerName?.toLowerCase()
   );
 
-  const teamsForAverage = managerTeams.filter(team => team.season !== currentYear);
+  const teamsForAverage = managerTeams.filter(team => team.season !== currentSeason);
   const averageFinish =
     teamsForAverage.length > 0
       ? (
@@ -482,7 +493,9 @@ export default function ManagerViewer() {
       ? managerTeams[0].felo_score
       : undefined;
 
-  const hasTrophies = managerTeams.some(team => [1, 2, 3].includes(team.rank));
+  const hasTrophies = managerTeams.some(
+    team => team.season !== currentSeason && [1, 2, 3].includes(team.rank)
+  );
 
   const feloHistory = managerTeams
     .filter(team => team.felo_score)
@@ -540,7 +553,10 @@ export default function ManagerViewer() {
             <h2 className="text-xl font-bold text-yellow-600 text-center mb-2">Trophy Case</h2>
             <div className="flex flex-col items-center gap-8 overflow-x-auto w-full">
               {[1, 2, 3].map(place => {
-                const trophies = managerTeams.filter(team => team.rank === place);
+                // Exclude current season from trophies until it's over
+                const trophies = managerTeams.filter(
+                  team => team.season !== currentSeason && team.rank === place
+                );
                 if (trophies.length === 0) return null;
                 return (
                   <div key={place} className="flex flex-col items-center w-full">
@@ -589,14 +605,14 @@ export default function ManagerViewer() {
           <p className="text-center text-emerald-400">No teams found for this manager.</p>
         ) : (
           <div className="mt-4">
-            {/* Show 2025 team (current year) above collapsible if present */}
-            {managerTeams.some(team => team.season === "2025") && (
+            {/* Show current season team(s) dynamically instead of hardcoded "2025" */}
+            {managerTeams.some(team => team.season === currentSeason) && (
               <div className="mb-4">
                 {managerTeams
-                  .filter(team => team.season === "2025")
+                  .filter(team => team.season === currentSeason)
                   .map(team => {
                     const drafted = isDraftCompleted(team.season);
-                    const isCurrentSeason = team.season === currentYear;
+                    const isCurrentSeason = team.season === currentSeason;
                     return drafted ? (
                       <Link
                         key={team.season + team.id}
@@ -659,10 +675,10 @@ export default function ManagerViewer() {
             >
               <div ref={contentRef} className="flex flex-col gap-6 mt-2">
                 {managerTeams
-                  .filter(team => team.season !== "2025")
+                  .filter(team => team.season !== currentSeason)
                   .map(team => {
                     const drafted = isDraftCompleted(team.season);
-                    const isCurrentSeason = team.season === currentYear;
+                    const isCurrentSeason = team.season === currentSeason;
                     return drafted ? (
                       <Link
                         key={team.season + team.id}

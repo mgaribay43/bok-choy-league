@@ -21,6 +21,9 @@ interface Matchup {
   winPct2?: number;
   projected1?: string;
   projected2?: string;
+  // NEW: recap
+  recapUrl?: string;
+  recapAvailable?: boolean;
 }
 
 const TEAM_AVATARS: Record<string, string> = {};
@@ -251,7 +254,8 @@ type MatchupCardProps = {
   style?: React.CSSProperties;
   onOpenChart?: (m: Matchup) => void;
   hasChart?: boolean;
-  showChartIcon?: boolean; // NEW
+  showChartIcon?: boolean; // existing
+  showRecapButton?: boolean; // NEW
 };
 
 const MatchupCard = ({
@@ -260,7 +264,8 @@ const MatchupCard = ({
   style = {},
   onOpenChart,
   hasChart = true,
-  showChartIcon = true, // NEW (default shows icon)
+  showChartIcon = true,       // default shows icon
+  showRecapButton = false,    // default hidden (marquee keeps it hidden)
 }: MatchupCardProps) => {
   const win1 = Number(m.displayValue1) > Number(m.displayValue2);
   const win2 = Number(m.displayValue2) > Number(m.displayValue1);
@@ -280,46 +285,79 @@ const MatchupCard = ({
         ...style,
       }}
     >
-      {/* Top bar: chart icon ABOVE team names (hidden on marquee) */}
-      {showChartIcon && (
+      {/* Top bar: recap (left) and chart (right). Hidden on marquee via props */}
+      {(showChartIcon || (showRecapButton && m.recapUrl)) && (
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
             alignItems: "center",
             padding: "10px 10px 0 10px",
-            pointerEvents: "none",
+            pointerEvents: "none", // allow inner buttons to toggle their own pointer events
           }}
         >
-          <button
-            onClick={() => hasChart && onOpenChart?.(m)}
-            aria-label={hasChart ? "Open win probability chart" : "No chart data yet"}
-            title={hasChart ? "Open win probability chart" : "No chart data yet"}
-            disabled={!hasChart}
-            style={{
-              background: "#0f1117",
-              border: "1px solid #3a3d45",
-              color: hasChart ? "#e5e7eb" : "#6b7280",
-              borderRadius: 10,
-              padding: "8px 10px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: hasChart ? "pointer" : "not-allowed",
-              pointerEvents: "auto",
-              opacity: hasChart ? 1 : 0.45,
-            }}
-          >
-            {/* icon */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 3v18h18" />
-              <path d="M19 9l-5 5-4-4-4 4" />
-              <circle cx="19" cy="9" r="1.5" />
-              <circle cx="14" cy="14" r="1.5" />
-              <circle cx="10" cy="10" r="1.5" />
-              <circle cx="6" cy="14" r="1.5" />
-            </svg>
-          </button>
+          {/* Week Recap left */}
+          {showRecapButton && m.recapUrl ? (
+            <a
+              href={m.recapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: "#0f1117",
+                border: "1px solid #3a3d45",
+                color: "#e5e7eb",
+                borderRadius: 10,
+                padding: "8px 10px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                textDecoration: "none",
+                pointerEvents: "auto",
+              }}
+              aria-label="Open week recap"
+              title="Open week recap"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Week Recap</span>
+            </a>
+          ) : (
+            <span />
+          )}
+
+          {/* Chart button right */}
+          {showChartIcon && (
+            <button
+              onClick={() => hasChart && onOpenChart?.(m)}
+              aria-label={hasChart ? "Open win probability chart" : "No chart data yet"}
+              title={hasChart ? "Open win probability chart" : "No chart data yet"}
+              disabled={!hasChart}
+              style={{
+                background: "#0f1117",
+                border: "1px solid #3a3d45",
+                color: hasChart ? "#e5e7eb" : "#6b7280",
+                borderRadius: 10,
+                padding: "8px 10px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: hasChart ? "pointer" : "not-allowed",
+                pointerEvents: "auto",
+                opacity: hasChart ? 1 : 0.45,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 3v18h18" />
+                <path d="M19 9l-5 5-4-4-4 4" />
+                <circle cx="19" cy="9" r="1.5" />
+                <circle cx="14" cy="14" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="6" cy="14" r="1.5" />
+              </svg>
+            </button>
+          )}
         </div>
       )}
 
@@ -486,6 +524,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           const team1 = teams["0"].team;
           const team2 = teams["1"].team;
           const started = matchup.matchup.status !== "preevent";
+          // NEW: recap info
+          const recapAvailable =
+            matchup.matchup.is_matchup_recap_available === 1 ||
+            matchup.matchup.is_matchup_recap_available === "1";
+          const recapUrl = recapAvailable ? matchup.matchup.matchup_recap_url : undefined;
+
           const team1Name =
             team1?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 1";
           const team2Name =
@@ -555,6 +599,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             winPct2: team2WinPct,
             projected1: team1Proj,
             projected2: team2Proj,
+            recapUrl,                  // NEW
+            recapAvailable,            // NEW
           };
         });
 
@@ -883,6 +929,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 m={m}
                 showNames
                 hasChart={hasChart}
+                showRecapButton // NEW: show on matchups page
                 onOpenChart={(mm) => {
                   if (!hasChart) return;
                   setChartSel({

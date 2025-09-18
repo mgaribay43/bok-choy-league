@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getCurrentSeason } from "./globalUtils/getCurrentSeason";
+import { getDisplayManagerName } from "./globalUtils/getManagerNames";
 
 const START_YEAR = 2017;
 
@@ -51,7 +52,7 @@ function extractChampionFromYahooJson(json: any, year: number): ChampionTeam | n
       managersObj.managers.length > 0 &&
       managersObj.managers[0]?.manager?.nickname
     ) {
-      manager = managersObj.managers[0].manager.nickname;
+      manager = getDisplayManagerName(managersObj.managers[0].manager.nickname);
     }
 
     // teamArr[2] is team_standings

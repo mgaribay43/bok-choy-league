@@ -3,67 +3,65 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
-// Helper: determine if a TheSportsDB status means "live"
-function isLiveStatus(status: string | undefined | null): boolean {
-  const s = String(status ?? "").trim().toLowerCase();
-  if (!s) return false;
-  // TheSportsDB commonly uses "Live". Be permissive for other live-like labels.
-  if (s === "live") return true;
-  const liveHints = [
-    "in play", "inplay", "in progress", "halftime", "half time",
-    "q1", "q2", "q3", "q4", "1st quarter", "2nd quarter", "3rd quarter", "4th quarter",
-    "ot", "overtime"
-  ];
-  return liveHints.some(h => s.includes(h));
+// Normalize status to one of Q1..Q4 or null
+function normalizeQuarter(status: unknown): "Q1" | "Q2" | "Q3" | "Q4" | null {
+  if (status == null) return null;
+  const raw = String(status).replace(/[^\x20-\x7E]/g, "").trim().toUpperCase();
+  const m = raw.match(/^Q([1-4])\b/);
+  return m ? (`Q${m[1]}` as any) : null;
 }
 
-// Helper: Returns true if an NFL game is live using TheSportsDB
-async function isNFLGameLive_TheSportsDB() {
-  const API_KEY = "123";
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const league = "NFL"; // filter to NFL only
-  const url = `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsday.php?d=${today}&l=${encodeURIComponent(league)}`;
+// NEW: gate — call SportsDB, require non-empty events, and at least one Q1–Q4
+async function sportsDbShouldPoll(): Promise<boolean> {
+  const date = new Date().toISOString().slice(0, 10);
+  const url = `https://www.thesportsdb.com/api/v1/json/307739/eventsday.php?d=${date}&l=${encodeURIComponent("NFL")}`;
 
   try {
     const res = await fetch(url);
-    const raw = await res.text(); // read RAW body
+    const raw = await res.text();
 
-    // Parse raw JSON safely
+    // Debug: print the raw response received by the Cloud Function
+    console.log("[SportsDB raw]:", raw);
+
     let data: any;
     try {
       data = JSON.parse(raw);
     } catch (e) {
-      console.error("Failed to parse SportsDB JSON:", e);
+      console.error("[SportsDB] JSON parse error:", e);
       return false;
     }
 
-    const events = Array.isArray(data?.events) ? data.events : [];
-    // Any event with a live-like status?
-    const liveGames = events.filter((ev: any) => isLiveStatus(ev?.strStatus));
+    const events: any[] = Array.isArray(data?.events) ? data.events : [];
+    if (!events.length) {
+      console.log("[SportsDB] events array empty — skipping polling.");
+      return false;
+    }
 
-    // Example raw shows "strStatus":"NS" for not started; this will correctly return false.
-    return liveGames.length > 0;
+    const anyInQuarter = events.some((ev) => normalizeQuarter(ev?.strStatus) !== null);
+    if (!anyInQuarter) {
+      console.log("[SportsDB] no events with strStatus Q1–Q4 — skipping polling.");
+      return false;
+    }
+
+    return true;
   } catch (err) {
-    console.error("Error checking NFL live status:", err);
+    console.error("[SportsDB] fetch error:", err);
     return false;
   }
 }
 
 export const pollWinProbabilities = onSchedule(
   {
-    schedule: "every 5 minutes",
+    schedule: "every 3 minutes",
     region: "us-central1",
     timeoutSeconds: 60,
     memory: "256MiB",
     invoker: "public",
   },
-  async (event: ScheduledEvent) => {
-    // Only poll if an NFL game is live according to TheSportsDB
-    const isLive = await isNFLGameLive_TheSportsDB();
-    if (!isLive) {
-      console.log("No NFL games are live according to TheSportsDB, skipping polling.");
-      return;
-    }
+  async (_event: ScheduledEvent) => {
+    // Only poll when SportsDB says there are NFL games today AND at least one is in Q1–Q4
+    const shouldPoll = await sportsDbShouldPoll();
+    if (!shouldPoll) return;
 
     const db = admin.firestore();
 

@@ -37,7 +37,7 @@ export default function Navbar() {
           <div className="flex items-center space-x-3 ml-2">
             <div className="relative">
               <a
-                href="https://football.fantasysports.yahoo.com/league/thebokchoyleague69"
+                href="https://football.fantasysports.yahoo.com/f1/128797"
                 target="_blank"
                 rel="noopener noreferrer"
               >

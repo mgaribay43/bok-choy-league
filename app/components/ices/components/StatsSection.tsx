@@ -359,7 +359,7 @@ export default function StatsSection({
           {/* Longest All-Time No Ice Streaks Card */}
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#444] flex-1">
             <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
-              Longest No Ice Streaks (All-Time)
+              Longest No Ice Streak (All-Time)
             </h3>
             <div className="space-y-2">
               {(longestAllTimeNoIceStreaks ?? []).map((rec: any, index: number) => (
@@ -403,73 +403,85 @@ export default function StatsSection({
                 Most Flavors Consumed
               </h3>
               <div className="space-y-3">
-                {managerWithMostFlavors.map(({ manager, flavorCount, flavors }: { manager: string; flavorCount: number; flavors: string[] }) => (
-                  <div key={manager}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-emerald-400">{manager}</span>
-                      <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
-                        {flavorCount}
-                      </span>
+                {(() => {
+                  const list = Array.isArray(managerWithMostFlavors) ? managerWithMostFlavors : [];
+                  if (!list.length) {
+                    return <div className="text-emerald-300 text-sm text-center">No data available</div>;
+                  }
+                  const top = list.reduce(
+                    (max: { manager: string; flavorCount: number; flavors: string[] }, cur: any) =>
+                      !max || (cur?.flavorCount ?? 0) > (max?.flavorCount ?? 0) ? cur : max,
+                    list[0]
+                  );
+                  const { manager, flavorCount, flavors = [] } = top || {};
+                  return (
+                    <div key={manager}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-emerald-400">{manager}</span>
+                        <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                          {flavorCount}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {flavors.map((flavor: string) => {
+                          const flavorLower = flavor.toLowerCase();
+                          if (flavorLower === "red, white & berry") {
+                            return (
+                              <span
+                                key={flavor}
+                                className="px-3 py-1 rounded-full font-bold text-xs"
+                                style={{
+                                  background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
+                                  color: "#353535ff",
+                                  border: "1px solid #141414ff",
+                                }}
+                              >
+                                {flavor}
+                              </span>
+                            );
+                          } else if (flavorLower === "red, white & merry holiday punch") {
+                            return (
+                              <span
+                                key={flavor}
+                                className="px-3 py-1 rounded-full font-bold text-xs"
+                                style={{
+                                  background: "#ab2308",
+                                  color: "#ffffffff",
+                                  border: "1px solid #ddd",
+                                }}
+                              >
+                                {flavor}
+                              </span>
+                            );
+                          } else if (flavorLower === "screwdriver") {
+                            return (
+                              <span
+                                key={flavor}
+                                className="px-3 py-1 rounded-full font-bold text-xs"
+                                style={{
+                                  background: "#ffbc13ff",
+                                  color: "#ffffffff",
+                                  border: "1px solid #ddd",
+                                }}
+                              >
+                                {flavor}
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span
+                                key={flavor}
+                                className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs"
+                              >
+                                {flavor}
+                              </span>
+                            );
+                          }
+                        })}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {flavors.map(flavor => {
-                        const flavorLower = flavor.toLowerCase();
-                        if (flavorLower === "red, white & berry") {
-                          return (
-                            <span
-                              key={flavor}
-                              className="px-3 py-1 rounded-full font-bold text-xs"
-                              style={{
-                                background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
-                                color: "#353535ff",
-                                border: "1px solid #141414ff"
-                              }}
-                            >
-                              {flavor}
-                            </span>
-                          );
-                        } else if (flavorLower === "red, white & merry holiday punch") {
-                          return (
-                            <span
-                              key={flavor}
-                              className="px-3 py-1 rounded-full font-bold text-xs"
-                              style={{
-                                background: "#ab2308",
-                                color: "#ffffffff",
-                                border: "1px solid #ddd"
-                              }}
-                            >
-                              {flavor}
-                            </span>
-                          );
-                        } else if (flavorLower === "screwdriver") {
-                          return (
-                            <span
-                              key={flavor}
-                              className="px-3 py-1 rounded-full font-bold text-xs"
-                              style={{
-                                background: "#ffbc13ff",
-                                color: "#ffffffff",
-                                border: "1px solid #ddd"
-                              }}
-                            >
-                              {flavor}
-                            </span>
-                          );
-                        } else {
-                          return (
-                            <span
-                              key={flavor}
-                              className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs"
-                            >
-                              {flavor}
-                            </span>
-                          );
-                        }
-                      })}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })()}
               </div>
             </div>
           </div>

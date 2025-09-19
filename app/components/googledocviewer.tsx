@@ -26,16 +26,25 @@ const GoogleDocViewer = ({ docId }: GoogleDocViewerProps) => {
         </a>
       </p>
 
-      {/* Iframe container without refresh button */}
-      <div className="relative w-full h-[92vh] bg-[#232323] rounded-md shadow-lg">
-        {/* Embedded Google Doc */}
-        <iframe
-          key={refreshKey}
-          src={embedUrl}
-          className="absolute top-0 left-0 w-full h-full rounded-md border-0"
-          allowFullScreen
-          style={{ border: 'none', background: '#232323' }}
-        ></iframe>
+      {/* Centered iframe container with max width */}
+      <div className="flex justify-center items-center w-full h-[92vh] bg-[#181818] px-2">
+        <div className="w-full max-w-2xl h-full bg-[#181818] flex items-center justify-center">
+          <iframe
+            key={refreshKey}
+            src={embedUrl}
+            className="w-full h-full border-0"
+            allowFullScreen
+            style={{
+              border: 'none',
+              background: '#181818',
+              maxWidth: '100%',
+              minWidth: 0,
+              margin: 0,
+              boxShadow: 'none',
+              height: '100%',
+            }}
+          ></iframe>
+        </div>
       </div>
     </div>
   );

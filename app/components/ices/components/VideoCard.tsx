@@ -15,8 +15,11 @@ export default function VideoCard({ video, expandedVideo, setExpandedVideo }: {
   // Prefer the highest-res thumbnail; gracefully fall back if unavailable
   const THUMBS = ["maxresdefault.jpg", "sddefault.jpg", "hqdefault.jpg"] as const;
   const [thumbIndex, setThumbIndex] = useState(0);
+
   const thumbSrc =
-    videoId ? `https://img.youtube.com/vi/${videoId}/${THUMBS[thumbIndex]}` : "";
+    videoId && thumbIndex < THUMBS.length
+      ? `https://img.youtube.com/vi/${videoId}/${THUMBS[thumbIndex]}`
+      : "/default-thumb.png"; // Make sure this file exists in your public folder
 
   return (
     <div
@@ -28,13 +31,14 @@ export default function VideoCard({ video, expandedVideo, setExpandedVideo }: {
         {videoId ? (
           !isExpanded ? (
             <Image
+              key={thumbSrc}
               src={thumbSrc}
               alt={`Thumbnail for ${video.player}`}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover cursor-pointer"
               onClick={() => setExpandedVideo(videoId)}
-              onError={() => setThumbIndex(i => Math.min(i + 1, THUMBS.length - 1))}
+              onError={() => setThumbIndex(i => i + 1)}
               loading="lazy"
             />
           ) : (

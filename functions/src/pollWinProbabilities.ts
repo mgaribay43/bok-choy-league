@@ -3,19 +3,45 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
+// Helper: determine if a TheSportsDB status means "live"
+function isLiveStatus(status: string | undefined | null): boolean {
+  const s = String(status ?? "").trim().toLowerCase();
+  if (!s) return false;
+  // TheSportsDB commonly uses "Live". Be permissive for other live-like labels.
+  if (s === "live") return true;
+  const liveHints = [
+    "in play", "inplay", "in progress", "halftime", "half time",
+    "q1", "q2", "q3", "q4", "1st quarter", "2nd quarter", "3rd quarter", "4th quarter",
+    "ot", "overtime"
+  ];
+  return liveHints.some(h => s.includes(h));
+}
+
 // Helper: Returns true if an NFL game is live using TheSportsDB
 async function isNFLGameLive_TheSportsDB() {
   const API_KEY = "123";
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const url = `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsday.php?d=${today}&s=American%20Football`;
+  const league = "NFL"; // filter to NFL only
+  const url = `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsday.php?d=${today}&l=${encodeURIComponent(league)}`;
 
   try {
     const res = await fetch(url);
-    const data: any = await res.json();
-    // TheSportsDB marks live games with strStatus === "Live"
-    const liveGames = (data.events || []).filter(
-      (event: any) => event.strStatus === "Live"
-    );
+    const raw = await res.text(); // read RAW body
+
+    // Parse raw JSON safely
+    let data: any;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.error("Failed to parse SportsDB JSON:", e);
+      return false;
+    }
+
+    const events = Array.isArray(data?.events) ? data.events : [];
+    // Any event with a live-like status?
+    const liveGames = events.filter((ev: any) => isLiveStatus(ev?.strStatus));
+
+    // Example raw shows "strStatus":"NS" for not started; this will correctly return false.
     return liveGames.length > 0;
   } catch (err) {
     console.error("Error checking NFL live status:", err);

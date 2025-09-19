@@ -793,9 +793,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           <h1 className="text-5xl font-extrabold text-emerald-200 mb-2 tracking-tight">
             All Matchups
           </h1>
-          <div className="text-base text-emerald-400">
-            The Bok Choy League &bull; Week {viewWeek !== null ? viewWeek : currentWeek}
-          </div>
         </header>
 
         {/* Hide week selector while initializing (first load) */}

@@ -237,7 +237,9 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
             mode: "index",
             intersect: false,
             yAlign: "top",
+            // Prevent x-axis label from showing in tooltip
             callbacks: {
+              title: () => "", // <-- hide tooltip title (x-axis label)
               label: (context) => {
                 const idx = context.dataIndex;
                 const point = resolved.points?.[idx];
@@ -255,6 +257,7 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
                   : { borderColor: "#f87171", backgroundColor: "#f87171" };
               },
             },
+            titleMarginBottom: 0, // <-- remove extra top spacing
             backgroundColor: "#222",
             titleColor: "#fff",
             bodyColor: "#fff",

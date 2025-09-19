@@ -66,6 +66,43 @@ function isIOSDevice() {
   return iOS || iPadOS;
 }
 
+// NEW: open a receiver tab that listens for a postMessage({ type: 'img', url, filename })
+function openIOSReceiverPopup(filename: string) {
+  const popup = window.open("about:blank", "_blank");
+  if (!popup) return null;
+  const html =
+    `<!doctype html><title>Preparing…</title>
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <body style="margin:0;background:#0f1115;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;font:16px system-ui">
+       <div id="wrap" style="max-width:100%;text-align:center">
+         <div id="status" style="margin-bottom:12px;color:#9ca3af">Preparing image…</div>
+         <img id="img" alt="chart" style="max-width:100%;height:auto;display:none;border-radius:8px" />
+         <div id="hint" style="display:none;margin-top:10px;color:#9ca3af">Tap and hold the image to Save</div>
+       </div>
+       <script>
+         window.addEventListener('message', function(e) {
+           try {
+             var d = e.data || {};
+             if (d.type === 'img' && d.url) {
+               var img = document.getElementById('img');
+               img.src = d.url;
+               img.style.display = 'block';
+               document.getElementById('status').textContent = '';
+               document.getElementById('hint').style.display = 'block';
+               if (d.filename) document.title = d.filename;
+             }
+           } catch (err) {}
+         }, false);
+       </script>
+     </body>`;
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+  return popup;
+}
+
+// ...existing code...
+
 export type WinProbChartSelection = {
   matchupId?: string;
   team1: { name: string; logo: string };
@@ -327,26 +364,17 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
 
   // Simple download (same-domain canvas; iOS users can long-press after open in new tab)
   const handleDownload = async () => {
-    if (!chartRef.current || !selected) return;
+    if (!chartRef.current || !resolved) return;
 
-    // Open popup immediately on iOS (before any await) to keep user-gesture context
+    const filename = `${resolved.team1.name}_vs_${resolved.team2.name}_winprob.png`;
     const isIOS = isIOSDevice();
     let popup: Window | null = null;
     if (isIOS) {
-      popup = window.open("", "_blank");
-      if (popup) {
-        popup.document.write(
-          `<!doctype html><title>Preparing...</title>
-           <body style="margin:0;background:#0f1115;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font:16px system-ui">
-             Preparing image…
-           </body>`
-        );
-      }
+      popup = openIOSReceiverPopup(filename);
     }
 
+    // ...build export canvas 'out' exactly as before...
     const canvasChart = chartRef.current;
-
-    // Use device-pixel size for a crisp export
     const exportWidth =
       canvasChart.width ||
       Math.round(canvasChart.getBoundingClientRect().width * (window.devicePixelRatio || 1));
@@ -354,7 +382,6 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       canvasChart.height ||
       Math.round(canvasChart.getBoundingClientRect().height * (window.devicePixelRatio || 1));
 
-    // Layout
     const pad = 24;
     const titleSize = 30;
     const metaSize = 20;
@@ -363,25 +390,21 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     const footerHeight = logoSize + pad * 1.5;
     const exportHeight = headerHeight + chartHeight + footerHeight;
 
-    // Export canvas
     const out = document.createElement("canvas");
     out.width = exportWidth;
     out.height = exportHeight;
     const ctx = out.getContext("2d");
     if (!ctx) return;
 
-    // Theme
     const bg = "#0f1115";
     const titleColor = "#ffffff";
     const metaColor = "#34d399";
     const fallback1 = "#60a5fa";
     const fallback2 = "#f87171";
 
-    // Background
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, exportWidth, exportHeight);
 
-    // Header text (center)
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
@@ -393,10 +416,9 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     ctx.fillText(`Week ${week}, ${season}`, exportWidth / 2, pad + titleSize + 6);
     ctx.restore();
 
-    // Logos (safe load to avoid taint)
     const [topLogo, bottomLogo] = await Promise.all([
-      safeLoadImage(selected.team1.logo),
-      safeLoadImage(selected.team2.logo),
+      safeLoadImage(resolved.team1.logo),
+      safeLoadImage(resolved.team2.logo),
     ]);
 
     const circleAvatar = (
@@ -419,77 +441,33 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       ctx.restore();
     };
 
-    // Top-left logo
     circleAvatar(topLogo, pad, pad, logoSize, fallback1);
-    // Chart image
     ctx.drawImage(canvasChart, 0, headerHeight, exportWidth, chartHeight);
-    // Bottom-left logo
     circleAvatar(bottomLogo, pad, headerHeight + chartHeight + pad / 2, logoSize, fallback2);
 
-    const filename = `${selected.team1.name}_vs_${selected.team2.name}_winprob.png`;
-
+    // Convert to blob/data URL and deliver
     const toBlobAsync = () =>
-      new Promise<Blob | null>((resolve) => {
-        if (out.toBlob) out.toBlob((b) => resolve(b), "image/png");
-        else {
-          const data = out.toDataURL("image/png");
-          const byte = atob(data.split(",")[1]);
-          const mime = data.split(",")[0].split(":")[1].split(";")[0];
-          const ab = new ArrayBuffer(byte.length);
-          const ia = new Uint8Array(ab);
-          for (let i = 0; i < byte.length; i++) ia[i] = byte.charCodeAt(i);
-          resolve(new Blob([ab], { type: mime }));
-        }
-      });
+      new Promise<Blob | null>((resolve) => out.toBlob ? out.toBlob((b) => resolve(b), "image/png") : resolve(null));
 
-    // iOS: prefer Web Share; fallback to popup with image (long-press to save)
     if (isIOS) {
-      if ("share" in navigator && "canShare" in navigator) {
+      try {
         const blob = await toBlobAsync();
         if (blob) {
-          const file = new File([blob], filename, { type: "image/png" });
-          // @ts-ignore
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              // @ts-ignore
-              await navigator.share({ files: [file], title: "Win Probability Chart" });
-              if (popup) popup.close();
-              return;
-            } catch {
-              /* fall through */
-            }
-          }
           const url = URL.createObjectURL(blob);
           if (popup) {
-            popup.document.open();
-            popup.document.write(
-              `<!doctype html><title>${filename}</title>
-               <body style="margin:0;background:#0f1115;display:flex;align-items:center;justify-content:center;">
-                 <img src="${url}" alt="chart" style="max-width:100%;height:auto;display:block" />
-                 <div style="position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#fff;font:14px system-ui">
-                   Tap and hold the image to Save
-                 </div>
-               </body>`
-            );
-            popup.document.close();
+            popup.postMessage({ type: "img", url, filename }, "*");
+            try { popup.focus(); } catch {}
           }
+          // Note: do not revoke immediately; iOS needs the URL alive in new tab.
           return;
         }
+      } catch {
+        // fallback to data URL
       }
-      // Final iOS fallback: dataURL into the already opened popup
       const dataUrl = out.toDataURL("image/png");
       if (popup) {
-        popup.document.open();
-        popup.document.write(
-          `<!doctype html><title>${filename}</title>
-           <body style="margin:0;background:#0f1115;display:flex;align-items:center;justify-content:center;">
-             <img src="${dataUrl}" alt="chart" style="max-width:100%;height:auto;display:block" />
-             <div style="position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#fff;font:14px system-ui">
-               Tap and hold the image to Save
-             </div>
-           </body>`
-        );
-        popup.document.close();
+        popup.postMessage({ type: "img", url: dataUrl, filename }, "*");
+        try { popup.focus(); } catch {}
       }
       return;
     }
@@ -892,19 +870,14 @@ const WinProbabilityTracker: React.FC = () => {
   const handleDownload = async () => {
     if (!chartRef.current || !selected) return;
 
+    // Prepare filename before using it
+    const filename = `${selected.team1.name}_vs_${selected.team2.name}_winprob.png`;
+
     // Open popup immediately on iOS (before any await) to keep user-gesture context
     const isIOS = isIOSDevice();
     let popup: Window | null = null;
     if (isIOS) {
-      popup = window.open("", "_blank");
-      if (popup) {
-        popup.document.write(
-          `<!doctype html><title>Preparing...</title>
-           <body style="margin:0;background:#0f1115;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font:16px system-ui">
-             Preparing image…
-           </body>`
-        );
-      }
+      popup = openIOSReceiverPopup(filename);
     }
 
     const canvasChart = chartRef.current;
@@ -989,7 +962,7 @@ const WinProbabilityTracker: React.FC = () => {
     // Bottom-left logo
     circleAvatar(bottomLogo, pad, headerHeight + chartHeight + pad / 2, logoSize, fallback2);
 
-    const filename = `${selected.team1.name}_vs_${selected.team2.name}_winprob.png`;
+    // filename is already declared above
 
     const toBlobAsync = () =>
       new Promise<Blob | null>((resolve) => {

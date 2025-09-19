@@ -504,28 +504,62 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     a.remove();
   };
 
+  // Lock background scroll when this modal is open (prevents page scroll)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      // Prevent scroll chaining when inner content hits its ends
+      document.documentElement.style.overscrollBehavior = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overscrollBehavior = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overscrollBehavior = "";
+    };
+  }, [isOpen]);
+
   return (
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
       contentLabel="Win Probability Chart"
-      className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto relative"
-      overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto overscroll-contain relative"
+      overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overscroll-none"
       ariaHideApp={false}
       shouldCloseOnOverlayClick={true}
     >
-      <button
-        className="absolute top-2 right-4 text-2xl text-emerald-300"
-        onClick={onClose}
-        aria-label="Close"
-      >
-        &times;
-      </button>
+      {/* Action buttons (top-right) */}
+      <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+        <button
+          onClick={handleDownload}
+          aria-label="Download chart"
+          title="Download chart"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 3v12" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+        </button>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          title="Close"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 6l12 12" />
+            <path d="M18 6l-12 12" />
+          </svg>
+        </button>
+      </div>
 
       {resolved ? (
         <div>
           <h3 className="text-xl font-bold text-center text-emerald-300 mb-2 mt-2">Week {week}, {season}</h3>
-
           <div className="relative flex flex-col items-center mb-4" style={{ minHeight: "320px" }}>
             <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
               <img
@@ -553,13 +587,6 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
               />
               <span className="font-bold text-red-300">{resolved.team2.name}</span>
             </div>
-
-            <button
-              className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow"
-              onClick={handleDownload}
-            >
-              Download Chart
-            </button>
           </div>
         </div>
       ) : (
@@ -846,15 +873,18 @@ const WinProbabilityTracker: React.FC = () => {
     }
   }, [matchups, modalOpen, selected]);
 
-  // Lock background scroll when modal is open (like PlayerViewer)
+  // Lock background scroll when the parent modal (below) opens
   useEffect(() => {
     if (modalOpen) {
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overscrollBehavior = "none";
     } else {
       document.body.style.overflow = "";
+      document.documentElement.style.overscrollBehavior = "";
     }
     return () => {
       document.body.style.overflow = "";
+      document.documentElement.style.overscrollBehavior = "";
     };
   }, [modalOpen]);
 
@@ -1068,11 +1098,39 @@ const WinProbabilityTracker: React.FC = () => {
         isOpen={modalOpen}
         onRequestClose={() => setModalOpen(false)}
         contentLabel="Win Probability Chart"
-        className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto relative"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+        className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto overscroll-contain relative"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overscroll-none"
         ariaHideApp={false}
         shouldCloseOnOverlayClick={true}
       >
+        {/* Action buttons (top-right) */}
+        <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+          <button
+            onClick={handleDownload}
+            aria-label="Download chart"
+            title="Download chart"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 3v12" />
+              <path d="M7 10l5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setModalOpen(false)}
+            aria-label="Close"
+            title="Close"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 6l12 12" />
+              <path d="M18 6l-12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Close icon */}
         <button
           className="absolute top-2 right-4 text-2xl text-emerald-300"
           onClick={() => setModalOpen(false)}
@@ -1125,13 +1183,6 @@ const WinProbabilityTracker: React.FC = () => {
                 />
                 <span className="font-bold text-red-300">{selected.team2.name}</span>
               </div>
-
-              <button
-                className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow"
-                onClick={handleDownload}
-              >
-                Download Chart
-              </button>
             </div>
 
             <div className="flex justify-center mt-6">
@@ -1147,6 +1198,6 @@ const WinProbabilityTracker: React.FC = () => {
       </Modal>
     </div>
   );
-};
+}
 
 export default WinProbabilityTracker;

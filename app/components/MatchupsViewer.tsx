@@ -807,20 +807,34 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           {repeatedMatchups.map((m, idx) => {
             const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
             return (
-              <div key={`${m.team1}-${m.team2}-${idx}`} style={{ display: "inline-block", marginRight: 32 }}>
+              <div
+                key={`${m.team1}-${m.team2}-${idx}`}
+                style={{ display: "inline-block", marginRight: 32 }}
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push("/matchups");
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label="Go to matchups"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+                }}
+              >
                 <MatchupCard
                   m={m}
-                  style={{ width: cardWidth, minWidth: cardWidth, maxWidth: cardWidth, display: "inline-block", verticalAlign: "top" }}
+                  style={{
+                    width: cardWidth,
+                    minWidth: cardWidth,
+                    maxWidth: cardWidth,
+                    display: "inline-block",
+                    verticalAlign: "top"
+                  }}
                   hasChart={hasChart}
-                  showChartIcon={false} // HIDE icon on marquee cards
-                  onOpenChart={(mm) => {
-                    if (!hasChart) return;
-                    setChartSel({
-                      team1: { name: mm.team1, logo: getAvatar(mm.team1) },
-                      team2: { name: mm.team2, logo: getAvatar(mm.team2) },
-                    });
-                    setChartOpen(true);
-                  } } week={""}                />
+                  showChartIcon={false}
+                  week={""}
+                />
               </div>
             );
           })}

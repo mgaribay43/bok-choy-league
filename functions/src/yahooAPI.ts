@@ -12,9 +12,21 @@ This is an all-purpose function that can be used to call the Yahoo FantasyAPI to
 - Players
 - Stats
 */
+// Use current year for all logic
+const CURRENT_YEAR = new Date().getFullYear();
+
+// SportsDB API key
+const API_KEY =
+    process.env.THESPORTSDB_API_KEY_PREMIUM ||
+    process.env.THESPORTSDB_API_KEY ||
+    "307739"; // set your key in env for prod
 
 const getLeagueKeysByYear = async (): Promise<Record<string, string>> => {
-    const leagueKeysSnapshot = await admin.firestore().collection("League_Keys").doc("leagueKeysByYear").get();
+    const leagueKeysSnapshot = await admin
+        .firestore()
+        .collection("League_Keys")
+        .doc("leagueKeysByYear")
+        .get();
     if (!leagueKeysSnapshot.exists) {
         throw new Error("League keys document does not exist");
     }
@@ -23,6 +35,28 @@ const getLeagueKeysByYear = async (): Promise<Record<string, string>> => {
 
 if (!admin.apps.length) {
     admin.initializeApp();
+}
+
+// Helper to get current NFL week from SportsDB API
+async function getCurrentNFLWeek(): Promise<number> {
+    const year = CURRENT_YEAR;
+    const resp = await fetch(
+        `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsseason.php?id=4391&s=${year}`
+    );
+    const data = (await resp.json()) as { events?: any[] };
+    let currentWeek = 1;
+    if (Array.isArray(data.events)) {
+        const now = Date.now();
+        // Find the latest event that has started or is in progress
+        const sorted = data.events
+            .filter(ev => ev.intRound && ev.dateEvent)
+            .sort((a, b) => new Date(a.dateEvent).getTime() - new Date(b.dateEvent).getTime());
+        for (const ev of sorted) {
+            if (new Date(ev.dateEvent).getTime() > now) break;
+            currentWeek = Number(ev.intRound) || currentWeek;
+        }
+    }
+    return currentWeek;
 }
 
 export const yahooAPI = functions.https.onRequest(
@@ -34,7 +68,7 @@ export const yahooAPI = functions.https.onRequest(
     },
     async (req, res) => {
         const type = req.query.type as string;
-        const year = parseInt((req.query.year as string) || "2025", 10); // default to 2025
+        const year = parseInt((req.query.year as string) || String(CURRENT_YEAR), 10); // default to CURRENT_YEAR
         const weekParam = req.query.week as string | undefined;
         const week = weekParam && weekParam.trim() !== "" ? `;week=${weekParam}` : "";
         const playerKeys = (req.query.playerKeys as string) || ""; // optional playerKeys param
@@ -66,7 +100,7 @@ export const yahooAPI = functions.https.onRequest(
             switch (type) {
                 // API URL Builders
                 case "teams": {
-                    if (year === 2025) {
+                    if (year === CURRENT_YEAR) {
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/teams?format=json`;
                         break;
                     }
@@ -80,7 +114,7 @@ export const yahooAPI = functions.https.onRequest(
                     break;
                 }
                 case "standings": {
-                    if (year === 2025) {
+                    if (year === CURRENT_YEAR) {
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings?format=json`;
                         break;
                     }
@@ -94,7 +128,7 @@ export const yahooAPI = functions.https.onRequest(
                     break;
                 }
                 case "scoreboard": {
-                    if (year === 2025) {
+                    if (year === CURRENT_YEAR) {
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard${week}?format=json`;
                         break;
                     }
@@ -118,7 +152,7 @@ export const yahooAPI = functions.https.onRequest(
                     break;
                 }
                 case "roster": {
-                    if (year === 2025) {
+                    if (year === CURRENT_YEAR) {
                         const teamId = (req.query.teamId as string) || "1";
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/team/${leagueKey}.t.${teamId}/roster${week}?format=json`;
                         break;
@@ -140,7 +174,6 @@ export const yahooAPI = functions.https.onRequest(
                 }
                 case "players":
                     if (playerKeys.trim() === "") {
-                        // If no playerKeys provided, get all players in league (single call)
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/players?format=json`;
                         const yahooResponse = await fetch(endpoint, {
                             headers: {
@@ -153,7 +186,6 @@ export const yahooAPI = functions.https.onRequest(
                         res.status(200).json(json);
                         return;
                     } else {
-                        // Batch playerKeys in groups of 25 (yahoo Limits each call to max of 25 player objs)
                         const keysArray = playerKeys.split(",");
                         const batchSize = 25;
                         const batchedResponses = [];
@@ -162,7 +194,6 @@ export const yahooAPI = functions.https.onRequest(
                             const batchKeys = keysArray.slice(i, i + batchSize).join(",");
                             const batchEndpoint = `https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${batchKeys}?format=json`;
 
-                            console.log(`Fetching batch: ${batchKeys}`);
                             const batchResponse = await fetch(batchEndpoint, {
                                 headers: {
                                     Authorization: `Bearer ${accessToken}`,
@@ -176,10 +207,6 @@ export const yahooAPI = functions.https.onRequest(
                             batchedResponses.push(batchJson);
                         }
 
-                        // Combine batchedResponses into one response structure
-                        // Yahoo's response structure nests players inside fantasy_content.league[1].players
-                        // We'll merge all players objects
-
                         const combinedPlayers: Record<string, any> = {};
                         for (const response of batchedResponses) {
                             const playersObj = response.fantasy_content?.players || {};
@@ -190,12 +217,11 @@ export const yahooAPI = functions.https.onRequest(
                             });
                         }
 
-                        // Compose a combined JSON response similar to the original Yahoo format
                         const combinedResponse = {
                             fantasy_content: {
                                 ...batchedResponses[0]?.fantasy_content,
                                 league: [
-                                    batchedResponses[0]?.fantasy_content?.league?.[0], // league info
+                                    batchedResponses[0]?.fantasy_content?.league?.[0],
                                     {
                                         players: combinedPlayers,
                                     },
@@ -212,15 +238,25 @@ export const yahooAPI = functions.https.onRequest(
                         return;
                     }
 
-                    // Compose a cache key based on year, week, and playerKeys
-                    const cacheKey = `playerstats_${year}_${weekParam || ""}_${playerKeys}`;
-                    const cached = await getCache(cacheKey);
-                    if (cached) {
-                        res.status(200).json(cached);
-                        return;
+                    // Use SportsDB API to get the current NFL week
+                    let isLiveWeek = false;
+                    try {
+                        const currentWeek = await getCurrentNFLWeek();
+                        isLiveWeek = !!(weekParam && Number(weekParam) === currentWeek);
+                    } catch (err) {
+                        isLiveWeek = false;
                     }
 
-                    // batch player keys in groups of 25 max
+                    const cacheKey = `playerstats_${year}_${weekParam || ""}_${playerKeys}`;
+                    // Only use cache for non-live weeks
+                    if (!isLiveWeek) {
+                        const cached = await getCache(cacheKey);
+                        if (cached) {
+                            res.status(200).json(cached);
+                            return;
+                        }
+                    }
+
                     const keysArray = playerKeys.split(",");
                     const batchSize = 25;
                     const batchedResponses = [];
@@ -241,7 +277,6 @@ export const yahooAPI = functions.https.onRequest(
                         batchedResponses.push(batchJson);
                     }
 
-                    // Merge batched player stats just like you do for players
                     const combinedPlayers: Record<string, any> = {};
                     for (const response of batchedResponses) {
                         const playersObj = response.fantasy_content?.players || {};
@@ -256,7 +291,7 @@ export const yahooAPI = functions.https.onRequest(
                         fantasy_content: {
                             ...batchedResponses[0]?.fantasy_content,
                             league: [
-                                batchedResponses[0]?.fantasy_content?.league?.[0], // league info
+                                batchedResponses[0]?.fantasy_content?.league?.[0],
                                 {
                                     players: combinedPlayers,
                                 },
@@ -264,8 +299,10 @@ export const yahooAPI = functions.https.onRequest(
                         },
                     };
 
-                    // Cache the combined response as a string
-                    await setCache(cacheKey, combinedResponse);
+                    // Cache only for non-live weeks
+                    if (!isLiveWeek) {
+                        await setCache(cacheKey, combinedResponse);
+                    }
 
                     res.status(200).json(combinedResponse);
                     return;
@@ -362,7 +399,7 @@ export const yahooAPI = functions.https.onRequest(
                 }
 
                 case "settings": {
-                    if (year === 2025) {
+                    if (year === CURRENT_YEAR) {
                         endpoint = `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/settings?format=json`;
                         break;
                     }
@@ -409,51 +446,48 @@ export const yahooAPI = functions.https.onRequest(
                 let cacheKey = "";
                 switch (type) {
                     case "teams": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         cacheKey = `teams_${year}`;
                         break;
                     }
                     case "standings": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         cacheKey = `standings_${year}`;
                         break;
                     }
                     case "scoreboard": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         cacheKey = `scoreboard_${year}_${weekParam || ""}`;
                         break;
                     }
                     case "draftresults": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
-                        }
                         cacheKey = `draftresults_${year}`;
                         break;
                     }
                     case "roster": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         const teamId = (req.query.teamId as string) || "1";
                         cacheKey = `roster_${year}_${teamId}_${weekParam || ""}`;
                         break;
                     }
                     case "settings": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         cacheKey = `settings_${year}`;
                         break;
                     }
                     case "transactions": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
+                        if (year === CURRENT_YEAR) {
+                            break;
                         }
                         cacheKey = `transactions_${year}`;
                         break;

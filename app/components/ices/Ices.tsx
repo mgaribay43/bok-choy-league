@@ -283,8 +283,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
         <main
           ref={videosSectionRef}
           className={latestOnly
-            ? "w-full max-w-4xl px-2 sm:px-6 py-4 pb-20 flex flex-col items-center"
-            : "w-full max-w-4xl px-2 sm:px-6 py-8 pb-20 flex flex-col items-center"}
+            ? "w-full max-w-4xl px-2 sm:px-6 py-4 pb-10 flex flex-col items-center"
+            : "w-full max-w-4xl px-2 sm:px-6 py-6 pb-10 flex flex-col items-center"}
         >
           {/* Loading/Error/No Results */}
           {loading ? (

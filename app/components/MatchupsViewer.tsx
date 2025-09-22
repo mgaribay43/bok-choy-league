@@ -7,6 +7,22 @@ import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 
+// Helper to build Yahoo Fantasy matchup link for the app/browser
+function getYahooMatchupLink({
+  leagueId,
+  week,
+  mid1,
+  mid2,
+}: {
+  leagueId: string | number;
+  week: string | number;
+  mid1: string | number;
+  mid2: string | number;
+}) {
+  return `https://football.fantasysports.yahoo.com/f1/${leagueId}/matchup?week=${week}&mid1=${mid1}&mid2=${mid2}`;
+}
+
+// Update Matchup type to include team IDs if available
 interface Matchup {
   team1: string;
   team2: string;
@@ -21,9 +37,11 @@ interface Matchup {
   winPct2?: number;
   projected1?: string;
   projected2?: string;
-  // NEW: recap
   recapUrl?: string;
   recapAvailable?: boolean;
+  team1Id?: string | number;
+  team2Id?: string | number;
+  week?: number | string;
 }
 
 const TEAM_AVATARS: Record<string, string> = {};
@@ -254,8 +272,8 @@ type MatchupCardProps = {
   style?: React.CSSProperties;
   onOpenChart?: (m: Matchup) => void;
   hasChart?: boolean;
-  showChartIcon?: boolean; // existing
-  showRecapButton?: boolean; // NEW
+  showChartIcon?: boolean;
+  showRecapButton?: boolean;
 };
 
 const MatchupCard = ({
@@ -264,11 +282,20 @@ const MatchupCard = ({
   style = {},
   onOpenChart,
   hasChart = true,
-  showChartIcon = true,       // default shows icon
-  showRecapButton = false,    // default hidden (marquee keeps it hidden)
-}: MatchupCardProps) => {
+  showChartIcon = true,
+  showRecapButton = false,
+  week,
+}: MatchupCardProps & { week: number | string }) => {
   const win1 = Number(m.displayValue1) > Number(m.displayValue2);
   const win2 = Number(m.displayValue2) > Number(m.displayValue1);
+
+  const leagueId = "128797";
+  const matchupUrl = getYahooMatchupLink({
+    leagueId,
+    week,
+    mid1: m.team1Id ?? 1,
+    mid2: m.team2Id ?? 2,
+  });
 
   return (
     <div
@@ -285,7 +312,7 @@ const MatchupCard = ({
         ...style,
       }}
     >
-      {/* Top bar: recap (left) and chart (right). Hidden on marquee via props */}
+      {/* Top bar: recap (left) and chart (right). Buttons are confined to their own area */}
       {(showChartIcon || (showRecapButton && m.recapUrl)) && (
         <div
           style={{
@@ -293,7 +320,6 @@ const MatchupCard = ({
             justifyContent: "space-between",
             alignItems: "center",
             padding: "10px 10px 0 10px",
-            pointerEvents: "none", // allow inner buttons to toggle their own pointer events
           }}
         >
           {/* Week Recap left */}
@@ -330,7 +356,11 @@ const MatchupCard = ({
           {/* Chart button right */}
           {showChartIcon && (
             <button
-              onClick={() => hasChart && onOpenChart?.(m)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                hasChart && onOpenChart?.(m);
+              }}
               aria-label={hasChart ? "Open win probability chart" : "No chart data yet"}
               title={hasChart ? "Open win probability chart" : "No chart data yet"}
               disabled={!hasChart}
@@ -361,55 +391,67 @@ const MatchupCard = ({
         </div>
       )}
 
-      {showNames && (
+      {/* Make the card itself link to Yahoo matchup */}
+      <a
+        href={matchupUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          textDecoration: "none",
+          display: "block",
+        }}
+        aria-label={`Open matchup in Yahoo Fantasy`}
+      >
+        {showNames && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              padding: "10px 18px 0 18px",
+              gap: 8,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
+            </div>
+            <div style={{ width: 12 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
+            </div>
+          </div>
+        )}
+
         <div
           style={{
             display: "flex",
+            alignItems: "center",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "10px 18px 0 18px", // full width; no right reserve needed
+            padding: showNames ? "4px 18px 0 18px" : "18px 18px 0 18px",
+            marginTop: showNames ? 6 : 0,
+            marginBottom: 8,
             gap: 8,
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
-          </div>
-          <div style={{ width: 12 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
-          </div>
+          <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
+          <ScoreBox
+            value={m.displayValue1}
+            projected={m.projected1}
+            highlight={win1 ? "win" : win2 ? "lose" : "tie"}
+            align="right"
+          />
+          <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>/</div>
+          <ScoreBox
+            value={m.displayValue2}
+            projected={m.projected2}
+            highlight={win2 ? "win" : win1 ? "lose" : "tie"}
+            align="left"
+          />
+          <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
         </div>
-      )}
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: showNames ? "4px 18px 0 18px" : "18px 18px 0 18px", // no right reserve
-          marginTop: showNames ? 6 : 0,
-          marginBottom: 8,
-          gap: 8,
-        }}
-      >
-        <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
-        <ScoreBox
-          value={m.displayValue1}
-          projected={m.projected1}
-          highlight={win1 ? "win" : win2 ? "lose" : "tie"}
-          align="right"
-        />
-        <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>/</div>
-        <ScoreBox
-          value={m.displayValue2}
-          projected={m.projected2}
-          highlight={win2 ? "win" : win1 ? "lose" : "tie"}
-          align="left"
-        />
-        <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
-      </div>
-
-      <WinBar pct1={m.winPct1} pct2={m.winPct2} />
+        <WinBar pct1={m.winPct1} pct2={m.winPct2} />
+      </a>
     </div>
   );
 };
@@ -429,7 +471,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartOpen, setChartOpen] = useState(false);
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
-  const [initializing, setInitializing] = useState(true); // NEW: hide controls on first load
+  const [initializing, setInitializing] = useState(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -464,22 +506,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
       const status = scoreboard?.status;
       setIsMatchupStarted(status === "midevent");
-
-      // Only auto-advance currentWeek if not viewing a different week
-      if (
-        !useViewWeek &&
-        lastStatusRef.current !== null &&
-        lastStatusRef.current !== "postevent" &&
-        status === "postevent" &&
-        weekParam < maxW
-      ) {
-        lastStatusRef.current = status;
-        setCurrentWeek(weekParam + 1);
-        localStorage.setItem("currentWeek", String(weekParam + 1));
-        fetchMatchups(weekParam + 1, false, false);
-        return;
-      }
-      lastStatusRef.current = status;
 
       const matchupsData = scoreboard?.matchups;
       if (!matchupsData) {
@@ -524,7 +550,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           const team1 = teams["0"].team;
           const team2 = teams["1"].team;
           const started = matchup.matchup.status !== "preevent";
-          // NEW: recap info
           const recapAvailable =
             matchup.matchup.is_matchup_recap_available === 1 ||
             matchup.matchup.is_matchup_recap_available === "1";
@@ -585,6 +610,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
               : 0;
           const team1Proj = team1?.[1]?.team_projected_points?.total || "";
           const team2Proj = team2?.[1]?.team_projected_points?.total || "";
+          const team1Id = team1?.[0]?.find((item: any) => item.team_id)?.team_id ?? 1;
+          const team2Id = team2?.[0]?.find((item: any) => item.team_id)?.team_id ?? 2;
+          const weekNum = scoreboard?.week ?? currentWeek;
           return {
             team1: t1,
             team2: t2,
@@ -599,27 +627,43 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             winPct2: team2WinPct,
             projected1: team1Proj,
             projected2: team2Proj,
-            recapUrl,                  // NEW
-            recapAvailable,            // NEW
+            recapUrl,
+            recapAvailable,
+            team1Id,
+            team2Id,
+            week: weekNum,
           };
         });
 
       if (updateOnlyScores) {
         setMatchups((prevMatchups) => {
+          // If no previous matchups, set all
           if (!prevMatchups.length) return formattedMatchups;
-          return formattedMatchups.map((fresh, i) => {
-            const old = prevMatchups[i];
-            if (!old) return fresh;
-            return {
-              ...old,
-              displayValue1: fresh.displayValue1,
-              displayValue2: fresh.displayValue2,
-              winPct1: fresh.winPct1,
-              winPct2: fresh.winPct2,
-              winnerOnTop: fresh.winnerOnTop,
-              projected1: fresh.projected1,
-              projected2: fresh.projected2,
-            };
+          // Only update scores, projected scores, and win probabilities if changed
+          return prevMatchups.map((old, i) => {
+            const fresh = formattedMatchups[i];
+            if (!fresh) return old;
+            const changed =
+              old.displayValue1 !== fresh.displayValue1 ||
+              old.displayValue2 !== fresh.displayValue2 ||
+              old.projected1 !== fresh.projected1 ||
+              old.projected2 !== fresh.projected2 ||
+              old.winPct1 !== fresh.winPct1 ||
+              old.winPct2 !== fresh.winPct2 ||
+              old.winnerOnTop !== fresh.winnerOnTop;
+            if (changed) {
+              return {
+                ...old,
+                displayValue1: fresh.displayValue1,
+                displayValue2: fresh.displayValue2,
+                projected1: fresh.projected1,
+                projected2: fresh.projected2,
+                winPct1: fresh.winPct1,
+                winPct2: fresh.winPct2,
+                winnerOnTop: fresh.winnerOnTop,
+              };
+            }
+            return old;
           });
         });
       } else {
@@ -651,20 +695,22 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     // eslint-disable-next-line
   }, []);
 
+  // POLLING LOGIC
   useEffect(() => {
-    if (isMatchupStarted) {
-      pollingRef.current = setInterval(() => fetchMatchups(undefined, true), 15000);
-    } else if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
+    // Always poll every 15 seconds, regardless of matchup status
+    pollingRef.current = setInterval(() => {
+      fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
+    }, 15000);
+
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
     };
-  }, [isMatchupStarted, currentWeek]);
+    // Only rerun when week changes
+    // eslint-disable-next-line
+  }, [viewWeek, currentWeek]);
 
   const handlePrevWeek = () => {
     const week = (viewWeek !== null ? viewWeek : currentWeek) - 1;
@@ -774,8 +820,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                       team2: { name: mm.team2, logo: getAvatar(mm.team2) },
                     });
                     setChartOpen(true);
-                  }}
-                />
+                  } } week={""}                />
               </div>
             );
           })}
@@ -926,7 +971,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 m={m}
                 showNames
                 hasChart={hasChart}
-                showRecapButton // NEW: show on matchups page
+                showRecapButton
+                week={weekToShow} // <-- pass week from dropdown!
                 onOpenChart={(mm) => {
                   if (!hasChart) return;
                   setChartSel({

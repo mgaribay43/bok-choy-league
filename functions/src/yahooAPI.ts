@@ -430,9 +430,6 @@ export const yahooAPI = functions.https.onRequest(
                         break;
                     }
                     case "draftresults": {
-                        if (year === 2025) {
-                            break; // Skip caching for 2025
-                        }
                         cacheKey = `draftresults_${year}`;
                         break;
                     }

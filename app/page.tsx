@@ -7,6 +7,7 @@ import Events from './components/Events';
 import KeeperBanner from './components/KeeperMarquee';
 import MatchupsMarquee from './components/MatchupsViewer';
 import Polls from './components/Poll';
+import Transactions from './components/Transactions';
 
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
@@ -33,6 +34,7 @@ export default function HomePage() {
       <Polls ActivePolls={true} />
       <Standings topThree />
       <Ices latestOnly />
+      <Transactions/>
       <Events eventsSlideshow />
     </div>
   );

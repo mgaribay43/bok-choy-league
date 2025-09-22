@@ -3,49 +3,100 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
-// Normalize status to one of Q1..Q4 or null
-function normalizeQuarter(status: unknown): "Q1" | "Q2" | "Q3" | "Q4" | null {
-  if (status == null) return null;
-  const raw = String(status).replace(/[^\x20-\x7E]/g, "").trim().toUpperCase();
-  const m = raw.match(/^Q([1-4])\b/);
-  return m ? (`Q${m[1]}` as any) : null;
+// ET date helper (avoids UTC boundary issues on night games)
+function getETDateYYYYMMDD(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // YYYY-MM-DD
 }
 
-// NEW: gate — call SportsDB, require non-empty events, and at least one Q1–Q4
+// Parse kickoff time (UTC first, then local as last resort)
+function parseKickoff(ev: any): Date | null {
+  // 1) UTC timestamp (best)
+  const ts = String(ev?.strTimestamp || "").trim();
+  if (ts) {
+    const iso = /[zZ]$/.test(ts) ? ts : ts + "Z";
+    const d = new Date(iso);
+    if (!isNaN(d.getTime())) return d;
+  }
+  // 2) UTC date/time
+  const dateEvent = String(ev?.dateEvent || "").trim();
+  const strTime = String(ev?.strTime || "").trim();
+  if (dateEvent && strTime) {
+    const iso = `${dateEvent}T${strTime}${/[zZ]$/.test(strTime) ? "" : "Z"}`;
+    const d = new Date(iso);
+    if (!isNaN(d.getTime())) return d;
+  }
+  // 3) Local date/time (fallback; interpreted by server TZ)
+  const dateEventLocal = String(ev?.dateEventLocal || ev?.strEventLocal || "").trim();
+  const strTimeLocal = String(ev?.strTimeLocal || "").trim();
+  if (dateEventLocal && strTimeLocal) {
+    const d = new Date(`${dateEventLocal}T${strTimeLocal}`);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
+// NEW: v1 gate — between earliest kickoff and 5h after latest kickoff
 async function sportsDbShouldPoll(): Promise<boolean> {
-  const date = new Date().toISOString().slice(0, 10);
-  const url = `https://www.thesportsdb.com/api/v1/json/307739/eventsday.php?d=${date}&l=${encodeURIComponent("NFL")}`;
+  const API_KEY =
+    process.env.THESPORTSDB_API_KEY_PREMIUM ||
+    process.env.THESPORTSDB_API_KEY ||
+    "307739"; // set your key in env for prod
+
+  const etDate = getETDateYYYYMMDD();
+  const url = `https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsday.php?d=${etDate}&l=${encodeURIComponent(
+    "NFL"
+  )}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
     const raw = await res.text();
-
-    // Debug: print the raw response received by the Cloud Function
+    const ctype = res.headers.get("content-type") || "";
+    console.log("[SportsDB GET]:", url);
+    console.log("[SportsDB content-type]:", ctype);
     console.log("[SportsDB raw]:", raw);
 
-    let data: any;
+    // Parse JSON (treat events: null as empty)
+    let data: any = null;
     try {
       data = JSON.parse(raw);
-    } catch (e) {
-      console.error("[SportsDB] JSON parse error:", e);
+    } catch {
+      console.error("[SportsDB] JSON parse error (v1).");
       return false;
     }
-
     const events: any[] = Array.isArray(data?.events) ? data.events : [];
     if (!events.length) {
       console.log("[SportsDB] events array empty — skipping polling.");
       return false;
     }
 
-    const anyInQuarter = events.some((ev) => normalizeQuarter(ev?.strStatus) !== null);
-    if (!anyInQuarter) {
-      console.log("[SportsDB] no events with strStatus Q1–Q4 — skipping polling.");
+    // Collect kickoff times
+    const kickoffs: Date[] = events
+      .map(parseKickoff)
+      .filter((d): d is Date => d instanceof Date && !isNaN(d.getTime()));
+
+    if (!kickoffs.length) {
+      console.log("[SportsDB] no parsable kickoff times — skipping polling.");
       return false;
     }
 
-    return true;
+    const earliest = new Date(Math.min(...kickoffs.map((d) => d.getTime())));
+    const latest = new Date(Math.max(...kickoffs.map((d) => d.getTime())));
+    const pollUntil = new Date(latest.getTime() + 5 * 60 * 60 * 1000);
+    const now = new Date();
+
+    const shouldPoll = now >= earliest && now <= pollUntil;
+    console.log(
+      `[SportsDB] events=${events.length} earliest=${earliest.toISOString()} latest=${latest.toISOString()} pollUntil=${pollUntil.toISOString()} now=${now.toISOString()} shouldPoll=${shouldPoll}`
+    );
+
+    return shouldPoll;
   } catch (err) {
-    console.error("[SportsDB] fetch error:", err);
+    console.error("[SportsDB] v1 eventsday fetch error:", err);
     return false;
   }
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import MatchupDetails from "./matchupDetails";
 
 interface Matchup {
   team1: string;
@@ -24,6 +25,9 @@ interface Matchup {
   // NEW: recap
   recapUrl?: string;
   recapAvailable?: boolean;
+  // NEW: to open MatchupDetails
+  teamId1?: string;
+  teamId2?: string;
 }
 
 const TEAM_AVATARS: Record<string, string> = {};
@@ -256,6 +260,8 @@ type MatchupCardProps = {
   hasChart?: boolean;
   showChartIcon?: boolean; // existing
   showRecapButton?: boolean; // NEW
+  // NEW: open details modal
+  onOpenDetails?: (m: Matchup) => void;
 };
 
 const MatchupCard = ({
@@ -264,11 +270,20 @@ const MatchupCard = ({
   style = {},
   onOpenChart,
   hasChart = true,
-  showChartIcon = true,       // default shows icon
-  showRecapButton = false,    // default hidden (marquee keeps it hidden)
+  showChartIcon = true,
+  showRecapButton = false,
+  onOpenDetails,
 }: MatchupCardProps) => {
   const win1 = Number(m.displayValue1) > Number(m.displayValue2);
   const win2 = Number(m.displayValue2) > Number(m.displayValue1);
+
+  // Add router for navigation
+  const router = useRouter();
+
+  // Helper to get current week (for correct navigation)
+  const currentWeek = typeof window !== "undefined"
+    ? Number(localStorage.getItem("currentWeek")) || 1
+    : 1;
 
   return (
     <div
@@ -284,6 +299,9 @@ const MatchupCard = ({
         overflow: "hidden",
         ...style,
       }}
+      onClick={() => onOpenDetails?.(m)}
+      role="button"
+      tabIndex={0}
     >
       {/* Top bar: recap (left) and chart (right). Hidden on marquee via props */}
       {(showChartIcon || (showRecapButton && m.recapUrl)) && (
@@ -302,6 +320,7 @@ const MatchupCard = ({
               href={m.recapUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               style={{
                 background: "#0f1117",
                 border: "1px solid #3a3d45",
@@ -330,14 +349,17 @@ const MatchupCard = ({
           {/* Chart button right */}
           {showChartIcon && (
             <button
-              onClick={() => hasChart && onOpenChart?.(m)}
+              onClick={(e) => {
+                e.stopPropagation();
+                hasChart && onOpenChart?.(m);
+              }}
               aria-label={hasChart ? "Open win probability chart" : "No chart data yet"}
               title={hasChart ? "Open win probability chart" : "No chart data yet"}
               disabled={!hasChart}
               style={{
                 background: "#0f1117",
                 border: "1px solid #3a3d45",
-                color: hasChart ? "#e5e7eb" : "#6b7280",
+                color: hasChart ? "#e7e7eb" : "#6b7280",
                 borderRadius: 10,
                 padding: "8px 10px",
                 display: "inline-flex",
@@ -372,11 +394,33 @@ const MatchupCard = ({
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
+            <span
+              style={{ cursor: "pointer", color: "#38bdf8", textDecoration: "underline" }}
+              onClick={e => {
+                e.stopPropagation();
+                router.push(`/roster?year=2025&teamId=${m.teamId1}&week=${currentWeek}`);
+              }}
+              tabIndex={0}
+              role="link"
+              aria-label={`View ${m.team1} roster`}
+            >
+              <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
+            </span>
           </div>
           <div style={{ width: 12 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
+            <span
+              style={{ cursor: "pointer", color: "#38bdf8", textDecoration: "underline" }}
+              onClick={e => {
+                e.stopPropagation();
+                router.push(`/roster?year=2025&teamId=${m.teamId2}&week=${currentWeek}`);
+              }}
+              tabIndex={0}
+              role="link"
+              aria-label={`View ${m.team2} roster`}
+            >
+              <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
+            </span>
           </div>
         </div>
       )}
@@ -430,6 +474,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true); // NEW: hide controls on first load
+  const [detailsOpen, setDetailsOpen] = useState(false);             // NEW
+  const [detailsSel, setDetailsSel] = useState<Matchup | null>(null); // NEW
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -534,21 +580,18 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             team1?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 1";
           const team2Name =
             team2?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 2";
-          const team1Score = started
-            ? parseFloat(team1?.[1]?.team_points?.total || "0")
-            : 0;
-          const team2Score = started
-            ? parseFloat(team2?.[1]?.team_points?.total || "0")
-            : 0;
+          const team1Id = team1?.[0]?.find((item: any) => item.team_id)?.team_id || "";
+          const team2Id = team2?.[0]?.find((item: any) => item.team_id)?.team_id || "";
+          const team1Score = started ? parseFloat(team1?.[1]?.team_points?.total || "0") : 0;
+          const team2Score = started ? parseFloat(team2?.[1]?.team_points?.total || "0") : 0;
           const team1Logo =
-            team1?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
-              ?.team_logo?.url ||
+            team1?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ||
             "https://cdn-icons-png.flaticon.com/512/149/149071.png";
           const team2Logo =
-            team2?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
-              ?.team_logo?.url ||
+            team2?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ||
             "https://cdn-icons-png.flaticon.com/512/149/149071.png";
           const isFinished = scoreboard?.is_finished === 1;
+
           let winnerOnTop = false;
           let t1 = team1Name,
             t2 = team2Name,
@@ -557,34 +600,24 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             r1 = records[team1Name],
             r2 = records[team2Name],
             a1 = team1Logo,
-            a2 = team2Logo;
+            a2 = team2Logo,
+            i1 = String(team1Id),
+            i2 = String(team2Id);
+
           if (isFinished && started && team1Score !== team2Score) {
             if (team2Score > team1Score) {
-              [t1, t2, s1, s2, r1, r2, a1, a2] = [
-                t2,
-                t1,
-                s2,
-                s1,
-                r2,
-                r1,
-                a2,
-                a1,
-              ];
+              [t1, t2, s1, s2, r1, r2, a1, a2, i1, i2] = [t2, t1, s2, s1, r2, r1, a2, a1, i2, i1];
             }
             winnerOnTop = true;
           }
+
           const team1WinProbRaw = team1?.[1]?.win_probability;
           const team2WinProbRaw = team2?.[1]?.win_probability;
-          const team1WinPct =
-            typeof team1WinProbRaw === "number"
-              ? team1WinProbRaw * 100
-              : 0;
-          const team2WinPct =
-            typeof team2WinProbRaw === "number"
-              ? team2WinProbRaw * 100
-              : 0;
+          const team1WinPct = typeof team1WinProbRaw === "number" ? team1WinProbRaw * 100 : 0;
+          const team2WinPct = typeof team2WinProbRaw === "number" ? team2WinProbRaw * 100 : 0;
           const team1Proj = team1?.[1]?.team_projected_points?.total || "";
           const team2Proj = team2?.[1]?.team_projected_points?.total || "";
+
           return {
             team1: t1,
             team2: t2,
@@ -599,9 +632,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             winPct2: team2WinPct,
             projected1: team1Proj,
             projected2: team2Proj,
-            recapUrl,                  // NEW
-            recapAvailable,            // NEW
-          };
+            recapUrl,
+            recapAvailable,
+            teamId1: i1,               // NEW
+            teamId2: i2,               // NEW
+          } as Matchup;
         });
 
       if (updateOnlyScores) {
@@ -665,6 +700,108 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       }
     };
   }, [isMatchupStarted, currentWeek]);
+
+  // Poll for scoreboard updates every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [viewWeek, currentWeek]);
+
+  // Poll for scoring updates every 30 seconds
+  useEffect(() => {
+    // Only poll for scoring updates if viewing the current week
+    if (viewWeek !== null && viewWeek !== currentWeek) return;
+
+    const interval = setInterval(async () => {
+      try {
+        // Always use the currently viewed week
+        const weekParam = currentWeek;
+        const response = await fetch(
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=2025&week=${weekParam}`
+        );
+        const data = await response.json();
+        const scoreboard = data?.fantasy_content?.league?.[1]?.scoreboard?.["0"];
+        const matchupsData = scoreboard?.matchups;
+
+        if (!matchupsData) return;
+
+        // Format new scores only
+        const formattedScores = Object.values(matchupsData)
+          .filter(
+            (matchup: any) =>
+              matchup &&
+              matchup.matchup &&
+              matchup.matchup["0"] &&
+              matchup.matchup["0"].teams
+          )
+          .map((matchup: any) => {
+            const teams = matchup.matchup["0"].teams;
+            const team1 = teams["0"].team;
+            const team2 = teams["1"].team;
+            const started = matchup.matchup.status !== "preevent";
+            const team1Score = started ? parseFloat(team1?.[1]?.team_points?.total || "0") : 0;
+            const team2Score = started ? parseFloat(team2?.[1]?.team_points?.total || "0") : 0;
+            const team1Proj = team1?.[1]?.team_projected_points?.total || "";
+            const team2Proj = team2?.[1]?.team_projected_points?.total || "";
+            const team1WinProbRaw = team1?.[1]?.win_probability;
+            const team2WinProbRaw = team2?.[1]?.win_probability;
+            const team1WinPct = typeof team1WinProbRaw === "number" ? team1WinProbRaw * 100 : 0;
+            const team2WinPct = typeof team2WinProbRaw === "number" ? team2WinProbRaw * 100 : 0;
+            return {
+              displayValue1: team1Score.toFixed(2),
+              displayValue2: team2Score.toFixed(2),
+              projected1: team1Proj,
+              projected2: team2Proj,
+              winPct1: team1WinPct,
+              winPct2: team2WinPct,
+            };
+          });
+
+        // Only update changed scores
+        setMatchups((prevMatchups) => {
+          if (!prevMatchups.length) return prevMatchups;
+          return prevMatchups.map((old, i) => {
+            const fresh = formattedScores[i];
+            if (!fresh) return old;
+            let changed = false;
+            const updated: any = { ...old };
+            if (old.displayValue1 !== fresh.displayValue1) {
+              updated.displayValue1 = fresh.displayValue1;
+              changed = true;
+            }
+            if (old.displayValue2 !== fresh.displayValue2) {
+              updated.displayValue2 = fresh.displayValue2;
+              changed = true;
+            }
+            if (old.projected1 !== fresh.projected1) {
+              updated.projected1 = fresh.projected1;
+              changed = true;
+            }
+            if (old.projected2 !== fresh.projected2) {
+              updated.projected2 = fresh.projected2;
+              changed = true;
+            }
+            if (old.winPct1 !== fresh.winPct1) {
+              updated.winPct1 = fresh.winPct1;
+              changed = true;
+            }
+            if (old.winPct2 !== fresh.winPct2) {
+              updated.winPct2 = fresh.winPct2;
+              changed = true;
+            }
+            return changed ? updated : old;
+          });
+        });
+      } catch {
+        // Ignore polling errors
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [viewWeek, currentWeek]);
 
   const handlePrevWeek = () => {
     const week = (viewWeek !== null ? viewWeek : currentWeek) - 1;
@@ -785,6 +922,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   }
 
   const weekToShow = viewWeek !== null ? viewWeek : currentWeek;
+  const seasonYear = String(new Date().getFullYear()); // for MatchupDetails
 
   return (
     <div style={{ background: "#0f0f0f", minHeight: "100vh", color: "#fff" }}>
@@ -926,7 +1064,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 m={m}
                 showNames
                 hasChart={hasChart}
-                showRecapButton // NEW: show on matchups page
+                showRecapButton
                 onOpenChart={(mm) => {
                   if (!hasChart) return;
                   setChartSel({
@@ -935,18 +1073,51 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   });
                   setChartOpen(true);
                 }}
+                onOpenDetails={(mm) => {
+                  setDetailsSel(mm);
+                  setDetailsOpen(true);
+                }}
               />
             );
           })
         )}
       </div>
+
+      {/* NEW: MatchupDetails modal */}
+      {detailsOpen && detailsSel && (
+        <MatchupDetails
+          isOpen={detailsOpen}
+          onClose={() => setDetailsOpen(false)}
+          season={seasonYear}
+          week={weekToShow}
+          team1={{
+            id: detailsSel.teamId1 || "",
+            name: detailsSel.team1,
+            logo: detailsSel.avatar1,
+            record: detailsSel.record1,
+            score: Number(detailsSel.displayValue1) || 0,
+            projected: Number.isFinite(Number(detailsSel.projected1)) ? Number(detailsSel.projected1) : undefined,
+          }}
+          team2={{
+            id: detailsSel.teamId2 || "",
+            name: detailsSel.team2,
+            logo: detailsSel.avatar2,
+            record: detailsSel.record2,
+            score: Number(detailsSel.displayValue2) || 0,
+            projected: Number.isFinite(Number(detailsSel.projected2)) ? Number(detailsSel.projected2) : undefined,
+          }}
+          winPct1={detailsSel.winPct1}
+          winPct2={detailsSel.winPct2}
+        />
+      )}
+
       {chartOpen && chartSel && (
         <WinProbChartModal
           isOpen={chartOpen}
           onClose={() => setChartOpen(false)}
           selected={chartSel}
-          season={String(new Date().getFullYear())}
-          week={viewWeek !== null ? viewWeek : currentWeek}
+          season={seasonYear}
+          week={weekToShow}
         />
       )}
     </div>

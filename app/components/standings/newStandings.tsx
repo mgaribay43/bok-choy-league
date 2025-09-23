@@ -376,7 +376,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="text-green-400 font-mono text-sm">{team.record}</div>
             </div>
 
-            {/* PF / PA / +/- / Avg Pts */}
+            {/* PF / PA / Avg / +/- */}
             <div className="mt-2 grid grid-cols-4 gap-2 text-center">
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PF</div>
@@ -387,12 +387,12 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <div className="text-emerald-200 font-mono text-sm">{team.pointsAgainst.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
-                <div className="text-[10px] text-emerald-300">+/-</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
-              </div>
-              <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">Avg</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.avgPoints.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">+/-</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
               </div>
             </div>
           </div>
@@ -486,11 +486,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.record}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsFor.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsAgainst.toFixed(2)}</td>
+                <td className="py-2 px-3 text-emerald-400 text-center">{team.avgPoints.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointDiff.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.winPct}</td>
-                <td className="py-2 px-3 text-emerald-400 text-center">
-                  {team.avgPoints.toFixed(2)}
-                </td>
               </tr>
             ))}
           </tbody>

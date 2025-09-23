@@ -16,6 +16,7 @@ type TeamEntry = {
   pointsAgainst: number;
   pointDiff: number;
   winPct: string;
+  avgPoints: number; // <-- Add this field
 };
 
 const START_YEAR = 2017;
@@ -95,6 +96,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
             winPct = ((wins + 0.5 * ties) / gamesPlayed).toFixed(3);
           }
 
+          // Average points per week
+          const avgPoints = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
+
           parsed.push({
             id,
             name,
@@ -106,6 +110,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
             pointsAgainst,
             pointDiff,
             winPct,
+            avgPoints, // <-- Add to parsed object
           });
         }
 
@@ -132,7 +137,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     | "pointsFor"
     | "pointsAgainst"
     | "pointDiff"
-    | "winPct";
+    | "winPct"
+    | "avgPoints";
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -175,6 +181,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
           break;
         case "winPct":
           cmp = parseFloat(a.winPct) - parseFloat(b.winPct);
+          break;
+        case "avgPoints":
+          cmp = a.avgPoints - b.avgPoints;
           break;
         case "rank":
         default:
@@ -269,13 +278,14 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     { key: "pointsAgainst", label: "PA" },
     { key: "pointDiff", label: "+/-" },
     { key: "winPct", label: "Pct" },
+    { key: "avgPoints", label: "Avg Pts" }, // <-- Add to mobile sort options
   ];
 
-  // Generate year options from START_YEAR to current year
+  // Generate year options from START_YEAR to current year, most recent year first
   const yearOptions = Array.from(
     { length: new Date().getFullYear() - START_YEAR + 1 },
     (_, i) => (START_YEAR + i).toString()
-  );
+  ).reverse();
 
   return (
     <div className="max-w-5xl mx-auto p-4">
@@ -366,8 +376,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="text-green-400 font-mono text-sm">{team.record}</div>
             </div>
 
-            {/* PF / PA / +/- */}
-            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+            {/* PF / PA / +/- / Avg Pts */}
+            <div className="mt-2 grid grid-cols-4 gap-2 text-center">
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PF</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.pointsFor.toFixed(2)}</div>
@@ -379,6 +389,10 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">+/-</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">Avg</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.avgPoints.toFixed(2)}</div>
               </div>
             </div>
           </div>
@@ -438,6 +452,12 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               >
                 Pct{arrow("winPct")}
               </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("avgPoints")}
+              >
+                Avg Pts{arrow("avgPoints")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -468,6 +488,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsAgainst.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointDiff.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.winPct}</td>
+                <td className="py-2 px-3 text-emerald-400 text-center">
+                  {team.avgPoints.toFixed(2)}
+                </td>
               </tr>
             ))}
           </tbody>

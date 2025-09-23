@@ -70,13 +70,12 @@ export default function Navbar() {
             </Link>
           ) : (
             <>
-              {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-2">
+              {/* Desktop Navigation: only show on xl and up */}
+              <div className="hidden xl:flex items-center space-x-2">
                 <NavLink href="/champions" icon={<Trophy size={18} />} text="Champions" />
                 <NavLink href="/rules" icon={<Award size={18} />} text="Rules" />
                 <NavLink href="/events" icon={<Calendar size={18} />} text="Events" />
                 <NavLink href="/ices" icon={<span className="text-lg">🧊</span>} text="Ices" />
-                {/* Admin Link for Michael */}
                 {userDisplay === "Michael" && (
                   <NavLink href="/admin" icon={<span className="text-lg">🛡️</span>} text="Admin" />
                 )}
@@ -199,10 +198,10 @@ export default function Navbar() {
                 </div>
               </div>
 
-              {/* Mobile Hamburger */}
+              {/* Mobile & Medium Hamburger: show for lg and below */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden relative w-10 h-10 flex items-center justify-center transition-all duration-200"
+                className="xl:hidden relative w-10 h-10 flex items-center justify-center transition-all duration-200"
                 aria-label="Toggle Menu"
               >
                 <div className="relative w-6 h-6">
@@ -215,9 +214,16 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile & Medium Menu: show for lg and below */}
         {user && (
-          <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+          <div
+            className={`xl:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 pb-6' : 'max-h-0 opacity-0 overflow-hidden'}`}
+            style={{
+              overflowY: isOpen ? 'auto' : 'hidden', // Enable vertical scrolling when open
+              maxHeight: isOpen ? '80vh' : '0',      // Limit height for landscape screens
+              WebkitOverflowScrolling: 'touch',      // Smooth scrolling on mobile
+            }}
+          >
             <div className="bg-[#232323] backdrop-blur-sm rounded-2xl mt-4 overflow-hidden border border-[#333]">
               <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80">{userDisplay}</div>
 
@@ -325,10 +331,10 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Floating mobile menu button */}
+        {/* Floating mobile menu button: show for lg and below */}
         <button
           type="button"
-          className={`fixed bottom-6 right-6 z-50 md:hidden bg-[#181818] hover:bg-[#232323] text-emerald-100 rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+          className={`fixed bottom-6 right-6 z-50 xl:hidden bg-[#181818] hover:bg-[#232323] text-emerald-100 rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
           aria-label={isOpen ? "Close Menu" : "Open Menu"}
           onClick={() => setIsOpen((prev) => !prev)}
           style={{

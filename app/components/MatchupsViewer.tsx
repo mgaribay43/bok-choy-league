@@ -117,8 +117,8 @@ const ScoreBox = ({
         highlight === "win"
           ? "#22c55e"
           : highlight === "lose"
-          ? "#dc2626"
-          : "#e5e7eb",
+            ? "#dc2626"
+            : "#e5e7eb",
       minWidth: "clamp(52px, 16vw, 84px)", // reserve width for scores
       textAlign: align,
       display: "flex",
@@ -313,7 +313,7 @@ const MatchupCard = ({
       }}
     >
       {/* Top bar: recap (left) and chart (right). Buttons are confined to their own area */}
-      {(showChartIcon || (showRecapButton && m.recapUrl)) && (
+      {(showChartIcon || showRecapButton) && (
         <div
           style={{
             display: "flex",
@@ -323,35 +323,36 @@ const MatchupCard = ({
           }}
         >
           {/* Week Recap left */}
-          {showRecapButton && m.recapUrl ? (
-            <a
-              href={m.recapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                background: "#0f1117",
-                border: "1px solid #3a3d45",
-                color: "#e5e7eb",
-                borderRadius: 10,
-                padding: "8px 10px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                textDecoration: "none",
-                pointerEvents: "auto",
-              }}
-              aria-label="Open week recap"
-              title="Open week recap"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h16v16H4z" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Week Recap</span>
-            </a>
-          ) : (
-            <span />
-          )}
+          <button
+            disabled={!m.recapUrl}
+            onClick={() => {
+              if (m.recapUrl) window.open(m.recapUrl, "_blank", "noopener,noreferrer");
+            }}
+            style={{
+              background: "#0f1117",
+              border: "1px solid #3a3d45",
+              color: m.recapUrl ? "#e5e7eb" : "#6b7280",
+              borderRadius: 10,
+              padding: "8px 10px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              textDecoration: "none",
+              pointerEvents: "auto",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: m.recapUrl ? "pointer" : "not-allowed",
+              opacity: m.recapUrl ? 1 : 0.5,
+            }}
+            aria-label="Open week recap"
+            title={m.recapUrl ? "Open week recap" : "Recap not available yet"}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 4h16v16H4z" />
+              <path d="M8 8h8M8 12h8M8 16h5" />
+            </svg>
+            <span>Week Recap</span>
+          </button>
 
           {/* Chart button right */}
           {showChartIcon && (
@@ -926,28 +927,43 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     overflowY: "auto",
                   }}
                 >
-                  {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => (
-                    <div
-                      key={w}
-                      style={{
-                        padding: "8px 18px",
-                        color: w === weekToShow ? "#22c55e" : "#fff",
-                        background: w === weekToShow ? "#166534" : "transparent",
-                        fontWeight: w === weekToShow ? 700 : 400,
-                        fontSize: 17,
-                        cursor: w === weekToShow ? "default" : "pointer",
-                        borderRadius: 8,
-                        margin: "2px 4px",
-                        transition: "background 0.15s",
-                      }}
-                      onClick={() => handleWeekDropdown(w)}
-                      tabIndex={0}
-                      role="option"
-                      aria-selected={w === weekToShow}
-                    >
-                      Week {w}
-                    </div>
-                  ))}
+                  {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
+                    // Weeks 15-17 grayed out until currentWeek >= 15
+                    const isPlayoffWeek = w >= 15;
+                    const isLocked = isPlayoffWeek && currentWeek < 15;
+                    return (
+                      <div
+                        key={w}
+                        style={{
+                          padding: "8px 18px",
+                          color: w === weekToShow
+                            ? "#22c55e"
+                            : isLocked
+                              ? "#6b7280"
+                              : "#fff",
+                          background: w === weekToShow
+                            ? "#166534"
+                            : "transparent",
+                          fontWeight: w === weekToShow ? 700 : 400,
+                          fontSize: 17,
+                          cursor: w === weekToShow || isLocked ? "default" : "pointer",
+                          borderRadius: 8,
+                          margin: "2px 4px",
+                          transition: "background 0.15s",
+                          opacity: isLocked ? 0.5 : 1,
+                        }}
+                        onClick={() => {
+                          if (!isLocked && w !== weekToShow) handleWeekDropdown(w);
+                        }}
+                        tabIndex={isLocked ? -1 : 0}
+                        role="option"
+                        aria-selected={w === weekToShow}
+                        aria-disabled={isLocked}
+                      >
+                        Week {w}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

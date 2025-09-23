@@ -131,9 +131,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
   // --- Sorting state ---
   type SortKey =
     | "rank"
-    | "team"
-    | "manager"
-    | "record"
+    // | "team"        // still removed
+    // | "manager"     // still removed
+    | "record"      // <-- re-added
     | "pointsFor"
     | "pointsAgainst"
     | "pointDiff"
@@ -161,12 +161,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     arr.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        case "team":
-          cmp = a.name.localeCompare(b.name);
-          break;
-        case "manager":
-          cmp = a.manager.localeCompare(b.manager);
-          break;
+        // case "team": ... // still removed
+        // case "manager": ... // still removed
         case "record":
           cmp = parseRecordPct(a.record) - parseRecordPct(b.record);
           break;
@@ -271,14 +267,14 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
   // Mobile sort options
   const sortOptions: { key: SortKey; label: string }[] = [
     { key: "rank", label: "Rank" },
-    { key: "team", label: "Team" },
-    { key: "manager", label: "Manager" },
-    { key: "record", label: "Record" },
+    // { key: "team", label: "Team" },      // still removed
+    // { key: "manager", label: "Manager" },// still removed
+    { key: "record", label: "Record" },    // <-- re-added
     { key: "pointsFor", label: "PF" },
     { key: "pointsAgainst", label: "PA" },
     { key: "pointDiff", label: "+/-" },
     { key: "winPct", label: "Pct" },
-    { key: "avgPoints", label: "Avg Pts" }, // <-- Add to mobile sort options
+    { key: "avgPoints", label: "Avg Pts" },
   ];
 
   // Generate year options from START_YEAR to current year, most recent year first
@@ -410,18 +406,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               >
                 Rank{arrow("rank")}
               </th>
-              <th
-                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
-                onClick={() => changeSort("team")}
-              >
-                Team{arrow("team")}
-              </th>
-              <th
-                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
-                onClick={() => changeSort("manager")}
-              >
-                Manager{arrow("manager")}
-              </th>
+              {/* Remove sort for Team, Manager */}
+              <th className="py-2 px-3 text-emerald-400 text-left">Team</th>
+              <th className="py-2 px-3 text-emerald-400 text-center">Manager</th>
               <th
                 className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
                 onClick={() => changeSort("record")}

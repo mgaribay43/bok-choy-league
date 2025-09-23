@@ -442,6 +442,12 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               </th>
               <th
                 className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("avgPoints")}
+              >
+                Avg{arrow("avgPoints")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
                 onClick={() => changeSort("pointDiff")}
               >
                 +/-{arrow("pointDiff")}
@@ -451,12 +457,6 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 onClick={() => changeSort("winPct")}
               >
                 Pct{arrow("winPct")}
-              </th>
-              <th
-                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
-                onClick={() => changeSort("avgPoints")}
-              >
-                Avg Pts{arrow("avgPoints")}
               </th>
             </tr>
           </thead>

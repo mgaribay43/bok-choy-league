@@ -11,6 +11,40 @@ function normalizeQuarter(status: unknown): "Q1" | "Q2" | "Q3" | "Q4" | null {
   return m ? (`Q${m[1]}` as any) : null;
 }
 
+/**
+ * Checks if we should poll based on NFL game start times.
+ * Poll if now >= earliest strTimeLocal and now <= latest strTimeLocal + 4 hours.
+ * @param events SportsDB events array
+ */
+function shouldPollByGameTimes(events: any[]): boolean {
+  if (!Array.isArray(events) || events.length === 0) return false;
+
+  // Parse all valid start times
+  const startTimes = events
+    .map(ev => {
+      if (!ev.strTimeLocal || !ev.dateEventLocal) return null;
+      // Combine local date and time, e.g. "2025-09-25 17:15:00"
+      const dtStr = `${ev.dateEventLocal}T${ev.strTimeLocal}`;
+      const dt = new Date(dtStr);
+      return isNaN(dt.getTime()) ? null : dt;
+    })
+    .filter(Boolean) as Date[];
+
+  if (!startTimes.length) return false;
+
+  // Find earliest and latest start times
+  const earliest = new Date(Math.min(...startTimes.map(dt => dt.getTime())));
+  const latest = new Date(Math.max(...startTimes.map(dt => dt.getTime())));
+
+  const now = new Date();
+
+  // Poll if now >= earliest start and now <= latest start + 4 hours
+  const pollStart = earliest.getTime();
+  const pollEnd = latest.getTime() + 4 * 60 * 60 * 1000; // 4 hours after latest start
+
+  return now.getTime() >= pollStart && now.getTime() <= pollEnd;
+}
+
 // NEW: gate — call SportsDB, require non-empty events, and at least one Q1–Q4
 async function sportsDbShouldPoll(): Promise<boolean> {
   const date = new Date().toISOString().slice(0, 10);
@@ -34,6 +68,12 @@ async function sportsDbShouldPoll(): Promise<boolean> {
     const events: any[] = Array.isArray(data?.events) ? data.events : [];
     if (!events.length) {
       console.log("[SportsDB] events array empty — skipping polling.");
+      return false;
+    }
+
+    // Use new time-based polling logic
+    if (!shouldPollByGameTimes(events)) {
+      console.log("[SportsDB] Not within polling window based on game start times.");
       return false;
     }
 

@@ -3,28 +3,20 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
-// Normalize status to one of Q1..Q4 or null
-function normalizeQuarter(status: unknown): "Q1" | "Q2" | "Q3" | "Q4" | null {
-  if (status == null) return null;
-  const raw = String(status).replace(/[^\x20-\x7E]/g, "").trim().toUpperCase();
-  const m = raw.match(/^Q([1-4])\b/);
-  return m ? (`Q${m[1]}` as any) : null;
-}
-
 /**
  * Checks if we should poll based on NFL game start times.
- * Poll if now >= earliest strTimeLocal and now <= latest strTimeLocal + 4 hours.
+ * Poll if now >= earliest strTime (UTC) and now <= latest strTime + 4 hours.
  * @param events SportsDB events array
  */
 function shouldPollByGameTimes(events: any[]): boolean {
   if (!Array.isArray(events) || events.length === 0) return false;
 
-  // Parse all valid start times
+  // Parse all valid UTC start times
   const startTimes = events
     .map(ev => {
-      if (!ev.strTimeLocal || !ev.dateEventLocal) return null;
-      // Combine local date and time, e.g. "2025-09-25 17:15:00"
-      const dtStr = `${ev.dateEventLocal}T${ev.strTimeLocal}`;
+      if (!ev.strTime || !ev.dateEvent) return null;
+      // Combine UTC date and time, e.g. "2025-09-26T00:15:00Z"
+      const dtStr = `${ev.dateEvent}T${ev.strTime}Z`;
       const dt = new Date(dtStr);
       return isNaN(dt.getTime()) ? null : dt;
     })
@@ -38,9 +30,16 @@ function shouldPollByGameTimes(events: any[]): boolean {
 
   const now = new Date();
 
+  // Print times for debugging
+  console.log(`[SportsDB Poll Debug] Earliest start: ${earliest.toISOString()}`);
+  console.log(`[SportsDB Poll Debug] Latest start: ${latest.toISOString()}`);
+  console.log(`[SportsDB Poll Debug] Current time: ${now.toISOString()}`);
+
   // Poll if now >= earliest start and now <= latest start + 4 hours
   const pollStart = earliest.getTime();
   const pollEnd = latest.getTime() + 4 * 60 * 60 * 1000; // 4 hours after latest start
+
+  console.log(`[SportsDB Poll Debug] Poll window: ${new Date(pollStart).toISOString()} to ${new Date(pollEnd).toISOString()}`);
 
   return now.getTime() >= pollStart && now.getTime() <= pollEnd;
 }
@@ -53,10 +52,6 @@ async function sportsDbShouldPoll(): Promise<boolean> {
   try {
     const res = await fetch(url);
     const raw = await res.text();
-
-    // Debug: print the raw response received by the Cloud Function
-    console.log("[SportsDB raw]:", raw);
-
     let data: any;
     try {
       data = JSON.parse(raw);
@@ -71,18 +66,13 @@ async function sportsDbShouldPoll(): Promise<boolean> {
       return false;
     }
 
-    // Use new time-based polling logic
+    // Only check the start time gate
     if (!shouldPollByGameTimes(events)) {
       console.log("[SportsDB] Not within polling window based on game start times.");
       return false;
     }
 
-    const anyInQuarter = events.some((ev) => normalizeQuarter(ev?.strStatus) !== null);
-    if (!anyInQuarter) {
-      console.log("[SportsDB] no events with strStatus Q1–Q4 — skipping polling.");
-      return false;
-    }
-
+    // If within the window, poll
     return true;
   } catch (err) {
     console.error("[SportsDB] fetch error:", err);

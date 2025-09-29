@@ -361,8 +361,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         {year} League Standings
       </h2>
 
-      {/* Mobile controls: sort dropdown + direction toggle */}
-      <div className="sm:hidden flex items-center justify-between mb-3">
+      {/* Mobile/Tablet controls: sort dropdown + direction toggle */}
+      <div className="flex items-center justify-between mb-3 sm:flex md:flex lg:hidden">
         <div className="flex items-center gap-2">
           <label htmlFor="mobile-sort" className="text-emerald-300 text-sm">Sort:</label>
           <select
@@ -385,7 +385,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         </button>
       </div>
 
-      {/* Mobile/Tablet list (up to md screens) */}
+      {/* Mobile/Tablet list (up to lg screens) */}
       <div className="lg:hidden space-y-3">
         {sortedTeams.map((team) => (
           <div key={team.id} className="bg-[#181818] border border-[#262626] rounded-xl p-3 shadow-sm">

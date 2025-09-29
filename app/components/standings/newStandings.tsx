@@ -429,23 +429,23 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
             <div className="mt-2 grid grid-cols-5 gap-2 text-center">
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PF</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.pointsFor.toFixed(2)}</div>
+                <div className="text-emerald-200 font-mono text-xs break-words">{team.pointsFor.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PA</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.pointsAgainst.toFixed(2)}</div>
+                <div className="text-emerald-200 font-mono text-xs break-words">{team.pointsAgainst.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">+/-</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
+                <div className="text-emerald-200 font-mono text-xs break-words">{team.pointDiff.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">Avg</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.avgPoints.toFixed(2)}</div>
+                <div className="text-emerald-200 font-mono text-xs break-words">{team.avgPoints.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">POP</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.pointsOverProjected.toFixed(2)}</div>
+                <div className="text-emerald-200 font-mono text-xs break-words">{team.pointsOverProjected.toFixed(2)}</div>
               </div>
             </div>
           </div>

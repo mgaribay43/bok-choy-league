@@ -22,6 +22,38 @@ function getYahooMatchupLink({
   return `https://football.fantasysports.yahoo.com/f1/${leagueId}/matchup?week=${week}&mid1=${mid1}&mid2=${mid2}`;
 }
 
+// NFL Game interface for ESPN data
+interface NFLGame {
+  id: string;
+  name: string;
+  shortName: string;
+  dateUTC: string;
+  dateEST: string;
+  status: string;
+  statusDetail: string;
+  week: number;
+  homeTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    score: string;
+    record: string;
+  };
+  awayTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    score: string;
+    record: string;
+  };
+  broadcast: string;
+  venue: {
+    name: string;
+    city: string;
+    state: string;
+  };
+}
+
 // Update Matchup type to include team IDs if available
 interface Matchup {
   team1: string;
@@ -48,6 +80,45 @@ const TEAM_AVATARS: Record<string, string> = {};
 const getAvatar = (teamName: string) =>
   TEAM_AVATARS[teamName] ||
   "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+// NFL team logos mapping
+const NFL_TEAM_LOGOS: Record<string, string> = {
+  "Arizona Cardinals": "https://a.espncdn.com/i/teamlogos/nfl/500/ari.png",
+  "Atlanta Falcons": "https://a.espncdn.com/i/teamlogos/nfl/500/atl.png",
+  "Baltimore Ravens": "https://a.espncdn.com/i/teamlogos/nfl/500/bal.png",
+  "Buffalo Bills": "https://a.espncdn.com/i/teamlogos/nfl/500/buf.png",
+  "Carolina Panthers": "https://a.espncdn.com/i/teamlogos/nfl/500/car.png",
+  "Chicago Bears": "https://a.espncdn.com/i/teamlogos/nfl/500/chi.png",
+  "Cincinnati Bengals": "https://a.espncdn.com/i/teamlogos/nfl/500/cin.png",
+  "Cleveland Browns": "https://a.espncdn.com/i/teamlogos/nfl/500/cle.png",
+  "Dallas Cowboys": "https://a.espncdn.com/i/teamlogos/nfl/500/dal.png",
+  "Denver Broncos": "https://a.espncdn.com/i/teamlogos/nfl/500/den.png",
+  "Detroit Lions": "https://a.espncdn.com/i/teamlogos/nfl/500/det.png",
+  "Green Bay Packers": "https://a.espncdn.com/i/teamlogos/nfl/500/gb.png",
+  "Houston Texans": "https://a.espncdn.com/i/teamlogos/nfl/500/hou.png",
+  "Indianapolis Colts": "https://a.espncdn.com/i/teamlogos/nfl/500/ind.png",
+  "Jacksonville Jaguars": "https://a.espncdn.com/i/teamlogos/nfl/500/jax.png",
+  "Kansas City Chiefs": "https://a.espncdn.com/i/teamlogos/nfl/500/kc.png",
+  "Las Vegas Raiders": "https://a.espncdn.com/i/teamlogos/nfl/500/lv.png",
+  "Los Angeles Chargers": "https://a.espncdn.com/i/teamlogos/nfl/500/lac.png",
+  "Los Angeles Rams": "https://a.espncdn.com/i/teamlogos/nfl/500/lar.png",
+  "Miami Dolphins": "https://a.espncdn.com/i/teamlogos/nfl/500/mia.png",
+  "Minnesota Vikings": "https://a.espncdn.com/i/teamlogos/nfl/500/min.png",
+  "New England Patriots": "https://a.espncdn.com/i/teamlogos/nfl/500/ne.png",
+  "New Orleans Saints": "https://a.espncdn.com/i/teamlogos/nfl/500/no.png",
+  "New York Giants": "https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png",
+  "New York Jets": "https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png",
+  "Philadelphia Eagles": "https://a.espncdn.com/i/teamlogos/nfl/500/phi.png",
+  "Pittsburgh Steelers": "https://a.espncdn.com/i/teamlogos/nfl/500/pit.png",
+  "San Francisco 49ers": "https://a.espncdn.com/i/teamlogos/nfl/500/sf.png",
+  "Seattle Seahawks": "https://a.espncdn.com/i/teamlogos/nfl/500/sea.png",
+  "Tampa Bay Buccaneers": "https://a.espncdn.com/i/teamlogos/nfl/500/tb.png",
+  "Tennessee Titans": "https://a.espncdn.com/i/teamlogos/nfl/500/ten.png",
+  "Washington Commanders": "https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png",
+};
+
+const getNFLLogo = (teamName: string) =>
+  NFL_TEAM_LOGOS[teamName] || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
 // Auto-shrink text to fit one line without truncation
 const AutoFitText: React.FC<{
@@ -266,6 +337,159 @@ const WinBar = ({
   </div>
 );
 
+// Helper function to determine if a game is completed
+const isGameCompleted = (game: NFLGame): boolean => {
+  return game.status === "Final" || game.status.includes("Final");
+};
+
+// Helper function to determine if a game is live or upcoming
+const isGameLiveOrUpcoming = (game: NFLGame): boolean => {
+  return !isGameCompleted(game);
+};
+
+// NFL Game Card Component
+const NFLGameCard = ({ game }: { game: NFLGame }) => {
+  const awayScore = parseInt(game.awayTeam.score) || 0;
+  const homeScore = parseInt(game.homeTeam.score) || 0;
+  
+  const awayWin = awayScore > homeScore && game.status !== "Scheduled";
+  const homeWin = homeScore > awayScore && game.status !== "Scheduled";
+  
+  const isLive = game.status === "In Progress" || game.status.includes("Quarter");
+  const isFinished = game.status === "Final";
+  
+  // ESPN game page URL - uses the game ID from the API
+  const espnGameUrl = `https://www.espn.com/nfl/game/_/gameId/${game.id}`;
+  
+  return (
+    <a
+      href={espnGameUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      aria-label={`View ${game.shortName} on ESPN`}
+    >
+      <div
+        style={{
+          background: "#23252b",
+          borderRadius: 16,
+          margin: "16px auto",
+          padding: 0,
+          boxShadow: "0 2px 12px 0 #000",
+          border: "2px solid #232323",
+          maxWidth: 540,
+          position: "relative",
+          overflow: "hidden",
+          cursor: "pointer",
+        }}
+      >
+        {/* Game status bar */}
+        <div
+          style={{
+            background: isLive ? "#dc2626" : isFinished ? "#059669" : "#6b7280",
+            color: "white",
+            textAlign: "center",
+            padding: "6px 12px",
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: 0.5,
+            position: "relative",
+          }}
+        >
+          {game.status} {game.broadcast && `• ${game.broadcast}`}
+          
+          {/* ESPN logo indicator */}
+          <div
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              opacity: 0.7,
+              fontSize: 11,
+              fontWeight: 500,
+            }}
+          >
+            ESPN ↗
+          </div>
+        </div>
+
+        {/* Teams and scores */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "10px 18px 0 18px",
+            gap: 8,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <AutoFitText text={game.awayTeam.name} max={22} min={13} color="#e5e7eb" align="left" />
+          </div>
+          <div style={{ width: 12 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <AutoFitText text={game.homeTeam.name} max={22} min={13} color="#e5e7eb" align="right" />
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 18px 0 18px",
+            marginTop: 6,
+            marginBottom: 8,
+            gap: 8,
+          }}
+        >
+          <AvatarBox 
+            src={getNFLLogo(game.awayTeam.name)} 
+            alt={game.awayTeam.name} 
+            record={game.awayTeam.record} 
+          />
+          <ScoreBox
+            value={game.awayTeam.score}
+            highlight={awayWin ? "win" : homeWin ? "lose" : "tie"}
+            align="right"
+          />
+          <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>
+            @
+          </div>
+          <ScoreBox
+            value={game.homeTeam.score}
+            highlight={homeWin ? "win" : awayWin ? "lose" : "tie"}
+            align="left"
+          />
+          <AvatarBox 
+            src={getNFLLogo(game.homeTeam.name)} 
+            alt={game.homeTeam.name} 
+            record={game.homeTeam.record} 
+          />
+        </div>
+
+        {/* Game details */}
+        <div
+          style={{
+            background: "#1f2024",
+            padding: "10px 18px",
+            marginTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 13,
+            color: "#a7a7a7",
+          }}
+        >
+          <span>{game.dateEST}</span>
+          <span>{game.venue.city}, {game.venue.state}</span>
+        </div>
+      </div>
+    </a>
+  );
+};
+
 type MatchupCardProps = {
   m: Matchup;
   showNames?: boolean;
@@ -302,7 +526,7 @@ const MatchupCard = ({
       style={{
         background: "#23252b",
         borderRadius: 16,
-        margin: "24px auto",
+        margin: "16px auto",
         padding: 0,
         boxShadow: "0 2px 12px 0 #000",
         border: "2px solid #232323",
@@ -463,9 +687,11 @@ interface MatchupsViewerProps {
 
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
+  const [nflGames, setNflGames] = useState<NFLGame[]>([]);
   const [currentWeek, setCurrentWeek] = useState<number>(1);
   const [maxWeek, setMaxWeek] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [nflLoading, setNflLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
   const [viewWeek, setViewWeek] = useState<number | null>(null);
@@ -473,11 +699,58 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
+  const [showNFL, setShowNFL] = useState(false);
+  const [hideCompletedGames, setHideCompletedGames] = useState(true); // Changed to default true
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const nflPollingRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   // Track last status to detect change to 'postevent'
   const lastStatusRef = useRef<string | null>(null);
+
+  // Fetch NFL games from your cloud function
+  const fetchNFLGames = async (weekOverride?: number, updateOnly = false) => {
+    if (!updateOnly) setNflLoading(true);
+    try {
+      const weekParam = typeof weekOverride === "number" ? weekOverride : (viewWeek !== null ? viewWeek : currentWeek);
+      
+      const response = await fetch(
+        `https://us-central1-bokchoyleague.cloudfunctions.net/nflMatchups?week=${weekParam}&year=2025`
+      );
+      
+      if (!response.ok) {
+        console.error("NFL API error:", response.status);
+        if (!updateOnly) setNflGames([]);
+        return;
+      }
+      
+      const data = await response.json();
+      const games = data?.data?.games || [];
+      
+      if (updateOnly) {
+        setNflGames(prevGames => {
+          if (!prevGames.length) return games;
+          // Update scores and status if changed
+          return prevGames.map((old, i) => {
+            const fresh = games[i];
+            if (!fresh) return old;
+            const changed = 
+              old.homeTeam.score !== fresh.homeTeam.score ||
+              old.awayTeam.score !== fresh.awayTeam.score ||
+              old.status !== fresh.status;
+            return changed ? fresh : old;
+          });
+        });
+      } else {
+        setNflGames(games);
+      }
+    } catch (error) {
+      console.error("Error fetching NFL games:", error);
+      if (!updateOnly) setNflGames([]);
+    } finally {
+      if (!updateOnly) setNflLoading(false);
+    }
+  };
 
   // Helper to fetch and handle week advancement
   const fetchMatchups = async (
@@ -501,7 +774,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       const scoreboard = data?.fantasy_content?.league?.[1]?.scoreboard?.["0"];
       const maxW =
         Number(
-          data?.fantasy_content?.league?.[1]?.settings?.[0]?.stat_categories?.[0]?.max_week
+          data?.fantasy_content?.league?.[1]?.settings?.[0]?.stat_categories?.[0]?.stat_categories?.[0]?.stat_position_types?.[0]?.stat_position_type?.[1]?.max_week
         ) || 17;
       setMaxWeek(maxW);
 
@@ -686,8 +959,10 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         setCurrentWeek(week);
         localStorage.setItem("currentWeek", String(week));
         await fetchMatchups(week);        // await initial load
+        await fetchNFLGames(week);        // fetch NFL games too
       } catch {
         await fetchMatchups(1);           // await fallback
+        await fetchNFLGames(1);           // fallback NFL
       } finally {
         setInitializing(false);           // show controls after first load
       }
@@ -703,10 +978,19 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
     }, 15000);
 
+    // Poll NFL games every 30 seconds
+    nflPollingRef.current = setInterval(() => {
+      fetchNFLGames(viewWeek !== null ? viewWeek : currentWeek, true);
+    }, 30000);
+
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
+      }
+      if (nflPollingRef.current) {
+        clearInterval(nflPollingRef.current);
+        nflPollingRef.current = null;
       }
     };
     // Only rerun when week changes
@@ -718,6 +1002,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     if (week >= 1) {
       setViewWeek(week);
       fetchMatchups(week, false, true);
+      fetchNFLGames(week, false);
     }
   };
 
@@ -726,6 +1011,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     if (week <= maxWeek) {
       setViewWeek(week);
       fetchMatchups(week, false, true);
+      fetchNFLGames(week, false);
     }
   };
 
@@ -733,6 +1019,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     setWeekDropdownOpen(false);
     setViewWeek(w);
     fetchMatchups(w, false, true);
+    fetchNFLGames(w, false);
   };
 
   // If user navigates away from week navigation, reset viewWeek to null (show currentWeek)
@@ -774,6 +1061,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     fetchAvailability();
     // eslint-disable-next-line
   }, [currentWeek, viewWeek]);
+
+  // Filter NFL games based on completion status
+  const filteredNFLGames = hideCompletedGames 
+    ? nflGames.filter(isGameLiveOrUpcoming) 
+    : nflGames;
 
   if (useMarquee) {
     const getCardContentLength = (m: Matchup) =>
@@ -848,174 +1140,201 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
   return (
     <div style={{ background: "#0f0f0f", minHeight: "100vh", color: "#fff" }}>
-      <div className="max-w-3xl mx-auto px-4 pt-0">
-        <header className="text-center mb-8 mt-8">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 pt-0">
+        <header className="text-center mb-6">
           <h1 className="text-5xl font-extrabold text-emerald-200 mb-2 tracking-tight">
-            All Matchups
+            Matchups
           </h1>
         </header>
 
-        {/* Hide week selector while initializing (first load) */}
+        {/* Controls Bar */}
         {!initializing && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 16,
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={handlePrevWeek}
-              disabled={weekToShow <= 1}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#a7f3d0",
-                fontSize: 28,
-                cursor: weekToShow > 1 ? "pointer" : "not-allowed",
-                marginRight: 12,
-                opacity: weekToShow > 1 ? 1 : 0.5,
-              }}
-              aria-label="Previous Week"
-            >
-              &#60;
-            </button>
-            <div
-              className="week-dropdown"
-              style={{
-                position: "relative",
-                display: "inline-block",
-                margin: "0 8px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 20,
-                  fontWeight: 600,
-                  background: "#232323",
-                  borderRadius: 12,
-                  padding: "4px 18px",
-                  color: "#a7f3d0",
-                  border: "1px solid #444",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  display: "inline-block",
-                }}
-                onClick={() => setWeekDropdownOpen((open) => !open)}
-                tabIndex={0}
-                aria-haspopup="listbox"
-                aria-expanded={weekDropdownOpen}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+            {/* Week Navigation */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePrevWeek}
+                disabled={weekToShow <= 1}
+                className="p-2 rounded-lg bg-gray-800 border border-gray-600 text-emerald-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous Week"
               >
-                Week {weekToShow}
-              </span>
-              {weekDropdownOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: "110%",
-                    background: "#232323",
-                    border: "1px solid #444",
-                    borderRadius: 10,
-                    zIndex: 10,
-                    minWidth: 120,
-                    boxShadow: "0 2px 8px #000a",
-                    padding: "4px 0",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                  }}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setWeekDropdownOpen(!weekDropdownOpen)}
+                  className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-emerald-300 font-semibold hover:bg-gray-700 transition-colors min-w-[100px]"
+                  aria-haspopup="listbox"
+                  aria-expanded={weekDropdownOpen}
                 >
-                  {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
-                    // Weeks 15-17 grayed out until currentWeek >= 15
-                    const isPlayoffWeek = w >= 15;
-                    const isLocked = isPlayoffWeek && currentWeek < 15;
-                    return (
-                      <div
-                        key={w}
-                        style={{
-                          padding: "8px 18px",
-                          color: w === weekToShow
-                            ? "#22c55e"
-                            : isLocked
-                              ? "#6b7280"
-                              : "#fff",
-                          background: w === weekToShow
-                            ? "#166534"
-                            : "transparent",
-                          fontWeight: w === weekToShow ? 700 : 400,
-                          fontSize: 17,
-                          cursor: w === weekToShow || isLocked ? "default" : "pointer",
-                          borderRadius: 8,
-                          margin: "2px 4px",
-                          transition: "background 0.15s",
-                          opacity: isLocked ? 0.5 : 1,
-                        }}
-                        onClick={() => {
-                          if (!isLocked && w !== weekToShow) handleWeekDropdown(w);
-                        }}
-                        tabIndex={isLocked ? -1 : 0}
-                        role="option"
-                        aria-selected={w === weekToShow}
-                        aria-disabled={isLocked}
-                      >
-                        Week {w}
-                      </div>
-                    );
-                  })}
-                </div>
+                  Week {weekToShow}
+                </button>
+                
+                {weekDropdownOpen && (
+                  <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg z-10 min-w-[100px] max-h-60 overflow-y-auto shadow-xl">
+                    {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
+                      const isPlayoffWeek = w >= 15;
+                      const isLocked = isPlayoffWeek && currentWeek < 15;
+                      return (
+                        <button
+                          key={w}
+                          onClick={() => !isLocked && w !== weekToShow && handleWeekDropdown(w)}
+                          disabled={isLocked}
+                          className={`w-full px-4 py-2 text-left transition-colors ${
+                            w === weekToShow
+                              ? "bg-emerald-600 text-white"
+                              : isLocked
+                              ? "text-gray-500 cursor-not-allowed"
+                              : "text-white hover:bg-gray-700"
+                          }`}
+                        >
+                          Week {w}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={handleNextWeek}
+                disabled={weekToShow >= maxWeek}
+                className="p-2 rounded-lg bg-gray-800 border border-gray-600 text-emerald-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next Week"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Filter Controls */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowNFL(!showNFL)}
+                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                  showNFL
+                    ? "bg-blue-600 border-blue-500 text-white"
+                    : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                NFL Games
+              </button>
+              
+              {showNFL && (
+                <button
+                  onClick={() => setHideCompletedGames(!hideCompletedGames)}
+                  className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                    hideCompletedGames
+                      ? "bg-orange-600 border-orange-500 text-white"
+                      : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                  }`}
+                >
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3" />
+                  </svg>
+                  Hide Final
+                </button>
               )}
             </div>
-            <button
-              onClick={handleNextWeek}
-              disabled={weekToShow >= maxWeek}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#a7f3d0",
-                fontSize: 28,
-                cursor: weekToShow < maxWeek ? "pointer" : "not-allowed",
-                marginLeft: 12,
-                opacity: weekToShow < maxWeek ? 1 : 0.5,
-              }}
-              aria-label="Next Week"
-            >
-              &#62;
-            </button>
           </div>
         )}
       </div>
 
-      <div style={{ padding: "0 0 32px 0" }}>
-        {loading ? (
-          <div style={{ textAlign: "center", marginTop: 40, color: "#a7f3d0" }}>
-            Loading matchups...
+      {/* Main Content - Grid Layout */}
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* NFL Games Column */}
+          {showNFL && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-blue-300">
+                  NFL Games
+                </h2>
+                <div className="text-sm text-gray-400">
+                  {filteredNFLGames.length} of {nflGames.length} games
+                  {hideCompletedGames && " (active only)"}
+                </div>
+              </div>
+              
+              {nflLoading ? (
+                <div className="text-center py-8 text-emerald-300">
+                  <div className="animate-spin w-8 h-8 border-2 border-emerald-300 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  Loading NFL games...
+                </div>
+              ) : filteredNFLGames.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  {hideCompletedGames && nflGames.length > 0
+                    ? "No active NFL games"
+                    : `No NFL games found for Week ${weekToShow}`}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredNFLGames.map((game) => (
+                    <NFLGameCard key={game.id} game={game} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fantasy Matchups Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-emerald-300">
+                Fantasy Matchups
+              </h2>
+              <div className="text-sm text-gray-400">
+                {matchups.length} matchups
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-emerald-300">
+                <div className="animate-spin w-8 h-8 border-2 border-emerald-300 border-t-transparent rounded-full mx-auto mb-2"></div>
+                Loading matchups...
+              </div>
+            ) : matchups.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                No matchups found for Week {weekToShow}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {matchups.map((m, idx) => {
+                  const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
+                  return (
+                    <MatchupCard
+                      key={idx}
+                      m={m}
+                      showNames
+                      hasChart={hasChart}
+                      showRecapButton
+                      week={weekToShow}
+                      onOpenChart={(mm) => {
+                        if (!hasChart) return;
+                        setChartSel({
+                          team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
+                          team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
+                        });
+                        setChartOpen(true);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ) : (
-          matchups.map((m, idx) => {
-            const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
-            return (
-              <MatchupCard
-                key={idx}
-                m={m}
-                showNames
-                hasChart={hasChart}
-                showRecapButton
-                week={weekToShow} // <-- pass week from dropdown!
-                onOpenChart={(mm) => {
-                  if (!hasChart) return;
-                  setChartSel({
-                    team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
-                    team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
-                  });
-                  setChartOpen(true);
-                }}
-              />
-            );
-          })
-        )}
+        </div>
       </div>
+
+      {/* Win Probability Chart Modal */}
       {chartOpen && chartSel && (
         <WinProbChartModal
           isOpen={chartOpen}

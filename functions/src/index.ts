@@ -10,3 +10,4 @@ export { yahooOAuth } from './yahooOAuth';
 export { refreshTokens } from './refreshTokens';
 export { yahooAPI } from './yahooAPI';
 export { pollWinProbabilities } from './pollWinProbabilities';
+export { nflMatchups } from "./nflMatchups";

@@ -4,82 +4,80 @@ import fetch from "node-fetch";
 import { ScheduledEvent } from "firebase-functions/v2/scheduler";
 
 /**
- * Checks if we should poll based on NFL game start times.
- * Poll if now >= earliest strTime (UTC) and now <= latest strTime + 4 hours.
- * @param events SportsDB events array
+ * Check if current time falls within any NFL game windows using ESPN API
+ * Returns true if we should be polling win probabilities
  */
-function shouldPollByGameTimes(events: any[]): boolean {
-  if (!Array.isArray(events) || events.length === 0) return false;
-
-  // Parse all valid UTC start times
-  const startTimes = events
-    .map(ev => {
-      if (!ev.strTime || !ev.dateEvent) return null;
-      // Combine UTC date and time, e.g. "2025-09-26T00:15:00Z"
-      const dtStr = `${ev.dateEvent}T${ev.strTime}Z`;
-      const dt = new Date(dtStr);
-      return isNaN(dt.getTime()) ? null : dt;
-    })
-    .filter(Boolean) as Date[];
-
-  if (!startTimes.length) return false;
-
-  // Find earliest and latest start times
-  const earliest = new Date(Math.min(...startTimes.map(dt => dt.getTime())));
-  const latest = new Date(Math.max(...startTimes.map(dt => dt.getTime())));
-
+async function shouldPollNow(): Promise<boolean> {
   const now = new Date();
-
-  // Print times for debugging
-  console.log(`[SportsDB Poll Debug] Earliest start: ${earliest.toISOString()}`);
-  console.log(`[SportsDB Poll Debug] Latest start: ${latest.toISOString()}`);
-  console.log(`[SportsDB Poll Debug] Current time: ${now.toISOString()}`);
-
-  // Poll if now >= earliest start and now <= latest start + 4 hours
-  const pollStart = earliest.getTime();
-  const pollEnd = latest.getTime() + 4 * 60 * 60 * 1000; // 4 hours after latest start
-
-  console.log(`[SportsDB Poll Debug] Poll window: ${new Date(pollStart).toISOString()} to ${new Date(pollEnd).toISOString()}`);
-
-  return now.getTime() >= pollStart && now.getTime() <= pollEnd;
-}
-
-// NEW: gate — call SportsDB, require non-empty events, and at least one Q1–Q4
-async function sportsDbShouldPoll(): Promise<boolean> {
-  const date = new Date().toISOString().slice(0, 10);
-  const url = `https://www.thesportsdb.com/api/v1/json/307739/eventsday.php?d=${date}&l=${encodeURIComponent("NFL")}`;
-
+  const today = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD format for ESPN
+  
+  console.log(`[Poll Check] Checking NFL games for ${today} via ESPN API`);
+  console.log(`[Poll Check] Current time UTC: ${now.toISOString()}`);
+  console.log(`[Poll Check] Current time EST: ${now.toLocaleString("en-US", { timeZone: "America/New_York" })}`);
+  
   try {
-    const res = await fetch(url);
-    const raw = await res.text();
-    let data: any;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.error("[SportsDB] JSON parse error:", e);
+    const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${today}`;
+    console.log(`[Poll Check] Fetching: ${url}`);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.log(`[Poll Check] ESPN API error: ${response.status}`);
       return false;
     }
-
-    const events: any[] = Array.isArray(data?.events) ? data.events : [];
-    if (!events.length) {
-      console.log("[SportsDB] events array empty — skipping polling.");
+    
+    const data = await response.json() as any;
+    const events = data?.events || [];
+    
+    if (events.length === 0) {
+      console.log(`[Poll Check] No NFL games found for ${today}`);
       return false;
     }
-
-    // Only check the start time gate
-    if (!shouldPollByGameTimes(events)) {
-      console.log("[SportsDB] Not within polling window based on game start times.");
-      return false;
+    
+    console.log(`[Poll Check] Found ${events.length} NFL games for ${today}`);
+    
+    // Check if any game is currently in progress (within 4 hours of start time)
+    for (const event of events) {
+      const competition = event.competitions?.[0];
+      if (!competition) continue;
+      
+      const gameDate = new Date(competition.date);
+      const gameTimeEST = gameDate.toLocaleString("en-US", { timeZone: "America/New_York" });
+      
+      const homeTeam = competition.competitors?.find((team: any) => team.homeAway === 'home');
+      const awayTeam = competition.competitors?.find((team: any) => team.homeAway === 'away');
+      
+      // Calculate time difference
+      const timeDiff = now.getTime() - gameDate.getTime();
+      const minutesDiff = Math.round(timeDiff / (1000 * 60));
+      
+      // Game window: from start time to 4 hours after start
+      const isInGameWindow = timeDiff >= 0 && timeDiff <= (4 * 60 * 60 * 1000);
+      
+      console.log(`[Poll Check] ${awayTeam?.team?.displayName} @ ${homeTeam?.team?.displayName}`);
+      console.log(`[Poll Check] Game time: ${gameTimeEST} EST`);
+      console.log(`[Poll Check] Status: ${competition.status?.type?.description}`);
+      console.log(`[Poll Check] Minutes since start: ${minutesDiff}`);
+      console.log(`[Poll Check] In game window: ${isInGameWindow}`);
+      
+      if (isInGameWindow) {
+        console.log(`[Poll Check] ✅ Game in progress - should poll`);
+        return true;
+      }
     }
-
-    // If within the window, poll
-    return true;
-  } catch (err) {
-    console.error("[SportsDB] fetch error:", err);
+    
+    console.log(`[Poll Check] ❌ No games currently in progress`);
+    return false;
+    
+  } catch (error) {
+    console.error(`[Poll Check] Error checking games:`, error);
     return false;
   }
 }
 
+/**
+ * Main polling function - runs every 3 minutes
+ */
 export const pollWinProbabilities = onSchedule(
   {
     schedule: "every 3 minutes",
@@ -89,116 +87,144 @@ export const pollWinProbabilities = onSchedule(
     invoker: "public",
   },
   async (_event: ScheduledEvent) => {
-    // Only poll when SportsDB says there are NFL games today AND at least one is in Q1–Q4
-    const shouldPoll = await sportsDbShouldPoll();
-    if (!shouldPoll) return;
-
-    const db = admin.firestore();
-
-    // Get current season (year)
-    const season = new Date().getFullYear().toString();
-
-    // Fetch current week from yahooAPI settings endpoint
-    const settingsRes = await fetch(
-      `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${season}`
-    );
-    const settingsData: {
-      fantasy_content?: {
-        league?: any[];
-      };
-    } = await settingsRes.json() as {
-      fantasy_content?: {
-        league?: any[];
-      };
-    };
-    const week =
-      Number(settingsData?.fantasy_content?.league?.[0]?.current_week);
-
-    // Fetch scoreboard for the current week
-    const res = await fetch(
-      `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=${season}&week=${week}`
-    );
-    const data = (await res.json()) as {
-      fantasy_content?: {
-        league?: any[];
-      };
-    };
-    const scoreboard = data?.fantasy_content?.league?.[1]?.scoreboard?.[0];
-    const matchups = scoreboard?.matchups;
-    // Get the first matchup object (usually key "0")
-    const firstMatchupObj = matchups?.["0"]?.matchup;
-    // Extract week status from the first matchup
-    const weekStatus = firstMatchupObj?.status ?? "preevent";
-    const games = matchups;
-    const count = parseInt(games?.count ?? "0", 10);
-
-    // Only poll and store win probabilities if the week is "midevent"
-    if (weekStatus !== "midevent") {
-      console.log(`Week ${week} is not midevent (status: ${weekStatus}), skipping polling.`);
-      return;
-    }
-
-    for (let i = 0; i < count; i++) {
-      const m = games[i.toString()]?.matchup;
-      if (!m) continue;
-      const teams = m[0]?.teams;
-      const team1 = teams?.[0]?.team;
-      const team2 = teams?.[1]?.team;
-      const status = m[1]?.status ?? "";
-      const matchupId = m[1]?.matchup_id ?? `${i}`;
-
-      // Get win probabilities (simulate or use real if available)
-      const team1Pct = Number(team1?.[1]?.win_probability ?? 50);
-      const team2Pct = Number(team2?.[1]?.win_probability ?? 50);
-
-      // Get team names/logos
-      const t1meta = team1?.[0] || [];
-      const t2meta = team2?.[0] || [];
-      const t1name = t1meta.find((item: { name: any }) => item.name)?.name ?? "Team 1";
-      const t2name = t2meta.find((item: { name: any }) => item.name)?.name ?? "Team 2";
-      const t1logo = t1meta.find((item: { team_logos: any }) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
-      const t2logo = t2meta.find((item: { team_logos: any }) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
-
-      // Firestore doc for this matchup
-      const matchupDocRef = db
-        .collection("WinProbabilities")
-        .doc(`${season}_${week}_${matchupId}`);
-
-      // Get existing points from Firestore
-      let prevPoints = [];
-      try {
-        const docSnap = await matchupDocRef.get();
-        if (docSnap.exists) {
-          const docData = docSnap.data();
-          prevPoints = docData && docData.points ? docData.points : [];
+    console.log(`[WinProb] Starting poll at ${new Date().toISOString()}`);
+    
+    try {
+      // Step 1: Check if we should poll based on NFL game times via ESPN API
+      const shouldPoll = await shouldPollNow();
+      if (!shouldPoll) {
+        console.log("[WinProb] Not polling - no games in progress");
+        return;
+      }
+      
+      console.log("[WinProb] ✅ Games in progress - starting poll");
+      
+      // Step 2: Get current season and week from Yahoo API
+      const season = new Date().getFullYear().toString();
+      
+      const settingsRes = await fetch(
+        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${season}`
+      );
+      
+      if (!settingsRes.ok) {
+        console.error(`[WinProb] Yahoo settings API error: ${settingsRes.status}`);
+        return;
+      }
+      
+      const settingsData = await settingsRes.json() as any;
+      const week = Number(settingsData?.fantasy_content?.league?.[0]?.current_week);
+      
+      if (!week) {
+        console.error("[WinProb] Could not get current week from Yahoo API");
+        return;
+      }
+      
+      console.log(`[WinProb] Processing season ${season}, week ${week}`);
+      
+      // Step 3: Get scoreboard data
+      const scoreboardRes = await fetch(
+        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=${season}&week=${week}`
+      );
+      
+      if (!scoreboardRes.ok) {
+        console.error(`[WinProb] Yahoo scoreboard API error: ${scoreboardRes.status}`);
+        return;
+      }
+      
+      const scoreboardData = await scoreboardRes.json() as any;
+      const scoreboard = scoreboardData?.fantasy_content?.league?.[1]?.scoreboard?.[0];
+      const matchups = scoreboard?.matchups;
+      
+      if (!matchups) {
+        console.log("[WinProb] No matchups found in scoreboard");
+        return;
+      }
+      
+      // Step 4: Check if week is active
+      const firstMatchup = matchups?.["0"]?.matchup;
+      const weekStatus = firstMatchup?.status ?? "preevent";
+      
+      if (weekStatus !== "midevent") {
+        console.log(`[WinProb] Week not active (status: ${weekStatus}) - not storing data`);
+        return;
+      }
+      
+      console.log(`[WinProb] Week is active - processing matchups`);
+      
+      // Step 5: Process each matchup
+      const db = admin.firestore();
+      const matchupCount = parseInt(matchups?.count ?? "0", 10);
+      
+      for (let i = 0; i < matchupCount; i++) {
+        const matchup = matchups[i.toString()]?.matchup;
+        if (!matchup) continue;
+        
+        const teams = matchup[0]?.teams;
+        const team1 = teams?.[0]?.team;
+        const team2 = teams?.[1]?.team;
+        const matchupId = matchup[1]?.matchup_id ?? `${i}`;
+        
+        // Get win probabilities (Yahoo returns as decimals 0.0-1.0)
+        const team1WinProb = Number(team1?.[1]?.win_probability ?? 0.5);
+        const team2WinProb = Number(team2?.[1]?.win_probability ?? 0.5);
+        
+        // Convert to percentages for storage
+        const team1Pct = team1WinProb * 100;
+        const team2Pct = team2WinProb * 100;
+        
+        // Skip if either team has 100% win probability
+        if (team1Pct >= 100 || team2Pct >= 100) {
+          console.log(`[WinProb] Skipping matchup ${matchupId} - game decided (${team1Pct}% vs ${team2Pct}%)`);
+          continue;
         }
-      } catch {}
-
-      // Format the current time in EST with single-digit hour if needed
-      const now = new Date();
-      const timeLabel = now.toLocaleString("en-US", {
-        timeZone: "America/New_York",
-        weekday: "short",
-        hour: "numeric",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      });
-
-      // Always store points regardless of matchup status (since week is midevent)
-      const newPoints = [...prevPoints, { time: timeLabel, team1Pct, team2Pct }];
-      await matchupDocRef.set(
-        {
+        
+        // Get team info
+        const team1Meta = team1?.[0] || [];
+        const team2Meta = team2?.[0] || [];
+        const team1Name = team1Meta.find((item: any) => item.name)?.name ?? "Team 1";
+        const team2Name = team2Meta.find((item: any) => item.name)?.name ?? "Team 2";
+        const team1Logo = team1Meta.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
+        const team2Logo = team2Meta.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
+        
+        // Create timestamp
+        const timeLabel = new Date().toLocaleString("en-US", {
+          timeZone: "America/New_York",
+          weekday: "short",
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        });
+        
+        // Get existing data
+        const docRef = db.collection("WinProbabilities").doc(`${season}_${week}_${matchupId}`);
+        const docSnap = await docRef.get();
+        const existingPoints = docSnap.exists ? (docSnap.data()?.points || []) : [];
+        
+        // Add new data point
+        const newPoints = [
+          ...existingPoints,
+          { time: timeLabel, team1Pct, team2Pct }
+        ];
+        
+        // Save to Firestore
+        await docRef.set({
           matchupId,
-          team1: { name: t1name, logo: t1logo },
-          team2: { name: t2name, logo: t2logo },
+          team1: { name: team1Name, logo: team1Logo },
+          team2: { name: team2Name, logo: team2Logo },
           points: newPoints,
-          final: status === "postevent",
+          final: matchup[1]?.status === "postevent",
           season,
           week,
-        },
-        { merge: true }
-      );
+        }, { merge: true });
+        
+        console.log(`[WinProb] Updated ${team1Name} (${team1Pct.toFixed(1)}%) vs ${team2Name} (${team2Pct.toFixed(1)}%)`);
+      }
+      
+      console.log(`[WinProb] ✅ Poll completed - processed ${matchupCount} matchups`);
+      
+    } catch (error) {
+      console.error("[WinProb] Error during polling:", error);
     }
   }
 );

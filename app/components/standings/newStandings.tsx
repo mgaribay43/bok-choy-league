@@ -16,7 +16,8 @@ type TeamEntry = {
   pointsAgainst: number;
   pointDiff: number;
   winPct: string;
-  avgPoints: number; // <-- Add this field
+  avgPoints: number;
+  pointsOverProjected: number; // <-- Rename to pointsOverProjected
 };
 
 const START_YEAR = 2017;
@@ -54,6 +55,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
       setLoading(true);
       setError(null);
       try {
+        // Fetch standings
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
         );
@@ -63,6 +65,49 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         const rawTeams = json.fantasy_content.league[1].standings[0].teams;
         const teamCount = parseInt(rawTeams.count, 10);
         const parsed: TeamEntry[] = [];
+
+        // --- Get current week ---
+        const currentWeek = Number(json.fantasy_content.league[0]?.current_week ?? 1);
+
+        // --- Aggregate POP for all weeks ---
+        // Map: teamId -> { actual: number[], projected: number[] }
+        const popMap: Record<string, { actual: number[]; projected: number[] }> = {};
+
+        for (let week = 1; week < currentWeek; week++) {
+          try {
+            const scoreboardRes = await fetch(
+              `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=${year}&week=${week}`
+            );
+            if (scoreboardRes.ok) {
+              const scoreboardJson = await scoreboardRes.json();
+              const matchups =
+                scoreboardJson.fantasy_content.league[1].scoreboard["0"].matchups;
+              for (const matchupIdx in matchups) {
+                const matchup = matchups[matchupIdx].matchup;
+                if (!matchup) continue;
+                const teamsObj = matchup["0"].teams;
+                for (const teamIdx in teamsObj) {
+                  if (teamIdx === "count") continue;
+                  const teamArr = teamsObj[teamIdx].team;
+                  const meta = teamArr[0];
+                  const stats = teamArr[1];
+                  const teamId = meta.find((item: any) => item.team_id)?.team_id;
+                  const actual = Number(stats.team_points?.total ?? 0);
+                  const projected = Number(stats.team_projected_points?.total ?? 0);
+                  if (teamId) {
+                    if (!popMap[teamId]) {
+                      popMap[teamId] = { actual: [], projected: [] };
+                    }
+                    popMap[teamId].actual.push(actual);
+                    popMap[teamId].projected.push(projected);
+                  }
+                }
+              }
+            }
+          } catch {
+            // skip week if error
+          }
+        }
 
         for (let i = 0; i < teamCount; i++) {
           const teamData = rawTeams[i.toString()].team;
@@ -99,6 +144,14 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
           // Average points per week
           const avgPoints = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
 
+          // --- Points Over Projected (POP) ---
+          // Sum over all weeks: actual - projected
+          const actualArr = popMap[id]?.actual ?? [];
+          const projectedArr = popMap[id]?.projected ?? [];
+          const pointsOverProjected =
+            actualArr.reduce((sum, val) => sum + val, 0) -
+            projectedArr.reduce((sum, val) => sum + val, 0);
+
           parsed.push({
             id,
             name,
@@ -110,7 +163,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
             pointsAgainst,
             pointDiff,
             winPct,
-            avgPoints, // <-- Add to parsed object
+            avgPoints,
+            pointsOverProjected,
           });
         }
 
@@ -131,14 +185,13 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
   // --- Sorting state ---
   type SortKey =
     | "rank"
-    // | "team"        // still removed
-    // | "manager"     // still removed
-    | "record"      // <-- re-added
+    | "record"
     | "pointsFor"
     | "pointsAgainst"
     | "pointDiff"
     | "winPct"
-    | "avgPoints";
+    | "avgPoints"
+    | "pointsOverProjected"; // <-- Rename to pointsOverProjected
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -161,8 +214,6 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     arr.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        // case "team": ... // still removed
-        // case "manager": ... // still removed
         case "record":
           cmp = parseRecordPct(a.record) - parseRecordPct(b.record);
           break;
@@ -180,6 +231,9 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
           break;
         case "avgPoints":
           cmp = a.avgPoints - b.avgPoints;
+          break;
+        case "pointsOverProjected":
+          cmp = a.pointsOverProjected - b.pointsOverProjected;
           break;
         case "rank":
         default:
@@ -267,14 +321,13 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
   // Mobile sort options
   const sortOptions: { key: SortKey; label: string }[] = [
     { key: "rank", label: "Rank" },
-    // { key: "team", label: "Team" },      // still removed
-    // { key: "manager", label: "Manager" },// still removed
-    { key: "record", label: "Record" },    // <-- re-added
+    { key: "record", label: "Record" },
     { key: "pointsFor", label: "PF" },
     { key: "pointsAgainst", label: "PA" },
     { key: "pointDiff", label: "+/-" },
     { key: "winPct", label: "Pct" },
     { key: "avgPoints", label: "Avg Pts" },
+    { key: "pointsOverProjected", label: "POP" }, // <-- Rename to POP
   ];
 
   // Generate year options from START_YEAR to current year, most recent year first
@@ -372,8 +425,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="text-green-400 font-mono text-sm">{team.record}</div>
             </div>
 
-            {/* PF / PA / Avg / +/- */}
-            <div className="mt-2 grid grid-cols-4 gap-2 text-center">
+            {/* PF / PA / Avg / +/- / POP */}
+            <div className="mt-2 grid grid-cols-5 gap-2 text-center">
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PF</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.pointsFor.toFixed(2)}</div>
@@ -389,6 +442,10 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">+/-</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">POP</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.pointsOverProjected.toFixed(2)}</div>
               </div>
             </div>
           </div>
@@ -445,6 +502,12 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               >
                 Pct{arrow("winPct")}
               </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("pointsOverProjected")}
+              >
+                POP{arrow("pointsOverProjected")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -476,10 +539,27 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.avgPoints.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointDiff.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.winPct}</td>
+                <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsOverProjected.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      {/* Stats Key */}
+      <div className="max-w-5xl mx-auto mt-8 mb-4 px-4">
+        <div className="bg-[#181818] border border-emerald-700 rounded-xl p-4 text-emerald-300 text-sm shadow">
+          <h3 className="text-emerald-400 font-bold mb-2">Stats Key</h3>
+          <ul className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-6">
+            <li><span className="font-mono text-emerald-200">Rank</span>: League rank</li>
+            <li><span className="font-mono text-emerald-200">Record</span>: Wins-Losses-Ties</li>
+            <li><span className="font-mono text-emerald-200">PF</span>: Points For (total points scored)</li>
+            <li><span className="font-mono text-emerald-200">PA</span>: Points Against (total points allowed)</li>
+            <li><span className="font-mono text-emerald-200">Avg</span>: Average points per week</li>
+            <li><span className="font-mono text-emerald-200">+/-</span>: Point Differential (PF minus PA)</li>
+            <li><span className="font-mono text-emerald-200">Pct</span>: Win Percentage</li>
+            <li><span className="font-mono text-emerald-200">POP</span>: Points Over Projected (actual points minus projected points)</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

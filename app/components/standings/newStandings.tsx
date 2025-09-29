@@ -385,8 +385,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         </button>
       </div>
 
-      {/* Mobile list (smaller screens) */}
-      <div className="sm:hidden space-y-3">
+      {/* Mobile/Tablet list (up to md screens) */}
+      <div className="lg:hidden space-y-3">
         {sortedTeams.map((team) => (
           <div key={team.id} className="bg-[#181818] border border-[#262626] rounded-xl p-3 shadow-sm">
             {/* Top row: rank, team, win% */}
@@ -425,7 +425,7 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               <div className="text-green-400 font-mono text-sm">{team.record}</div>
             </div>
 
-            {/* PF / PA / Avg / +/- / POP */}
+            {/* PF / PA / +/- / Avg / POP */}
             <div className="mt-2 grid grid-cols-5 gap-2 text-center">
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">PF</div>
@@ -436,12 +436,12 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <div className="text-emerald-200 font-mono text-sm">{team.pointsAgainst.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
-                <div className="text-[10px] text-emerald-300">Avg</div>
-                <div className="text-emerald-200 font-mono text-sm">{team.avgPoints.toFixed(2)}</div>
-              </div>
-              <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">+/-</div>
                 <div className="text-emerald-200 font-mono text-sm">{team.pointDiff.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#111] border border-[#222] rounded p-1.5">
+                <div className="text-[10px] text-emerald-300">Avg</div>
+                <div className="text-emerald-200 font-mono text-sm">{team.avgPoints.toFixed(2)}</div>
               </div>
               <div className="bg-[#111] border border-[#222] rounded p-1.5">
                 <div className="text-[10px] text-emerald-300">POP</div>
@@ -452,8 +452,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         ))}
       </div>
 
-      {/* Desktop/tablet table (sm and up) */}
-      <div className="hidden sm:block overflow-x-auto mt-2">
+      {/* Desktop/tablet table (lg and up) */}
+      <div className="hidden lg:block overflow-x-auto mt-2">
         <table className="min-w-full bg-[#181818] rounded-lg shadow">
           <thead>
             <tr>
@@ -486,15 +486,15 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
               </th>
               <th
                 className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
-                onClick={() => changeSort("avgPoints")}
-              >
-                Avg{arrow("avgPoints")}
-              </th>
-              <th
-                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
                 onClick={() => changeSort("pointDiff")}
               >
                 +/-{arrow("pointDiff")}
+              </th>
+              <th
+                className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
+                onClick={() => changeSort("avgPoints")}
+              >
+                Avg{arrow("avgPoints")}
               </th>
               <th
                 className="py-2 px-3 text-emerald-400 text-center cursor-pointer select-none"
@@ -536,8 +536,8 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.record}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsFor.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsAgainst.toFixed(2)}</td>
-                <td className="py-2 px-3 text-emerald-400 text-center">{team.avgPoints.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointDiff.toFixed(2)}</td>
+                <td className="py-2 px-3 text-emerald-400 text-center">{team.avgPoints.toFixed(2)}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.winPct}</td>
                 <td className="py-2 px-3 text-emerald-400 text-center">{team.pointsOverProjected.toFixed(2)}</td>
               </tr>

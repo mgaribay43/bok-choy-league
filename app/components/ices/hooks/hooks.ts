@@ -343,18 +343,26 @@ export function useLongestActiveNoIceStreak(
 }
 
 // =======================
-// Longest Active All-Time No-Ice Streaks Calculation Hook
+// Longest All-Time No-Ice Streaks Calculation Hook
 // =======================
 export function useLongestAllTimeNoIceStreaks(videos: IceVideo[], currentWeek: number) {
   // 1. Get all unique seasons
   const allSeasons = Array.from(new Set(videos.map(v => v.season))).filter((s): s is string => typeof s === "string").sort();
 
-  // 2. Build all season/week pairs for 17 weeks per season, but only up to currentWeek for the current season
+  // 2. Build all season/week pairs for 17 weeks per season, but only up to the previous week for the current season
   const allSeasonWeeks: { season: string; weekNum: number }[] = [];
-  allSeasons.forEach(season => {
-    const maxWeek = (season === allSeasons[allSeasons.length - 1]) ? currentWeek : 17;
-    for (let weekNum = 1; weekNum <= maxWeek; weekNum++) {
-      allSeasonWeeks.push({ season, weekNum });
+  allSeasons.forEach((season, idx) => {
+    if (season === allSeasons[allSeasons.length - 1]) {
+      // Only up to previous week for current season
+      if (currentWeek > 1) {
+        for (let weekNum = 1; weekNum < currentWeek; weekNum++) {
+          allSeasonWeeks.push({ season, weekNum });
+        }
+      }
+    } else {
+      for (let weekNum = 1; weekNum <= 17; weekNum++) {
+        allSeasonWeeks.push({ season, weekNum });
+      }
     }
   });
 

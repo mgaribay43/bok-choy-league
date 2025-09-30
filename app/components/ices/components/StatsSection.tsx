@@ -1,6 +1,11 @@
 'use client';
 
 import React from "react";
+import {
+  useLongestActiveNoIceStreak,
+  useLongestAllTimeNoIceStreaks,
+  // ...other hooks...
+} from "../hooks/hooks";
 
 export default function StatsSection({
   stats,
@@ -22,6 +27,34 @@ export default function StatsSection({
   longestActiveNoIceStreak,
   longestAllTimeNoIceStreaks,
 }: any) {
+  // Merge and deduplicate all-time and active streaks, then show top 3
+  const mergedAllTimeStreaks = React.useMemo(() => {
+    // Combine both arrays
+    const all = [
+      ...(longestAllTimeNoIceStreaks ?? []),
+      ...(longestActiveNoIceStreak ?? []),
+    ];
+
+    // Remove exact duplicates (same manager, same streak, same start/end)
+    const seen = new Set();
+    const deduped = all.filter(rec => {
+      const key = `${rec.manager}|${rec.streak}|${rec.start?.season}|${rec.start?.weekNum}|${rec.end?.season}|${rec.end?.weekNum}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by streak descending, then by most recent end
+    deduped.sort((a, b) => {
+      if (b.streak !== a.streak) return b.streak - a.streak;
+      // Prefer more recent streaks
+      if (b.end?.season !== a.end?.season) return (b.end?.season || "").localeCompare(a.end?.season || "");
+      return (b.end?.weekNum || 0) - (a.end?.weekNum || 0);
+    });
+
+    // Only top 3
+    return deduped.slice(0, 3);
+  }, [longestAllTimeNoIceStreaks, longestActiveNoIceStreak]);
 
   return (
     <div className="w-full mb-6">
@@ -362,24 +395,51 @@ export default function StatsSection({
               Longest No Ice Streak (All-Time)
             </h3>
             <div className="space-y-2">
-              {(longestAllTimeNoIceStreaks ?? []).map((rec: any, index: number) => (
-                <div key={rec.manager + rec.streak} className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <div className="flex items-center space-x-2">
-                      <span className="bg-cyan-900 text-cyan-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </span>
-                      <span className="font-medium text-emerald-400">{rec.manager}</span>
+              {(mergedAllTimeStreaks ?? []).map((rec: any, index: number) => {
+                // Check if this streak is also in the active streaks list
+                const isActive = (longestActiveNoIceStreak ?? []).some(
+                  (active: any) =>
+                    active.manager === rec.manager &&
+                    active.streak === rec.streak &&
+                    active.start?.season === rec.start?.season &&
+                    active.start?.weekNum === rec.start?.weekNum &&
+                    active.end?.season === rec.end?.season &&
+                    active.end?.weekNum === rec.end?.weekNum
+                );
+                return (
+                  <div
+                    key={
+                      rec.manager +
+                      rec.streak +
+                      (rec.start?.season ?? "") +
+                      (rec.start?.weekNum ?? "") +
+                      (rec.end?.season ?? "") +
+                      (rec.end?.weekNum ?? "")
+                    }
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-cyan-900 text-cyan-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="font-medium text-emerald-400">{rec.manager}</span>
+                        {isActive && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-700 text-emerald-100 text-[10px] font-semibold uppercase tracking-wide">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-emerald-300 ml-8">
+                        {rec.start?.weekStr ?? `Week ${rec.start?.weekNum}`} {rec.start?.season} - {rec.end?.weekStr ?? `Week ${rec.end?.weekNum}`} {rec.end?.season}
+                      </div>
                     </div>
-                    <div className="text-xs text-emerald-300 ml-8">
-                      {rec.start.weekStr} {rec.start.season} - {rec.end.weekStr} {rec.end.season}
-                    </div>
+                    <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
+                      {rec.streak} week{rec.streak === 1 ? "" : "s"}
+                    </span>
                   </div>
-                  <span className="text-emerald-200 font-semibold bg-[#2a2a2a] px-2 py-1 rounded text-xs">
-                    {rec.streak} week{rec.streak === 1 ? "" : "s"}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

@@ -167,14 +167,14 @@ export const pollWinProbabilities = onSchedule(
         // Get win probabilities (Yahoo returns as decimals 0.0-1.0)
         const team1WinProb = Number(team1?.[1]?.win_probability ?? 0.5);
         const team2WinProb = Number(team2?.[1]?.win_probability ?? 0.5);
-        
-        // Convert to percentages for storage
-        const team1Pct = team1WinProb * 100;
-        const team2Pct = team2WinProb * 100;
-        
+
+        // Store as decimals (0.0 - 1.0) in Firestore
+        const team1Pct = team1WinProb;
+        const team2Pct = team2WinProb;
+
         // Skip if either team has 100% win probability
-        if (team1Pct >= 100 || team2Pct >= 100) {
-          console.log(`[WinProb] Skipping matchup ${matchupId} - game decided (${team1Pct}% vs ${team2Pct}%)`);
+        if (team1Pct >= 1 || team2Pct >= 1) {
+          console.log(`[WinProb] Skipping matchup ${matchupId} - game decided (${team1Pct} vs ${team2Pct})`);
           continue;
         }
         
@@ -206,7 +206,7 @@ export const pollWinProbabilities = onSchedule(
           ...existingPoints,
           { time: timeLabel, team1Pct, team2Pct }
         ];
-        
+
         // Save to Firestore
         await docRef.set({
           matchupId,
@@ -217,8 +217,8 @@ export const pollWinProbabilities = onSchedule(
           season,
           week,
         }, { merge: true });
-        
-        console.log(`[WinProb] Updated ${team1Name} (${team1Pct.toFixed(1)}%) vs ${team2Name} (${team2Pct.toFixed(1)}%)`);
+
+        console.log(`[WinProb] Updated ${team1Name} (${team1Pct}) vs ${team2Name} (${team2Pct})`);
       }
       
       console.log(`[WinProb] ✅ Poll completed - processed ${matchupCount} matchups`);

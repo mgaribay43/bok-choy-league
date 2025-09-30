@@ -1214,13 +1214,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
             {/* Filter Controls */}
             <div className="flex items-center gap-3">
+              {/* Remove NFL Games toggle on desktop */}
               <button
                 onClick={() => setShowNFL(!showNFL)}
                 className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                   showNFL
                     ? "bg-blue-600 border-blue-500 text-white"
                     : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                }`}
+                } lg:hidden`} // <-- Only show on mobile/tablet
               >
                 <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1228,6 +1229,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 NFL Games
               </button>
               
+              {/* Hide Final toggle remains */}
               {showNFL && (
                 <button
                   onClick={() => setHideCompletedGames(!hideCompletedGames)}
@@ -1253,8 +1255,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* NFL Games Column */}
           {showNFL && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-6">
+            <div className="space-y-4 xl:max-h-[80vh] xl:overflow-y-auto xl:pr-2">
+              <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#0f0f0f] z-10 xl:pt-4">
                 <h2 className="text-2xl font-bold text-blue-300">
                   NFL Games
                 </h2>
@@ -1263,7 +1265,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   {hideCompletedGames && " (active only)"}
                 </div>
               </div>
-              
               {nflLoading ? (
                 <div className="text-center py-8 text-emerald-300">
                   <div className="animate-spin w-8 h-8 border-2 border-emerald-300 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -1286,8 +1287,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           )}
 
           {/* Fantasy Matchups Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-6">
+          <div className="space-y-4 xl:max-h-[80vh] xl:overflow-y-auto xl:pr-2">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#0f0f0f] z-10 xl:pt-4">
               <h2 className="text-2xl font-bold text-emerald-300">
                 Fantasy Matchups
               </h2>
@@ -1295,7 +1296,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 {matchups.length} matchups
               </div>
             </div>
-
             {loading ? (
               <div className="text-center py-8 text-emerald-300">
                 <div className="animate-spin w-8 h-8 border-2 border-emerald-300 border-t-transparent rounded-full mx-auto mb-2"></div>

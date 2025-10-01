@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
-import { useRouter } from "next/navigation";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -228,20 +227,40 @@ const AvatarBox = ({
   record: string;
 }) => {
   const cleanRecord = (record || "").replace(/[()]/g, ""); // no parentheses
+
+  // Detect if this is an NFL team logo (use white bg), otherwise fantasy (use transparent bg)
+  const isNFLLogo =
+    typeof src === "string" &&
+    src.startsWith("https://a.espncdn.com/i/teamlogos/nfl/500/");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <img
-        src={src}
-        alt={alt}
+      <div
         style={{
-          width: 44,
-          height: 44,
+          width: 64,
+          height: 64,
           borderRadius: "50%",
-          objectFit: "cover",
-          border: "none",
-          background: "#18191b",
+          background: isNFLLogo ? "#fff" : "transparent", // Only NFL logos get white bg
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          marginBottom: 2,
         }}
-      />
+      >
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            width: 54,
+            height: 54,
+            borderRadius: "50%",
+            objectFit: "contain",
+            border: "none",
+            background: isNFLLogo ? "#fff" : "transparent",
+          }}
+        />
+      </div>
       <span
         style={{
           fontSize: 13,
@@ -249,7 +268,7 @@ const AvatarBox = ({
           fontWeight: 600,
           marginTop: 2,
           letterSpacing: 0.5,
-          whiteSpace: "nowrap",         // always one line
+          whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -362,6 +381,13 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
 
   // ESPN game page URL - uses the game ID from the API
   const espnGameUrl = `https://www.espn.com/nfl/game/_/gameId/${game.id}`;
+
+  // Format EST time without seconds
+  let displayDate = game.dateEST;
+  if (displayDate) {
+    // Try to remove seconds from time if present (e.g., "Sun 1:00:00 PM" -> "Sun 1:00 PM")
+    displayDate = displayDate.replace(/(\d{1,2}:\d{2}):\d{2}(\s*[AP]M)/, "$1$2");
+  }
 
   return (
     <a
@@ -484,7 +510,7 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
             color: "#a7a7a7",
           }}
         >
-          <span>{game.dateEST}</span>
+          <span>{displayDate}</span>
           <span>{game.venue.city}, {game.venue.state}</span>
         </div>
       </div>

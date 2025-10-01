@@ -76,7 +76,8 @@ const MinusIcon = () => (
     <span className="text-red-500 font-bold text-lg mr-2">−</span>
 );
 
-function getInitial(name: string) {
+function getInitial(name: string, position: string) {
+    if (position === "DEF") return name; // Do not abbreviate for DEF
     const parts = name.split(" ");
     if (parts.length === 1) return parts[0][0] + ".";
     return parts[0][0] + ". " + (parts[1] || "");
@@ -120,7 +121,9 @@ const TransactionsBox: React.FC = () => {
                 {adds.map((p) => (
                     <div key={p.player_id} className="flex items-center mb-1">
                         <PlusIcon />
-                        <span className="font-bold text-white text-base mr-2">{getInitial(p.name.full)}</span>
+                        <span className="font-bold text-white text-base mr-2">
+                            {getInitial(p.name.full, p.display_position)}
+                        </span>
                         <span className="text-gray-300 text-base mr-2">{p.display_position}</span>
                         <span className="text-gray-400 text-base mr-2">{`(${getSourceAbbr(p)})`}</span>
                     </div>
@@ -128,7 +131,9 @@ const TransactionsBox: React.FC = () => {
                 {drops.map((p) => (
                     <div key={p.player_id} className="flex items-center mb-1">
                         <MinusIcon />
-                        <span className="font-bold text-white text-base mr-2">{getInitial(p.name.full)}</span>
+                        <span className="font-bold text-white text-base mr-2">
+                            {getInitial(p.name.full, p.display_position)}
+                        </span>
                         <span className="text-gray-300 text-base mr-2">{p.display_position}</span>
                         <span className="text-gray-400 text-base mr-2">{`(${getDestAbbr(p)})`}</span>
                     </div>

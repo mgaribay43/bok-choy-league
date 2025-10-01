@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
 import { useRouter } from "next/navigation";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { EyeSlashIcon } from "@heroicons/react/24/outline";
+import router from "next/router";
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -351,16 +353,16 @@ const isGameLiveOrUpcoming = (game: NFLGame): boolean => {
 const NFLGameCard = ({ game }: { game: NFLGame }) => {
   const awayScore = parseInt(game.awayTeam.score) || 0;
   const homeScore = parseInt(game.homeTeam.score) || 0;
-  
+
   const awayWin = awayScore > homeScore && game.status !== "Scheduled";
   const homeWin = homeScore > awayScore && game.status !== "Scheduled";
-  
+
   const isLive = game.status === "In Progress" || game.status.includes("Quarter");
   const isFinished = game.status === "Final";
-  
+
   // ESPN game page URL - uses the game ID from the API
   const espnGameUrl = `https://www.espn.com/nfl/game/_/gameId/${game.id}`;
-  
+
   return (
     <a
       href={espnGameUrl}
@@ -397,7 +399,7 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
           }}
         >
           {game.status} {game.broadcast && `• ${game.broadcast}`}
-          
+
           {/* ESPN logo indicator */}
           <div
             style={{
@@ -444,10 +446,10 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
             gap: 8,
           }}
         >
-          <AvatarBox 
-            src={getNFLLogo(game.awayTeam.name)} 
-            alt={game.awayTeam.name} 
-            record={game.awayTeam.record} 
+          <AvatarBox
+            src={getNFLLogo(game.awayTeam.name)}
+            alt={game.awayTeam.name}
+            record={game.awayTeam.record}
           />
           <ScoreBox
             value={game.awayTeam.score}
@@ -462,10 +464,10 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
             highlight={homeWin ? "win" : awayWin ? "lose" : "tie"}
             align="left"
           />
-          <AvatarBox 
-            src={getNFLLogo(game.homeTeam.name)} 
-            alt={game.homeTeam.name} 
-            record={game.homeTeam.record} 
+          <AvatarBox
+            src={getNFLLogo(game.homeTeam.name)}
+            alt={game.homeTeam.name}
+            record={game.homeTeam.record}
           />
         </div>
 
@@ -685,6 +687,9 @@ interface MatchupsViewerProps {
   Marquee?: boolean;
 }
 
+const pollingRef = { current: null as null | NodeJS.Timeout };
+const nflPollingRef = { current: null as null | NodeJS.Timeout };
+
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
   const [nflGames, setNflGames] = useState<NFLGame[]>([]);
@@ -699,34 +704,50 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
-  const [showNFL, setShowNFL] = useState(false);
-  const [hideCompletedGames, setHideCompletedGames] = useState(true); // Changed to default true
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const nflPollingRef = useRef<NodeJS.Timeout | null>(null);
-  const router = useRouter();
 
-  // Track last status to detect change to 'postevent'
-  const lastStatusRef = useRef<string | null>(null);
+  // Responsive state
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false
+  );
+  const [showNFL, setShowNFL] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false
+  );
+  const [hideCompletedGames, setHideCompletedGames] = useState(true);
+
+  // Responsive: update isDesktop and showNFL on resize
+  useEffect(() => {
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 1024;
+      setIsDesktop(desktop);
+      if (desktop) {
+        setShowNFL(true); // Always show NFL games on desktop
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    // Set initial state
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Fetch NFL games from your cloud function
   const fetchNFLGames = async (weekOverride?: number, updateOnly = false) => {
     if (!updateOnly) setNflLoading(true);
     try {
       const weekParam = typeof weekOverride === "number" ? weekOverride : (viewWeek !== null ? viewWeek : currentWeek);
-      
+
       const response = await fetch(
         `https://us-central1-bokchoyleague.cloudfunctions.net/nflMatchups?week=${weekParam}&year=2025`
       );
-      
+
       if (!response.ok) {
         console.error("NFL API error:", response.status);
         if (!updateOnly) setNflGames([]);
         return;
       }
-      
+
       const data = await response.json();
       const games = data?.data?.games || [];
-      
+
       if (updateOnly) {
         setNflGames(prevGames => {
           if (!prevGames.length) return games;
@@ -734,7 +755,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           return prevGames.map((old, i) => {
             const fresh = games[i];
             if (!fresh) return old;
-            const changed = 
+            const changed =
               old.homeTeam.score !== fresh.homeTeam.score ||
               old.awayTeam.score !== fresh.awayTeam.score ||
               old.status !== fresh.status;
@@ -1063,8 +1084,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   }, [currentWeek, viewWeek]);
 
   // Filter NFL games based on completion status
-  const filteredNFLGames = hideCompletedGames 
-    ? nflGames.filter(isGameLiveOrUpcoming) 
+  const filteredNFLGames = hideCompletedGames
+    ? nflGames.filter(isGameLiveOrUpcoming)
     : nflGames;
 
   if (useMarquee) {
@@ -1163,7 +1184,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              
+
               <div className="relative">
                 <button
                   onClick={() => setWeekDropdownOpen(!weekDropdownOpen)}
@@ -1173,7 +1194,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 >
                   Week {weekToShow}
                 </button>
-                
+
                 {weekDropdownOpen && (
                   <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg z-10 min-w-[100px] max-h-60 overflow-y-auto shadow-xl">
                     {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
@@ -1184,13 +1205,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                           key={w}
                           onClick={() => !isLocked && w !== weekToShow && handleWeekDropdown(w)}
                           disabled={isLocked}
-                          className={`w-full px-4 py-2 text-left transition-colors ${
-                            w === weekToShow
-                              ? "bg-emerald-600 text-white"
-                              : isLocked
+                          className={`w-full px-4 py-2 text-left transition-colors ${w === weekToShow
+                            ? "bg-emerald-600 text-white"
+                            : isLocked
                               ? "text-gray-500 cursor-not-allowed"
                               : "text-white hover:bg-gray-700"
-                          }`}
+                            }`}
                         >
                           Week {w}
                         </button>
@@ -1199,7 +1219,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   </div>
                 )}
               </div>
-              
+
               <button
                 onClick={handleNextWeek}
                 disabled={weekToShow >= maxWeek}
@@ -1214,34 +1234,34 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
             {/* Filter Controls */}
             <div className="flex items-center gap-3">
-              {/* Remove NFL Games toggle on desktop */}
-              <button
-                onClick={() => setShowNFL(!showNFL)}
-                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-                  showNFL
+              {/* Only show NFL Games toggle on mobile/tablet */}
+              {!isDesktop && (
+                <button
+                  onClick={() => setShowNFL((prev) => !prev)}
+                  className={`px-4 py-2 rounded-lg border font-medium transition-colors ${showNFL
                     ? "bg-blue-600 border-blue-500 text-white"
                     : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                } lg:hidden`} // <-- Only show on mobile/tablet
-              >
-                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                NFL Games
-              </button>
-              
+                    }`}
+                >
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  NFL Games
+                </button>
+              )}
               {/* Hide Final toggle remains */}
               {showNFL && (
                 <button
-                  onClick={() => setHideCompletedGames(!hideCompletedGames)}
-                  className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-                    hideCompletedGames
-                      ? "bg-orange-600 border-orange-500 text-white"
-                      : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                  }`}
+                  onClick={() => setHideCompletedGames((prev) => !prev)}
+                  className={`px-4 py-2 rounded-lg border font-medium transition-colors flex items-center gap-2 ${hideCompletedGames
+                    ? "bg-orange-600 border-orange-500 text-white"
+                    : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                    }`}
+                  style={{ lineHeight: 1, height: 40, minHeight: 40 }}
                 >
-                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3" />
-                  </svg>
+                  <span className="flex items-center justify-center" style={{ height: 20, width: 20 }}>
+                    <EyeSlashIcon className="w-5 h-5" aria-hidden="true" />
+                  </span>
                   Hide Final
                 </button>
               )}

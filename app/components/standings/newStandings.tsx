@@ -17,7 +17,7 @@ type TeamEntry = {
   pointDiff: number;
   winPct: string;
   avgPoints: number;
-  pointsOverProjected: number; // <-- Rename to pointsOverProjected
+  pointsOverProjected: number;
 };
 
 const START_YEAR = 2017;

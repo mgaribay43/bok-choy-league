@@ -74,7 +74,8 @@ export default function Navbar() {
               <div className="hidden xl:flex items-center space-x-2">
                 <NavLink href="/champions" icon={<Trophy size={18} />} text="Champions" />
                 <NavLink href="/rules" icon={<Award size={18} />} text="Rules" />
-                <NavLink href="/events" icon={<Calendar size={18} />} text="Events" />
+                {/* Replace Events with Polls */}
+                <NavLink href="/polls" icon={<span className="text-lg">📊</span>} text="Polls" />
                 <NavLink href="/ices" icon={<span className="text-lg">🧊</span>} text="Ices" />
                 {userDisplay === "Michael" && (
                   <NavLink href="/admin" icon={<span className="text-lg">🛡️</span>} text="Admin" />
@@ -157,20 +158,11 @@ export default function Navbar() {
                           </div>
                           <span className="font-medium">Managers</span>
                         </Link>
-                        <Link
-                          href="/polls"
-                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
-                        >
-                          <div className="w-6 h-6 flex items-center justify-center bg-blue-900 rounded">
-                            <span className="text-xs">📊</span>
-                          </div>
-                          <span className="font-medium">Polls</span>
-                        </Link>
+                        {/* Polls link removed from League dropdown */}
                       </div>
                     </div>
                   </div>
                 </div>
-
                 {/* User Name */}
                 <div
                   className="ml-6 px-4 py-2 pr-10 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
@@ -291,16 +283,7 @@ export default function Navbar() {
                       </div>
                       <span className="font-medium">Managers</span>
                     </Link>
-                    <Link
-                      href="/polls"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
-                    >
-                      <div className="w-6 h-6 flex items-center justify-center bg-blue-900 rounded">
-                        <span className="text-xs">📊</span>
-                      </div>
-                      <span className="font-medium">Polls</span>
-                    </Link>
+                    {/* Polls link removed from League dropdown */}
                   </div>
                 </div>
               </div>
@@ -308,7 +291,8 @@ export default function Navbar() {
               {/* Other mobile links */}
               <MobileLink href="/champions" icon={<Trophy size={20} className="text-yellow-300" />} text="Hall of Champions" closeMenu={() => setIsOpen(false)} />
               <MobileLink href="/rules" icon={<Award size={20} />} text="Rules" closeMenu={() => setIsOpen(false)} />
-              <MobileLink href="/events" icon={<Calendar size={20} />} text="Events" closeMenu={() => setIsOpen(false)} />
+              {/* Replace Events with Polls */}
+              <MobileLink href="/polls" icon={<span className="text-xl">📊</span>} text="Polls" closeMenu={() => setIsOpen(false)} />
               <MobileLink href="/ices" icon={<span className="text-xl">🧊</span>} text="Ices" closeMenu={() => setIsOpen(false)} />
               {/* Admin Link for Michael (mobile) */}
               {userDisplay === "Michael" && (

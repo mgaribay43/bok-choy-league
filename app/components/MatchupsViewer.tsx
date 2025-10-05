@@ -561,16 +561,54 @@ const MatchupCard = ({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            padding: "10px 18px 0 18px",
+            padding: "18px 18px 0 18px",
             gap: 8,
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
+            <span
+              style={{
+                display: "block",
+                fontSize: "clamp(1.3rem, 3vw, 2.1rem)",
+                fontWeight: 800,
+                color: "#fff",
+                textAlign: "left",
+                textShadow: "0 2px 8px #000a, 0 1px 0 #23252b",
+                letterSpacing: 0.5,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                lineHeight: 1.15,
+                marginBottom: 8,
+                maxWidth: "100%",
+              }}
+              title={m.team1}
+            >
+              {m.team1}
+            </span>
           </div>
           <div style={{ width: 12 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
+            <span
+              style={{
+                display: "block",
+                fontSize: "clamp(1.3rem, 3vw, 2.1rem)",
+                fontWeight: 800,
+                color: "#fff",
+                textAlign: "right",
+                textShadow: "0 2px 8px #000a, 0 1px 0 #23252b",
+                letterSpacing: 0.5,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                lineHeight: 1.15,
+                marginBottom: 8,
+                maxWidth: "100%",
+              }}
+              title={m.team2}
+            >
+              {m.team2}
+            </span>
           </div>
         </div>
       )}
@@ -586,7 +624,10 @@ const MatchupCard = ({
           gap: 8,
         }}
       >
-        <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
+        {/* Team 1: Avatar and Score side by side */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0 }}>
+          <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
+        </div>
         <ScoreBox
           value={m.displayValue1}
           projected={m.projected1}
@@ -600,7 +641,10 @@ const MatchupCard = ({
           highlight={win2 ? "win" : win1 ? "lose" : "tie"}
           align="left"
         />
-        <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
+        {/* Team 2: Avatar and Score side by side */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0 }}>
+          <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
+        </div>
       </div>
 
       <WinBar pct1={m.winPct1} pct2={m.winPct2} />
@@ -1279,7 +1323,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     }`}
                 >
                   <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   NFL Games
                 </button>

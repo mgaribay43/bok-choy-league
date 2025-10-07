@@ -6,6 +6,7 @@ import { getCurrentWeek } from "../globalUtils/getCurrentWeek";
 import { getDisplayManagerName, getInternalManagerName } from "../globalUtils/getManagerNames";
 import Link from "next/link";
 import { db } from "../../../firebase"; // Use the shared Firestore instance
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 type TeamEntry = {
   id: string;
@@ -66,7 +67,6 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
 
       try {
         // 1. Try Firestore first
-        const { doc, getDoc, setDoc } = await import("firebase/firestore");
         const standingsRef = doc(db, "standings", year);
         const standingsSnap = await getDoc(standingsRef);
 
@@ -229,9 +229,32 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
       }
     }
 
-    fetchAndCacheStandings();
+    // For topThree, only pull from Firestore and do not update
+    if (topThree) {
+      setLoading(true);
+      setError(null);
+      (async () => {
+        try {
+          const standingsRef = doc(db, "standings", year);
+          const standingsSnap = await getDoc(standingsRef);
+          if (standingsSnap.exists()) {
+            const cached = standingsSnap.data() as CachedStandings;
+            setTeams(cached.teams);
+            setLastUpdatedWeek(cached.lastUpdatedWeek);
+          } else {
+            setError("No standings data found for this season.");
+          }
+        } catch (err: any) {
+          setError(err.message || "An error occurred");
+        } finally {
+          setLoading(false);
+        }
+      })();
+    } else {
+      fetchAndCacheStandings();
+    }
     return () => { isMounted = false; };
-  }, [year]);
+  }, [year, topThree]);
 
   // --- Sorting state ---
   type SortKey =

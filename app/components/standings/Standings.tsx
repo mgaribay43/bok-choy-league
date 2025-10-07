@@ -2,8 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { getCurrentSeason } from "../globalUtils/getCurrentSeason";
+import { getCurrentWeek } from "../globalUtils/getCurrentWeek";
 import { getDisplayManagerName, getInternalManagerName } from "../globalUtils/getManagerNames";
 import Link from "next/link";
+import { db } from "../../../firebase"; // Use the shared Firestore instance
 
 type TeamEntry = {
   id: string;
@@ -26,11 +28,17 @@ interface NewStandingsProps {
   topThree?: boolean;
 }
 
+interface CachedStandings {
+  teams: TeamEntry[];
+  lastUpdatedWeek: number;
+}
+
 const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
   const [year, setYear] = useState<string>("");
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedWeek, setLastUpdatedWeek] = useState<number>(0);
 
   // Get current season on mount
   useEffect(() => {
@@ -47,15 +55,52 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     return () => { isMounted = false; };
   }, []);
 
-  // Fetch standings when year changes
+  // Fetch standings (with Firestore caching)
   useEffect(() => {
     if (!year) return;
     let isMounted = true;
-    async function fetchStandings() {
+
+    async function fetchAndCacheStandings() {
       setLoading(true);
       setError(null);
+
       try {
-        // Fetch standings
+        // 1. Try Firestore first
+        const { doc, getDoc, setDoc } = await import("firebase/firestore");
+        const standingsRef = doc(db, "standings", year);
+        const standingsSnap = await getDoc(standingsRef);
+
+        let cached: CachedStandings | null = null;
+        if (standingsSnap.exists()) {
+          cached = standingsSnap.data() as CachedStandings;
+        }
+
+        // 2. For current season, check if update needed
+        let shouldUpdate = false;
+        let currentWeek = 0;
+        const currentSeason = await getCurrentSeason();
+        if (year === currentSeason) {
+          currentWeek = await getCurrentWeek(year);
+          if (!cached || !cached.lastUpdatedWeek || cached.lastUpdatedWeek < currentWeek) {
+            shouldUpdate = true;
+          }
+        } else if (!cached) {
+          // 3. For past seasons, only update if not cached
+          shouldUpdate = true;
+        }
+
+        if (cached && !shouldUpdate) {
+          // Use cached data
+          if (isMounted) {
+            setTeams(cached.teams);
+            setLastUpdatedWeek(cached.lastUpdatedWeek);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // 4. Fetch from Yahoo API, process, and cache
+        // --- Fetch standings from Yahoo ---
         const response = await fetch(
           `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
         );
@@ -67,13 +112,11 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         const parsed: TeamEntry[] = [];
 
         // --- Get current week ---
-        const currentWeek = Number(json.fantasy_content.league[0]?.current_week ?? 1);
+        const yahooCurrentWeek = Number(json.fantasy_content.league[0]?.current_week ?? 1);
 
         // --- Aggregate POP for all weeks ---
-        // Map: teamId -> { actual: number[], projected: number[] }
         const popMap: Record<string, { actual: number[]; projected: number[] }> = {};
-
-        for (let week = 1; week < currentWeek; week++) {
+        for (let week = 1; week < yahooCurrentWeek; week++) {
           try {
             const scoreboardRes = await fetch(
               `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=${year}&week=${week}`
@@ -145,7 +188,6 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
           const avgPoints = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
 
           // --- Points Over Projected (POP) ---
-          // Sum over all weeks: actual - projected
           const actualArr = popMap[id]?.actual ?? [];
           const projectedArr = popMap[id]?.projected ?? [];
           const pointsOverProjected =
@@ -169,17 +211,26 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
         }
 
         parsed.sort((a, b) => a.rank - b.rank);
-        if (isMounted) setTeams(parsed);
+
+        // 5. Store in Firestore
+        await setDoc(standingsRef, {
+          teams: parsed,
+          lastUpdatedWeek: yahooCurrentWeek,
+        });
+
+        if (isMounted) {
+          setTeams(parsed);
+          setLastUpdatedWeek(yahooCurrentWeek);
+        }
       } catch (err: any) {
         if (isMounted) setError(err.message || "An error occurred");
       } finally {
         if (isMounted) setLoading(false);
       }
     }
-    fetchStandings();
-    return () => {
-      isMounted = false;
-    };
+
+    fetchAndCacheStandings();
+    return () => { isMounted = false; };
   }, [year]);
 
   // --- Sorting state ---

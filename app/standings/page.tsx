@@ -1,7 +1,7 @@
 'use client';
 
 import React from "react";
-import StandingsPage from "../components/standings/newStandings";
+import StandingsPage from "../components/standings/Standings";
 
 const Standings = () => {
   return (

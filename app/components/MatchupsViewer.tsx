@@ -799,6 +799,24 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   );
   const [hideCompletedGames, setHideCompletedGames] = useState(true);
 
+  // Ref for the week dropdown and button
+  const weekDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    if (!weekDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        weekDropdownRef.current &&
+        !weekDropdownRef.current.contains(e.target as Node)
+      ) {
+        setWeekDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [weekDropdownOpen]);
+
   // Responsive: update isDesktop and showNFL on resize
   useEffect(() => {
     const handleResize = () => {
@@ -1263,8 +1281,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-
-              <div className="relative">
+              <div className="relative" ref={weekDropdownRef}>
                 <button
                   onClick={() => setWeekDropdownOpen(!weekDropdownOpen)}
                   className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-emerald-300 font-semibold hover:bg-gray-700 transition-colors min-w-[100px]"
@@ -1275,7 +1292,16 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 </button>
 
                 {weekDropdownOpen && (
-                  <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg z-10 min-w-[100px] max-h-60 overflow-y-auto shadow-xl">
+                  <div
+                    className="absolute left-0 mt-1 min-w-[100px] max-h-60 overflow-y-auto shadow-xl"
+                    style={{
+                      top: "100%",
+                      zIndex: 50,
+                      background: "#1f2937",
+                      border: "1px solid #4b5563",
+                      borderRadius: 8,
+                    }}
+                  >
                     {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
                       const isPlayoffWeek = w >= 15;
                       const isLocked = isPlayoffWeek && currentWeek < 15;

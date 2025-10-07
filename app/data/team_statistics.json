@@ -1,0 +1,291 @@
+[
+  {
+    "category": "Touchdowns - Most",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": [
+          "Welcome! vs. Just Forget About Me - Week 4",
+          "Let's Get Retarded in Here vs. Just Forget About Me - Week 2",
+          "Bottom of the Pool vs. Gay Little Alpacas - Week 3"
+        ],
+        "touchdowns": 10
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Poop vs. Gerry's Sweaty Balls - Week 14, Season 2017"],
+        "touchdowns": 14
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Gay Little Alpacas"],
+        "touchdowns": 31,
+        "average": 6.2
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Dont u forget ab me, Season 2020"],
+        "touchdowns": 110
+      }
+    ]
+  },
+  {
+    "category": "Touchdowns - Least",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["WAT DAT MELL??? vs. Skibidi Toilet Rizz - Week 3"],
+        "touchdowns": 1
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Tossin’ Heat vs. Johnny’s Micro Peen - Week 9, Season 2020"],
+        "touchdowns": 0
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Just Forget About Me"],
+        "touchdowns": 16,
+        "average": 3.2
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": [
+          "Bottom of the Pool, Season 2025",
+          "Let's Get Retarded in Here, Season 2025"
+        ],
+        "touchdowns": 2
+      }
+    ]
+  },
+  {
+    "category": "Passing Yards - Most",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Gay Little Alpacas vs. WAT DAT MELL??? - Week 1"],
+        "yards": 394
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Mike’s Big White Truck vs. The disabled bartender - Week 16, Season 2021"],
+        "yards": 525
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Just Forget About Me"],
+        "yards": 1274,
+        "average": 254.8
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Urban Meyer’s Fingers, Season 2021"],
+        "yards": 5286
+      }
+    ]
+  },
+  {
+    "category": "Passing Yards - Least",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["New England Peters vs. Bottom of the Pool - Week 2"],
+        "yards": 27
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["BeeF vs. Peter on Family Guy - Week 8, Season 2019"],
+        "yards": 0
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Bottom of the Pool"],
+        "yards": 889,
+        "average": 177.8
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Skibidi Toilet Rizz, Season 2025"],
+        "yards": 113
+      }
+    ]
+  },
+  {
+    "category": "Rushing - Most",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Let's Get Retarded in Here vs. Fag Capital - Week 5"],
+        "yards": 354
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["No More Pain! vs. HCH - Week 10, Season 2022"],
+        "yards": 433
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Let's Get Retarded in Here"],
+        "yards": 1222,
+        "average": 244.4
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Sandusky Tight Ends, Season 2018"],
+        "yards": 4148
+      }
+    ]
+  },
+  {
+    "category": "Rushing Yards - Least",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["WAT DAT MELL??? vs. HCH - Week 2"],
+        "yards": 31
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["BING BONG vs. HCH - Week 16, Season 2021"],
+        "yards": 16
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["WAT DAT MELL???"],
+        "yards": 391,
+        "average": 78.2
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Skibidi Toilet Rizz, Season 2025"],
+        "yards": 52
+      }
+    ]
+  },
+  {
+    "category": "Receiving Yards - Most",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Welcome! vs. Just Forget About Me - Week 4"],
+        "yards": 464
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Autistic Screeches vs. Sandusky Tight Ends - Week 4, Season 2018"],
+        "yards": 628
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["New England Peters"],
+        "yards": 1782,
+        "average": 356.4
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Fag Capital, Season 2023"],
+        "yards": 5866
+      }
+    ]
+  },
+  {
+    "category": "Receiving Yards - Least",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Just Forget About Me vs. New England Peters - Week 3"],
+        "yards": 140
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Nick's Nifty Team vs. Autistic Screeches - Week 16, Season 2017"],
+        "yards": 20
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["Just Forget About Me"],
+        "yards": 1078,
+        "average": 215.6
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["HCH, Season 2025"],
+        "yards": 163
+      }
+    ]
+  },
+  {
+    "category": "Field Goals - Most",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["WAT DAT MELL??? vs. Skibidi Toilet Rizz - Week 3"],
+        "fieldGoals": 5
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Jordan’s Giant Hose vs. HCH - Week 3, Season 2020"],
+        "fieldGoals": 6
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["WAT DAT MELL???"],
+        "fieldGoals": 12,
+        "average": 2.4
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": ["Let's Get Retarded in Here, Season 2024"],
+        "fieldGoals": 41
+      }
+    ]
+  },
+  {
+    "category": "Field Goals - Least",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": [
+          "New England Peters vs. Bottom of the Pool - Week 2",
+          "Just Forget About Me vs. New England Peters - Week 3",
+          "Bottom of the Pool vs. Gay Little Alpacas - Week 3",
+          "WAT DAT MELL??? vs. HCH - Week 2",
+          "Gay Little Alpacas vs. Just Forget About Me - Week 5",
+          "Welcome! vs. WAT DAT MELL??? - Week 5"
+        ],
+        "fieldGoals": 0
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": [
+          "End My Suffering! vs. Tossin’ Heat - Week 4, Season 2020",
+          "Johnny’s Micro Peen vs. Welcome! - Week 4, Season 2020",
+          "Dont u forget ab me vs. End My Suffering! - Week 7, Season 2020",
+          "Jordan’s Giant Hose vs. Johnny’s Micro Peen - Week 5, Season 2020",
+          "Fag Capital vs. HCH - Week 4, Season 2020",
+          "Welcome! vs. Zach’s Team - Week 3, Season 2020",
+          "HCH vs. Comeback Season - Week 2, Season 2020",
+          "Tossin’ Heat vs. End My Suffering! - Week 13, Season 2020",
+          "Zach’s Team vs. Welcome! - Week 12, Season 2020",
+          "Comeback Season vs. Jordan’s Giant Hose - Week 4, Season 2020"
+        ],
+        "fieldGoals": 0
+      },
+      {
+        "record": "Season (Average)",
+        "recordHolders": ["New England Peters"],
+        "fieldGoals": 4,
+        "average": 0.8
+      },
+      {
+        "record": "Season, All Time",
+        "recordHolders": [
+          "Just Forget About Me, Season 2025",
+          "WAT DAT MELL???, Season 2025",
+          "Let's Get Retarded in Here, Season 2025"
+        ],
+        "fieldGoals": 1
+      }
+    ]
+  }
+]

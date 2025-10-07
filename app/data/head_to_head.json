@@ -1,0 +1,217 @@
+[
+  {
+    "category": "Wins",
+    "records": [
+      {
+        "record": "Most Wins",
+        "recordHolders": [
+          "Let's Get Retarded in Here",
+          "Gay Little Alpacas",
+          "HCH",
+          "Skibidi Toilet Rizz"
+        ],
+        "value": 4
+      },
+      {
+        "record": "Most Wins in a Season, All Time",
+        "recordHolders": ["HCH"],
+        "season": 2019,
+        "value": 12
+      },
+      {
+        "record": "Longest Streak",
+        "recordHolders": [
+          "Let's Get Retarded in Here",
+          "HCH"
+        ],
+        "value": 4
+      },
+      {
+        "record": "Longest Streak, All Time",
+        "recordHolders": ["Rebuild Year ⏳😈"],
+        "season": 2022,
+        "value": 8
+      },
+      {
+        "record": "Current Streak",
+        "recordHolders": [
+          "Let's Get Retarded in Here",
+          "HCH"
+        ],
+        "value": 4
+      }
+    ]
+  },
+  {
+    "category": "Losses",
+    "records": [
+      {
+        "record": "Most Losses",
+        "recordHolders": ["Fag Capital"],
+        "value": 5
+      },
+      {
+        "record": "Most Losses, All Time",
+        "recordHolders": ["Nick's Nifty Team"],
+        "season": 2017,
+        "value": 14
+      },
+      {
+        "record": "Longest Streak",
+        "recordHolders": ["Fag Capital"],
+        "value": 5
+      },
+      {
+        "record": "Longest Streak, All Time",
+        "recordHolders": ["Nick's Nifty Team"],
+        "season": 2017,
+        "value": 11
+      },
+      {
+        "record": "Current Streak",
+        "recordHolders": ["Fag Capital"],
+        "value": 5
+      }
+    ]
+  },
+  {
+    "category": "Margin of Victory - Largest",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Welcome! vs. Just Forget About Me - Week 4"],
+        "value": 72.92
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Tossin’ Heat vs. Comeback Season - Week 6"],
+        "season": 2020,
+        "value": 113.84
+      },
+      {
+        "record": "Average",
+        "recordHolders": ["Welcome!"],
+        "value": 38.29
+      },
+      {
+        "record": "Average, All Time",
+        "recordHolders": ["HCH"],
+        "season": 2024,
+        "value": 39.10
+      }
+    ]
+  },
+  {
+    "category": "Margin of Victory - Smallest",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["New England Peters vs. Fag Capital - Week 1"],
+        "value": 1.42
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Mike’s Big White Truck vs. Baskin Dobbins - Week 14"],
+        "season": 2022,
+        "value": 0.02
+      },
+      {
+        "record": "Average",
+        "recordHolders": ["HCH"],
+        "value": 9.87
+      },
+      {
+        "record": "Average, All Time",
+        "recordHolders": ["Jordan’s Giant Hose"],
+        "season": 2020,
+        "value": 10.99
+      }
+    ]
+  },
+  {
+    "category": "Margin of Defeat - Largest",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Just Forget About Me vs. Welcome! - Week 4"],
+        "value": 72.92
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Comeback Season vs. Tossin’ Heat - Week 6"],
+        "season": 2020,
+        "value": 113.84
+      },
+      {
+        "record": "Average",
+        "recordHolders": ["Just Forget About Me"],
+        "value": 42.71
+      },
+      {
+        "record": "Average, All Time",
+        "recordHolders": ["Dont you forget about me"],
+        "season": 2024,
+        "value": 42.25
+      }
+    ]
+  },
+  {
+    "category": "Margin of Defeat - Smallest",
+    "records": [
+      {
+        "record": "Single Week",
+        "recordHolders": ["Fag Capital vs. New England Peters - Week 1"],
+        "value": 1.42
+      },
+      {
+        "record": "Single Week, All Time",
+        "recordHolders": ["Baskin Dobbins vs. Mike’s Big White Truck - Week 14"],
+        "season": 2022,
+        "value": 0.02
+      },
+      {
+        "record": "Average",
+        "recordHolders": ["HCH"],
+        "value": 3.40
+      },
+      {
+        "record": "Average, All Time",
+        "recordHolders": ["No women hitters"],
+        "season": 2019,
+        "value": 11.27
+      }
+    ]
+  },
+  {
+    "category": "Strength of Schedule- Hardest",
+    "records": [
+      {
+        "record": "Weekly Average",
+        "recordHolders": ["Just Forget About Me"],
+        "value": 121.49
+      },
+      {
+        "record": "Weekly Average, All Time",
+        "recordHolders": ["Welcome!"],
+        "season": 2021,
+        "value": 131.43
+      }
+    ]
+  },
+  {
+    "category": "Strength of Schedule- Easiest",
+    "records": [
+      {
+        "record": "Weekly Average",
+        "recordHolders": ["Skibidi Toilet Rizz"],
+        "value": 95.91
+      },
+      {
+        "record": "Weekly Average, All Time",
+        "recordHolders": ["Autistic Screeches"],
+        "season": 2017,
+        "value": 87.64
+      }
+    ]
+  }
+]

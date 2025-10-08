@@ -698,6 +698,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [nflLoading, setNflLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
+  const weekDropdownRef = useRef<HTMLDivElement>(null); // <-- add ref
   const [viewWeek, setViewWeek] = useState<number | null>(null);
   const [chartOpen, setChartOpen] = useState(false);
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
@@ -1042,6 +1043,21 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     fetchNFLGames(w, false);
   };
 
+  // Close week dropdown when clicking outside
+  useEffect(() => {
+    if (!weekDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        weekDropdownRef.current &&
+        !weekDropdownRef.current.contains(e.target as Node)
+      ) {
+        setWeekDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [weekDropdownOpen]);
+
   // If user navigates away from week navigation, reset viewWeek to null (show currentWeek)
   useEffect(() => {
     if (!weekDropdownOpen && viewWeek !== null) {
@@ -1184,7 +1200,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 </svg>
               </button>
 
-              <div className="relative">
+              <div className="relative" ref={weekDropdownRef}>
                 <button
                   onClick={() => setWeekDropdownOpen(!weekDropdownOpen)}
                   className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-emerald-300 font-semibold hover:bg-gray-700 transition-colors min-w-[100px]"
@@ -1195,7 +1211,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 </button>
 
                 {weekDropdownOpen && (
-                  <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg z-10 min-w-[100px] max-h-60 overflow-y-auto shadow-xl">
+                  <div
+                    className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg min-w-[100px] max-h-60 overflow-y-auto shadow-xl z-30"
+                  >
                     {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
                       const isPlayoffWeek = w >= 15;
                       const isLocked = isPlayoffWeek && currentWeek < 15;

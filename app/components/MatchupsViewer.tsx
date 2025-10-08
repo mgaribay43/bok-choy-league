@@ -6,7 +6,7 @@ import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -704,6 +704,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
+  const router = useRouter(); // <-- add this here
 
   // Responsive state
   const [isDesktop, setIsDesktop] = useState(

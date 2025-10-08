@@ -7,7 +7,6 @@ import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityT
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
 import router from "next/router";
-import Link from "next/link";
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -228,40 +227,20 @@ const AvatarBox = ({
   record: string;
 }) => {
   const cleanRecord = (record || "").replace(/[()]/g, ""); // no parentheses
-
-  // Detect if this is an NFL team logo (use white bg), otherwise fantasy (use transparent bg)
-  const isNFLLogo =
-    typeof src === "string" &&
-    src.startsWith("https://a.espncdn.com/i/teamlogos/nfl/500/");
-
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div
+      <img
+        src={src}
+        alt={alt}
         style={{
-          width: 64,
-          height: 64,
+          width: 44,
+          height: 44,
           borderRadius: "50%",
-          background: isNFLLogo ? "#fff" : "transparent", // Only NFL logos get white bg
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          marginBottom: 2,
+          objectFit: "cover",
+          border: "none",
+          background: "#18191b",
         }}
-      >
-        <img
-          src={src}
-          alt={alt}
-          style={{
-            width: 54,
-            height: 54,
-            borderRadius: "50%",
-            objectFit: "contain",
-            border: "none",
-            background: isNFLLogo ? "#fff" : "transparent",
-          }}
-        />
-      </div>
+      />
       <span
         style={{
           fontSize: 13,
@@ -269,7 +248,7 @@ const AvatarBox = ({
           fontWeight: 600,
           marginTop: 2,
           letterSpacing: 0.5,
-          whiteSpace: "nowrap",
+          whiteSpace: "nowrap",         // always one line
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -382,13 +361,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
 
   // ESPN game page URL - uses the game ID from the API
   const espnGameUrl = `https://www.espn.com/nfl/game/_/gameId/${game.id}`;
-
-  // Format EST time without seconds
-  let displayDate = game.dateEST;
-  if (displayDate) {
-    // Try to remove seconds from time if present (e.g., "Sun 1:00:00 PM" -> "Sun 1:00 PM")
-    displayDate = displayDate.replace(/(\d{1,2}:\d{2}):\d{2}(\s*[AP]M)/, "$1$2");
-  }
 
   return (
     <a
@@ -511,7 +483,7 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
             color: "#a7a7a7",
           }}
         >
-          <span>{displayDate}</span>
+          <span>{game.dateEST}</span>
           <span>{game.venue.city}, {game.venue.state}</span>
         </div>
       </div>
@@ -527,7 +499,6 @@ type MatchupCardProps = {
   hasChart?: boolean;
   showChartIcon?: boolean;
   showRecapButton?: boolean;
-  disableLink?: boolean; // <-- add this
 };
 
 const MatchupCard = ({
@@ -539,7 +510,6 @@ const MatchupCard = ({
   showChartIcon = true,
   showRecapButton = false,
   week,
-  disableLink = false, // <-- add this
 }: MatchupCardProps & { week: number | string }) => {
   const win1 = Number(m.displayValue1) > Number(m.displayValue2);
   const win2 = Number(m.displayValue2) > Number(m.displayValue1);
@@ -551,105 +521,6 @@ const MatchupCard = ({
     mid1: m.team1Id ?? 1,
     mid2: m.team2Id ?? 2,
   });
-
-  // Only wrap in <a> if disableLink is false
-  const CardContent = (
-    <>
-      {showNames && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "18px 18px 0 18px",
-            gap: 8,
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                fontSize: "clamp(1.3rem, 3vw, 2.1rem)",
-                fontWeight: 800,
-                color: "#fff",
-                textAlign: "left",
-                textShadow: "0 2px 8px #000a, 0 1px 0 #23252b",
-                letterSpacing: 0.5,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                lineHeight: 1.15,
-                marginBottom: 8,
-                maxWidth: "100%",
-              }}
-              title={m.team1}
-            >
-              {m.team1}
-            </span>
-          </div>
-          <div style={{ width: 12 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                fontSize: "clamp(1.3rem, 3vw, 2.1rem)",
-                fontWeight: 800,
-                color: "#fff",
-                textAlign: "right",
-                textShadow: "0 2px 8px #000a, 0 1px 0 #23252b",
-                letterSpacing: 0.5,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                lineHeight: 1.15,
-                marginBottom: 8,
-                maxWidth: "100%",
-              }}
-              title={m.team2}
-            >
-              {m.team2}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: showNames ? "4px 18px 0 18px" : "18px 18px 0 18px",
-          marginTop: showNames ? 6 : 0,
-          marginBottom: 8,
-          gap: 8,
-        }}
-      >
-        {/* Team 1: Avatar and Score side by side */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0 }}>
-          <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
-        </div>
-        <ScoreBox
-          value={m.displayValue1}
-          projected={m.projected1}
-          highlight={win1 ? "win" : win2 ? "lose" : "tie"}
-          align="right"
-        />
-        <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>/</div>
-        <ScoreBox
-          value={m.displayValue2}
-          projected={m.projected2}
-          highlight={win2 ? "win" : win1 ? "lose" : "tie"}
-          align="left"
-        />
-        {/* Team 2: Avatar and Score side by side */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0 }}>
-          <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
-        </div>
-      </div>
-
-      <WinBar pct1={m.winPct1} pct2={m.winPct2} />
-    </>
-  );
 
   return (
     <div
@@ -666,7 +537,7 @@ const MatchupCard = ({
         ...style,
       }}
     >
-      {/* Top bar: recap and chart */}
+      {/* Top bar: recap (left) and chart (right). Buttons are confined to their own area */}
       {(showChartIcon || showRecapButton) && (
         <div
           style={{
@@ -746,24 +617,67 @@ const MatchupCard = ({
         </div>
       )}
 
-      {disableLink ? (
-        <div style={{ textDecoration: "none", display: "block" }}>
-          {CardContent}
-        </div>
-      ) : (
-        <a
-          href={matchupUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+      {/* Make the card itself link to Yahoo matchup */}
+      <a
+        href={matchupUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          textDecoration: "none",
+          display: "block",
+        }}
+        aria-label={`Open matchup in Yahoo Fantasy`}
+      >
+        {showNames && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              padding: "10px 18px 0 18px",
+              gap: 8,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AutoFitText text={m.team1} max={22} min={13} color="#e5e7eb" align="left" />
+            </div>
+            <div style={{ width: 12 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AutoFitText text={m.team2} max={22} min={13} color="#e5e7eb" align="right" />
+            </div>
+          </div>
+        )}
+
+        <div
           style={{
-            textDecoration: "none",
-            display: "block",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: showNames ? "4px 18px 0 18px" : "18px 18px 0 18px",
+            marginTop: showNames ? 6 : 0,
+            marginBottom: 8,
+            gap: 8,
           }}
-          aria-label={`Open matchup in Yahoo Fantasy`}
         >
-          {CardContent}
-        </a>
-      )}
+          <AvatarBox src={m.avatar1} alt={m.team1} record={m.record1} />
+          <ScoreBox
+            value={m.displayValue1}
+            projected={m.projected1}
+            highlight={win1 ? "win" : win2 ? "lose" : "tie"}
+            align="right"
+          />
+          <div style={{ fontWeight: 700, fontSize: "clamp(20px, 5.5vw, 28px)", color: "#6b7280", margin: "0 2px" }}>/</div>
+          <ScoreBox
+            value={m.displayValue2}
+            projected={m.projected2}
+            highlight={win2 ? "win" : win1 ? "lose" : "tie"}
+            align="left"
+          />
+          <AvatarBox src={m.avatar2} alt={m.team2} record={m.record2} />
+        </div>
+
+        <WinBar pct1={m.winPct1} pct2={m.winPct2} />
+      </a>
     </div>
   );
 };
@@ -798,24 +712,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
   const [hideCompletedGames, setHideCompletedGames] = useState(true);
-
-  // Ref for the week dropdown and button
-  const weekDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown if clicking outside
-  useEffect(() => {
-    if (!weekDropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (
-        weekDropdownRef.current &&
-        !weekDropdownRef.current.contains(e.target as Node)
-      ) {
-        setWeekDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [weekDropdownOpen]);
 
   // Responsive: update isDesktop and showNFL on resize
   useEffect(() => {
@@ -1210,12 +1106,15 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     const repeatedMatchups = [...matchups, ...matchups, ...matchups];
 
     return (
-      <Link
-        href="/matchups"
-        tabIndex={0}
-        aria-label="Go to matchups"
-        className="block"
+      <div
         style={{ background: "#0f0f0f", padding: "8px", cursor: "pointer" }}
+        onClick={() => router.push("/matchups")}
+        tabIndex={0}
+        role="button"
+        aria-label="Go to matchups"
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+        }}
       >
         <Marquee gradient={false} speed={60} pauseOnHover pauseOnClick>
           {repeatedMatchups.map((m, idx) => {
@@ -1223,13 +1122,17 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             return (
               <div
                 key={`${m.team1}-${m.team2}-${idx}`}
-                style={{
-                  display: "inline-block",
-                  marginRight: 32,
-                  width: cardWidth,
-                  minWidth: cardWidth,
-                  maxWidth: cardWidth,
-                  verticalAlign: "top"
+                style={{ display: "inline-block", marginRight: 32 }}
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push("/matchups");
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label="Go to matchups"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") router.push("/matchups");
                 }}
               >
                 <MatchupCard
@@ -1244,13 +1147,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   hasChart={hasChart}
                   showChartIcon={false}
                   week={""}
-                  disableLink // <-- add this prop
                 />
               </div>
             );
           })}
         </Marquee>
-      </Link>
+      </div>
     );
   }
 
@@ -1281,7 +1183,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <div className="relative" ref={weekDropdownRef}>
+
+              <div className="relative">
                 <button
                   onClick={() => setWeekDropdownOpen(!weekDropdownOpen)}
                   className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-emerald-300 font-semibold hover:bg-gray-700 transition-colors min-w-[100px]"
@@ -1292,16 +1195,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 </button>
 
                 {weekDropdownOpen && (
-                  <div
-                    className="absolute left-0 mt-1 min-w-[100px] max-h-60 overflow-y-auto shadow-xl"
-                    style={{
-                      top: "100%",
-                      zIndex: 50,
-                      background: "#1f2937",
-                      border: "1px solid #4b5563",
-                      borderRadius: 8,
-                    }}
-                  >
+                  <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg z-10 min-w-[100px] max-h-60 overflow-y-auto shadow-xl">
                     {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
                       const isPlayoffWeek = w >= 15;
                       const isLocked = isPlayoffWeek && currentWeek < 15;
@@ -1349,7 +1243,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     }`}
                 >
                   <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   NFL Games
                 </button>

@@ -11,7 +11,6 @@ import annotationPlugin from "chartjs-plugin-annotation";
 
 Chart.register(annotationPlugin);
 
-// Add these shared types and helpers near the top (before they are referenced)
 type WinProbPoint = {
   time: string;
   team1Pct: number;
@@ -26,47 +25,174 @@ type MatchupWinProb = {
   final: boolean;
 };
 
-// Day label helper
 function getDayFromTimeLabel(time: string) {
-  const abbr = time.split(" ")[0]; // e.g., "Thu 07:38:02 PM"
+  const abbr = time.split(" ")[0];
   return abbr || "";
 }
 
-// Dull gray for vertical split lines
 const SPLIT_LINE_COLOR = "rgba(148, 163, 184, 0.45)";
 
-// Safe image loader (avoid canvas taint)
-async function safeLoadImage(src: string): Promise<HTMLImageElement | null> {
-  try {
-    const res = await fetch(src, { mode: "cors", cache: "no-store" });
-    if (!res.ok) throw new Error("bad status");
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    return await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(null);
-      };
-      img.src = url;
+// Helper: returns a single array of {x, y, color} where y is above 50 if team1 is ahead, below 50 if team2 is ahead,
+// and color changes exactly at the 50% crossing (by interpolating a point at the crossing).
+function getDominantWinProbLineWithExactColorChange(
+  points: WinProbPoint[],
+  team1: { name: string },
+  team2: { name: string }
+) {
+  if (!points || points.length === 0) return [];
+  const result: {
+    x: number;
+    y: number;
+    color: string;
+    team: string;
+    pct: number;
+    label: string;
+  }[] = [];
+
+  let prev = points[0];
+  let prevTeam1Higher = prev.team1Pct >= prev.team2Pct;
+  let prevY =
+    prevTeam1Higher
+      ? 50 + (prev.team1Pct - 0.5) * 100
+      : 50 - (prev.team2Pct - 0.5) * 100;
+  let prevColor = prevTeam1Higher ? "#3b82f6" : "#f87171";
+  let prevTeam = prevTeam1Higher ? team1.name : team2.name;
+  let prevPct = prevTeam1Higher ? prev.team1Pct : prev.team2Pct;
+  let prevLabel = getDayFromTimeLabel(prev.time);
+
+  result.push({
+    x: 0,
+    y: prevY,
+    color: prevColor,
+    team: prevTeam,
+    pct: prevPct,
+    label: prevLabel,
+  });
+
+  for (let i = 1; i < points.length; i++) {
+    const curr = points[i];
+    const currTeam1Higher = curr.team1Pct >= curr.team2Pct;
+    let currY =
+      currTeam1Higher
+        ? 50 + (curr.team1Pct - 0.5) * 100
+        : 50 - (curr.team2Pct - 0.5) * 100;
+    let currColor = currTeam1Higher ? "#3b82f6" : "#f87171";
+    let currTeam = currTeam1Higher ? team1.name : team2.name;
+    let currPct = currTeam1Higher ? curr.team1Pct : curr.team2Pct;
+    let currLabel = getDayFromTimeLabel(curr.time);
+
+    // If the dominant team switches, interpolate a point at the 50% crossing
+    if (currTeam1Higher !== prevTeam1Higher) {
+      // Find t where the two lines cross (team1Pct == team2Pct)
+      // That is, find t in [0,1] such that:
+      // prev.team1Pct + t*(curr.team1Pct - prev.team1Pct) = prev.team2Pct + t*(curr.team2Pct - prev.team2Pct)
+      // => t = (prev.team2Pct - prev.team1Pct) / ((curr.team1Pct - prev.team1Pct) - (curr.team2Pct - prev.team2Pct))
+      const denom =
+        (curr.team1Pct - prev.team1Pct) - (curr.team2Pct - prev.team2Pct);
+      let t = 0.5;
+      if (denom !== 0) {
+        t = (prev.team2Pct - prev.team1Pct) / denom;
+      }
+      t = Math.max(0, Math.min(1, t));
+      // Interpolate x, pct, etc.
+      const crossX = (i - 1) + t;
+      const crossTeam1Pct = prev.team1Pct + t * (curr.team1Pct - prev.team1Pct);
+      const crossTeam2Pct = prev.team2Pct + t * (curr.team2Pct - prev.team2Pct);
+      // At crossing, both are equal
+      const crossY = 50;
+      // The color before crossing is prevColor, after is currColor
+      // Add the crossing point with prevColor (end of previous segment)
+      result.push({
+        x: crossX,
+        y: crossY,
+        color: prevColor,
+        team: prevTeam,
+        pct: crossTeam1Pct, // or crossTeam2Pct, they're equal
+        label: prevLabel,
+      });
+      // Add the crossing point again with currColor (start of new segment)
+      result.push({
+        x: crossX,
+        y: crossY,
+        color: currColor,
+        team: currTeam,
+        pct: crossTeam1Pct,
+        label: currLabel,
+      });
+    }
+    result.push({
+      x: i,
+      y: currY,
+      color: currColor,
+      team: currTeam,
+      pct: currPct,
+      label: currLabel,
     });
-  } catch {
-    return null;
+    prev = curr;
+    prevTeam1Higher = currTeam1Higher;
+    prevY = currY;
+    prevColor = currColor;
+    prevTeam = currTeam;
+    prevPct = currPct;
+    prevLabel = currLabel;
   }
+  return result;
 }
 
+function buildDaySplitAnnotations(points: WinProbPoint[]) {
+  const regions: { day: string; start: number; end: number }[] = [];
+  let currentDay = "";
+  let regionStart = 0;
+  points.forEach((p, idx) => {
+    const day = getDayFromTimeLabel(p.time);
+    if (day !== currentDay) {
+      if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
+      currentDay = day;
+      regionStart = idx;
+    }
+    if (idx === points.length - 1) regions.push({ day, start: regionStart, end: idx });
+  });
+  return regions.slice(1).map((r) => ({
+    type: "line",
+    xMin: r.start - 0.5,
+    xMax: r.start - 0.5,
+    borderColor: SPLIT_LINE_COLOR,
+    borderWidth: 1,
+    drawTime: "beforeDatasetsDraw",
+  }));
+}
+
+function buildCenteredDayLabels(points: WinProbPoint[]) {
+  const regions: { day: string; start: number; end: number }[] = [];
+  let currentDay = "";
+  let regionStart = 0;
+  points.forEach((p, idx) => {
+    const day = getDayFromTimeLabel(p.time);
+    if (day !== currentDay) {
+      if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
+      currentDay = day;
+      regionStart = idx;
+    }
+    if (idx === points.length - 1) regions.push({ day, start: regionStart, end: idx });
+  });
+  const labels = points.map(() => "");
+  regions.forEach((r) => {
+    const center = Math.floor((r.start + r.end) / 2);
+    labels[center] = r.day;
+  });
+  return labels;
+}
+
+// iOS detection helper
 function isIOSDevice() {
-  const ua = navigator.userAgent || navigator.vendor;
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || (navigator as any).vendor || "";
   const iOS = /iPad|iPhone|iPod/.test(ua);
-  const iPadOS = /Macintosh/.test(ua) && "ontouchend" in document;
+  const iPadOS = /Macintosh/.test(ua) && typeof document !== "undefined" && "ontouchend" in document;
   return iOS || iPadOS;
 }
 
-// NEW: open a receiver tab that listens for a postMessage({ type: 'img', url, filename })
+// iOS popup receiver for image download
 function openIOSReceiverPopup(filename: string) {
   const popup = window.open("about:blank", "_blank");
   if (!popup) return null;
@@ -101,8 +227,6 @@ function openIOSReceiverPopup(filename: string) {
   return popup;
 }
 
-// ...existing code...
-
 export type WinProbChartSelection = {
   matchupId?: string;
   team1: { name: string; logo: string };
@@ -129,52 +253,6 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
   const chartRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstance = useRef<Chart | null>(null);
 
-  // build split lines
-  const buildDaySplitAnnotations = (points: WinProbPoint[]) => {
-    const regions: { day: string; start: number; end: number }[] = [];
-    let currentDay = "";
-    let regionStart = 0;
-    points.forEach((p, idx) => {
-      const day = getDayFromTimeLabel(p.time);
-      if (day !== currentDay) {
-        if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
-        currentDay = day;
-        regionStart = idx;
-      }
-      if (idx === points.length - 1) regions.push({ day, start: regionStart, end: idx });
-    });
-    return regions.slice(1).map((r) => ({
-      type: "line",
-      xMin: r.start - 0.5,
-      xMax: r.start - 0.5,
-      borderColor: SPLIT_LINE_COLOR,
-      borderWidth: 1,
-      drawTime: "beforeDatasetsDraw",
-    }));
-  };
-
-  const buildCenteredDayLabels = (points: WinProbPoint[]) => {
-    const regions: { day: string; start: number; end: number }[] = [];
-    let currentDay = "";
-    let regionStart = 0;
-    points.forEach((p, idx) => {
-      const day = getDayFromTimeLabel(p.time);
-      if (day !== currentDay) {
-        if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
-        currentDay = day;
-        regionStart = idx;
-      }
-      if (idx === points.length - 1) regions.push({ day, start: regionStart, end: idx });
-    });
-    const labels = points.map(() => "");
-    regions.forEach((r) => {
-      const center = Math.floor((r.start + r.end) / 2);
-      labels[center] = r.day;
-    });
-    return labels;
-  };
-
-  // Pull points from Firestore if not provided
   const [resolved, setResolved] = useState<WinProbChartSelection | null>(selected);
   useEffect(() => {
     let mounted = true;
@@ -212,7 +290,7 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
             final: !!match.final,
           });
         } else {
-          setResolved(selected); // no points found, still open the modal gracefully
+          setResolved(selected);
         }
       } catch {
         setResolved(selected);
@@ -224,17 +302,41 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     };
   }, [isOpen, selected, season, week]);
 
-  // Draw/Update chart
   useEffect(() => {
     if (!isOpen || !resolved || !resolved.points?.length || !chartRef.current) return;
 
     const labels = buildCenteredDayLabels(resolved.points);
-    const series = resolved.points.map((p) => (p.team1Pct * 100) - (p.team2Pct * 100));
+    const line = getDominantWinProbLineWithExactColorChange(resolved.points, resolved.team1, resolved.team2);
     const daySplits = buildDaySplitAnnotations(resolved.points);
+
+    // Chart.js expects data sorted by x
+    const sortedLine = [...line].sort((a, b) => a.x - b.x);
+
+    const dataset = {
+      label: "Dominant Team Win Probability (Above/Below 50%)",
+      data: sortedLine.map((d) => ({ x: d.x, y: d.y })),
+      borderColor: (ctx: any) => {
+        const idx = ctx.p0DataIndex ?? ctx.p0?.parsed?.x ?? 0;
+        return sortedLine[idx]?.color || "#fff";
+      },
+      backgroundColor: "transparent",
+      fill: false,
+      tension: 0.3,
+      pointRadius: 0,
+      borderWidth: 3,
+      segment: {
+        borderColor: (ctx: any) => {
+          const idx = ctx.p0DataIndex ?? ctx.p0?.parsed?.x ?? 0;
+          return sortedLine[idx]?.color || "#fff";
+        },
+      },
+      order: 1,
+      showLine: true,
+    };
 
     if (chartInstance.current) {
       chartInstance.current.data.labels = labels;
-      chartInstance.current.data.datasets[0].data = series;
+      chartInstance.current.data.datasets = [dataset];
       (chartInstance.current.options.plugins as any).annotation = { annotations: daySplits };
       chartInstance.current.update();
       return;
@@ -244,20 +346,7 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       type: "line",
       data: {
         labels,
-        datasets: [
-          {
-            label: "Win Probability",
-            data: series,
-            borderColor: "#f87171",
-            backgroundColor: "#f87171",
-            fill: false,
-            tension: 0.3,
-            pointRadius: 0,
-            segment: {
-              borderColor: (ctx) => (ctx.p0.parsed.y >= 0 ? "#3b82f6" : "#f87171"),
-            },
-          },
-        ],
+        datasets: [dataset],
       },
       options: {
         responsive: true,
@@ -274,27 +363,22 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
             mode: "index",
             intersect: false,
             yAlign: "top",
-            // Prevent x-axis label from showing in tooltip
             callbacks: {
-              title: () => "", // <-- hide tooltip title (x-axis label)
               label: (context) => {
                 const idx = context.dataIndex;
-                const point = resolved.points?.[idx];
-                if (!point) return "";
-                return point.team1Pct >= point.team2Pct
-                  ? `${resolved.team1.name}: ${(point.team1Pct * 100).toFixed(1)}%`
-                  : `${resolved.team2.name}: ${(point.team2Pct * 100).toFixed(1)}%`;
+                const d = sortedLine[idx];
+                if (!d) return "";
+                return `${d.team}: ${(d.pct * 100).toFixed(1)}%`;
               },
               labelColor: (context) => {
                 const idx = context.dataIndex;
-                const point = resolved.points?.[idx];
-                if (!point) return { borderColor: "#fff", backgroundColor: "#fff" };
-                return point.team1Pct >= point.team2Pct
-                  ? { borderColor: "#3b82f6", backgroundColor: "#3b82f6" }
-                  : { borderColor: "#f87171", backgroundColor: "#f87171" };
+                const d = sortedLine[idx];
+                return {
+                  borderColor: d?.color || "#fff",
+                  backgroundColor: d?.color || "#fff",
+                };
               },
             },
-            titleMarginBottom: 0, // <-- remove extra top spacing
             backgroundColor: "#222",
             titleColor: "#fff",
             bodyColor: "#fff",
@@ -305,26 +389,26 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
         },
         scales: {
           y: {
-            min: -100,
+            min: 0,
             max: 100,
             ticks: {
               color: "#fff",
               callback: function (tickValue: string | number) {
                 if (tickValue === 100) return "100%";
-                if (tickValue === 0) return "50%";
-                if (tickValue === -100) return "100%";
+                if (tickValue === 75) return "75%";
+                if (tickValue === 50) return "50%";
+                if (tickValue === 25) return "25%";
+                if (tickValue === 0) return "0%";
                 return "";
               },
             },
             grid: {
-              // keep only the midline visible
               color: (ctx: { tick: { value: number } }) =>
-                ctx.tick.value === 0 ? "#888" : "transparent",
+                ctx.tick.value === 50 ? "#888" : "transparent",
               lineWidth: (ctx: { tick: { value: number } }) =>
-                ctx.tick.value === 0 ? 2 : 0,
+                ctx.tick.value === 50 ? 2 : 0,
               drawTicks: false,
             },
-            // v4: axis border config lives here
             border: {
               display: true,
               color: "rgba(148,163,184,0.7)",
@@ -343,7 +427,6 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
               color: "transparent",
               drawTicks: false,
             },
-            // v4: axis border config
             border: {
               display: true,
               color: "rgba(148,163,184,0.7)",
@@ -362,7 +445,28 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     };
   }, [isOpen, resolved]);
 
-  // Simple download (same-domain canvas; iOS users can long-press after open in new tab)
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent scroll on all parent elements
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  }, [isOpen]);
+
+  // Download handler with iOS support
   const handleDownload = async () => {
     if (!chartRef.current || !resolved) return;
 
@@ -373,7 +477,6 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       popup = openIOSReceiverPopup(filename);
     }
 
-    // ...build export canvas 'out' exactly as before...
     const canvasChart = chartRef.current;
     const exportWidth =
       canvasChart.width ||
@@ -385,7 +488,7 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     const pad = 24;
     const titleSize = 30;
     const metaSize = 20;
-    const logoSize = 64;
+    const logoSize = 112; // Increased from 64 to 112
     const headerHeight = Math.max(logoSize + pad * 1.5, pad + titleSize + 6 + metaSize + pad);
     const footerHeight = logoSize + pad * 1.5;
     const exportHeight = headerHeight + chartHeight + footerHeight;
@@ -405,534 +508,20 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, exportWidth, exportHeight);
 
+    // Remove the "Win Probability" header in the download image
+    // Make the Week and year text larger and bold
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillStyle = titleColor;
-    ctx.font = `bold ${titleSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.fillText("Win Probability", exportWidth / 2, pad);
     ctx.fillStyle = metaColor;
-    ctx.font = `600 ${metaSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.fillText(`Week ${week}, ${season}`, exportWidth / 2, pad + titleSize + 6);
-    ctx.restore();
-
-    const [topLogo, bottomLogo] = await Promise.all([
-      safeLoadImage(resolved.team1.logo),
-      safeLoadImage(resolved.team2.logo),
-    ]);
-
-    const circleAvatar = (
-      img: HTMLImageElement | null,
-      x: number,
-      y: number,
-      size: number,
-      fallback: string
-    ) => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      if (img) ctx.drawImage(img, x, y, size, size);
-      else {
-        ctx.fillStyle = fallback;
-        ctx.fillRect(x, y, size, size);
-      }
-      ctx.restore();
-    };
-
-    circleAvatar(topLogo, pad, pad, logoSize, fallback1);
-    ctx.drawImage(canvasChart, 0, headerHeight, exportWidth, chartHeight);
-    circleAvatar(bottomLogo, pad, headerHeight + chartHeight + pad / 2, logoSize, fallback2);
-
-    // Convert to blob/data URL and deliver
-    const toBlobAsync = () =>
-      new Promise<Blob | null>((resolve) => out.toBlob ? out.toBlob((b) => resolve(b), "image/png") : resolve(null));
-
-    if (isIOS) {
-      try {
-        const blob = await toBlobAsync();
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          if (popup) {
-            popup.postMessage({ type: "img", url, filename }, "*");
-            try { popup.focus(); } catch {}
-          }
-          // Note: do not revoke immediately; iOS needs the URL alive in new tab.
-          return;
-        }
-      } catch {
-        // fallback to data URL
-      }
-      const dataUrl = out.toDataURL("image/png");
-      if (popup) {
-        popup.postMessage({ type: "img", url: dataUrl, filename }, "*");
-        try { popup.focus(); } catch {}
-      }
-      return;
-    }
-
-    // Desktop/others: direct download
-    const href = out.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  // Lock background scroll when this modal is open (prevents page scroll)
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      // Prevent scroll chaining when inner content hits its ends
-      document.documentElement.style.overscrollBehavior = "none";
-    } else {
-      document.body.style.overflow = "";
-      document.documentElement.style.overscrollBehavior = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.documentElement.style.overscrollBehavior = "";
-    };
-  }, [isOpen]);
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onClose}
-      contentLabel="Win Probability Chart"
-      className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto overscroll-contain relative"
-      overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overscroll-none"
-      ariaHideApp={false}
-      shouldCloseOnOverlayClick={true}
-    >
-      {/* Action buttons (top-right) */}
-      <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
-        <button
-          onClick={handleDownload}
-          aria-label="Download chart"
-          title="Download chart"
-          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 3v12" />
-            <path d="M7 10l5 5 5-5" />
-            <path d="M5 21h14" />
-          </svg>
-        </button>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          title="Close"
-          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 6l12 12" />
-            <path d="M18 6l-12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {resolved ? (
-        <div>
-          <h3 className="text-xl font-bold text-center text-emerald-300 mb-2 mt-2">Week {week}, {season}</h3>
-          <div className="relative flex flex-col items-center mb-4" style={{ minHeight: "320px" }}>
-            <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
-              <img
-                src={resolved.team1.logo}
-                alt={resolved.team1.name}
-                className="w-12 h-12 rounded-full mb-1"
-                style={{ objectFit: "cover" }}
-              />
-              <span className="font-bold text-blue-300">{resolved.team1.name}</span>
-            </div>
-
-            <div
-              className="w-full max-w-[900px] md:max-w-[1000px] lg:max-w-[1200px] xl:max-w-[1400px] md:h-[560px] lg:h-[640px] xl:h-[720px]"
-              style={{ width: "100%", height: "320px", position: "relative", zIndex: 1 }}
-            >
-              <canvas ref={chartRef} style={{ width: "100%", height: "100%" }} />
-            </div>
-
-            <div className="flex flex-col items-center mt-2">
-              <img
-                src={resolved.team2.logo}
-                alt={resolved.team2.name}
-                className="w-12 h-12 rounded-full mb-1"
-                style={{ objectFit: "cover" }}
-              />
-              <span className="font-bold text-red-300">{resolved.team2.name}</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-center text-gray-300">No matchup selected.</div>
-      )}
-    </Modal>
-  );
-};
-
-// WinProbabilityTracker component
-const WinProbabilityTracker: React.FC = () => {
-  const [season, setSeason] = useState<string>("");
-  const [week, setWeek] = useState<number>(1);
-  const [matchups, setMatchups] = useState<MatchupWinProb[]>([]);
-  const [selected, setSelected] = useState<MatchupWinProb | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const chartRef = useRef<HTMLCanvasElement | null>(null);
-  const chartInstance = useRef<Chart | null>(null);
-
-  // Fetch current season and week on mount
-  useEffect(() => {
-    async function fetchMeta() {
-      const s = await getCurrentSeason();
-      setSeason(s);
-      const w = await getCurrentWeek(s);
-      setWeek(w);
-    }
-    fetchMeta();
-  }, []);
-
-  // Poll Firestore for all matchups with points (remove YahooAPI polling)
-  useEffect(() => {
-    if (!season || !week) return;
-    const db = getFirestore();
-    const colRef = collection(db, "WinProbabilities");
-
-    // Poll Firestore every 10 seconds for live updates
-    const pollFirestore = () => {
-      // Query all matchups for this season/week that have points
-      getDocs(colRef).then((snapshot) => {
-        const data: MatchupWinProb[] = [];
-        snapshot.forEach((docSnap) => {
-          const d = docSnap.data() as any;
-          if (
-            d.season === season &&
-            d.week === week &&
-            Array.isArray(d.points) &&
-            d.points.length > 0
-          ) {
-            data.push({
-              matchupId: d.matchupId,
-              team1: d.team1,
-              team2: d.team2,
-              points: d.points,
-              final: !!d.final,
-            });
-          }
-        });
-        setMatchups(data);
-      });
-    };
-
-    pollFirestore();
-    const interval = setInterval(pollFirestore, 10000);
-
-    return () => clearInterval(interval);
-  }, [season, week]);
-
-  // Build vertical split lines for day boundaries
-  const buildDaySplitAnnotations = (points: WinProbPoint[]) => {
-    const regions: { day: string; start: number; end: number }[] = [];
-    let currentDay = "";
-    let regionStart = 0;
-    points.forEach((p, idx) => {
-      const day = getDayFromTimeLabel(p.time);
-      if (day !== currentDay) {
-        if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
-        currentDay = day;
-        regionStart = idx;
-      }
-      if (idx === points.length - 1) {
-        regions.push({ day, start: regionStart, end: idx });
-      }
-    });
-
-    // Draw a thin dull-gray vertical line at the start of each region (except the first)
-    const splits = regions.slice(1).map((r) => ({
-      type: "line",
-      xMin: r.start - 0.5,
-      xMax: r.start - 0.5,
-      borderColor: SPLIT_LINE_COLOR, // changed from white to dull gray
-      borderWidth: 1,
-      // drawTime keeps it beneath the line but above background
-      drawTime: "beforeDatasetsDraw",
-    }));
-    return splits;
-  };
-
-  // Add this helper to center one label per day region
-  function buildCenteredDayLabels(points: WinProbPoint[]) {
-    const regions: { day: string; start: number; end: number }[] = [];
-    let currentDay = "";
-    let regionStart = 0;
-    points.forEach((p, idx) => {
-      const day = getDayFromTimeLabel(p.time);
-      if (day !== currentDay) {
-        if (currentDay) regions.push({ day: currentDay, start: regionStart, end: idx - 1 });
-        currentDay = day;
-        regionStart = idx;
-      }
-      if (idx === points.length - 1) regions.push({ day, start: regionStart, end: idx });
-    });
-
-    const labels = points.map(() => "");
-    regions.forEach(r => {
-      const center = Math.floor((r.start + r.end) / 2);
-      labels[center] = r.day; // e.g., "Thu", "Sun"
-    });
-    return labels;
-  }
-
-  // Draw chart when modal opens / selected changes
-  useEffect(() => {
-    if (!modalOpen || !selected) return;
-
-    const drawChart = () => {
-      if (!chartRef.current) return;
-
-      const labels = buildCenteredDayLabels(selected.points);  // <-- centered day labels
-      const series = selected.points.map((p) => (p.team1Pct * 100) - (p.team2Pct * 100));
-      const daySplits = buildDaySplitAnnotations(selected.points);
-
-      if (chartInstance.current) {
-        chartInstance.current.data.labels = labels;
-        chartInstance.current.data.datasets[0].data = series;
-        (chartInstance.current.options.plugins as any).annotation = { annotations: daySplits };
-        chartInstance.current.update();
-        return;
-      }
-
-      chartInstance.current = new Chart(chartRef.current, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Win Probability",
-              data: series,
-              borderColor: "#f87171",
-              backgroundColor: "#f87171",
-              fill: false,
-              tension: 0.3,
-              pointRadius: 0,
-              segment: {
-                borderColor: (ctx) => (ctx.p0.parsed.y >= 0 ? "#3b82f6" : "#f87171"),
-              },
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            title: {
-              display: true,
-              text: "Win Probability",
-              color: "#fff",
-              font: { size: 18, weight: "bold" },
-            },
-            tooltip: {
-              mode: "index",
-              intersect: false,
-              yAlign: "top",
-              callbacks: {
-                label: (context) => {
-                  const idx = context.dataIndex;
-                  const point = selected.points[idx];
-                  if (!point) return "";
-                  if (point.team1Pct >= point.team2Pct) {
-                    return `${selected.team1.name}: ${(point.team1Pct * 100).toFixed(1)}%`;
-                  } else {
-                    return `${selected.team2.name}: ${(point.team2Pct * 100).toFixed(1)}%`;
-                  }
-                },
-                labelColor: (context) => {
-                  const idx = context.dataIndex;
-                  const point = selected.points[idx];
-                  if (!point) return { borderColor: "#fff", backgroundColor: "#fff" };
-                  return point.team1Pct >= point.team2Pct
-                    ? { borderColor: "#3b82f6", backgroundColor: "#3b82f6" }
-                    : { borderColor: "#f87171", backgroundColor: "#f87171" };
-                },
-              },
-              backgroundColor: "#222",
-              titleColor: "#fff",
-              bodyColor: "#fff",
-              borderColor: "#3b82f6",
-              borderWidth: 1,
-            },
-            // Vertical day split lines (no colored backgrounds)
-            annotation: { annotations: daySplits } as any,
-          },
-          scales: {
-            y: {
-              min: -100,
-              max: 100,
-              ticks: {
-                color: "#fff",
-                callback: function (tickValue: string | number) {
-                  if (tickValue === 100) return "100%";
-                  if (tickValue === 0) return "50%";
-                  if (tickValue === -100) return "100%";
-                  return "";
-                },
-              },
-              grid: {
-                // keep only the midline visible
-                color: (ctx: { tick: { value: number } }) =>
-                  ctx.tick.value === 0 ? "#888" : "transparent",
-                lineWidth: (ctx: { tick: { value: number } }) =>
-                  ctx.tick.value === 0 ? 2 : 0,
-                drawTicks: false,
-              },
-              // v4: axis border config lives here
-              border: {
-                display: true,
-                color: "rgba(148,163,184,0.7)",
-                width: 1,
-              },
-            },
-            x: {
-              ticks: {
-                display: true,
-                autoSkip: false,
-                color: "#fff",
-                maxRotation: 0,
-                minRotation: 0,
-              },
-              grid: {
-                color: "transparent",
-                drawTicks: false,
-              },
-              // v4: axis border config
-              border: {
-                display: true,
-                color: "rgba(148,163,184,0.7)",
-                width: 1,
-              },
-            },
-          },
-        },
-      });
-    };
-
-    const timeout = setTimeout(drawChart, 50);
-    return () => {
-      clearTimeout(timeout);
-      if (chartInstance.current) {
-        chartInstance.current.destroy();
-        chartInstance.current = null;
-      }
-    };
-  }, [modalOpen, selected]);
-
-  // Live updates while modal is open
-  useEffect(() => {
-    if (!modalOpen || !selected || !chartInstance.current) return;
-    const labels = buildCenteredDayLabels(selected.points);   // <-- keep centered labels in sync
-    const series = selected.points.map((p) => (p.team1Pct * 100) - (p.team2Pct * 100));
-    const daySplits = buildDaySplitAnnotations(selected.points);
-    chartInstance.current.data.labels = labels;
-    chartInstance.current.data.datasets[0].data = series;
-    (chartInstance.current.options.plugins as any).annotation = { annotations: daySplits };
-    chartInstance.current.update();
-  }, [selected?.points, modalOpen]);
-
-  // Keep selected matchup in sync with live matchups data
-  useEffect(() => {
-    if (!modalOpen || !selected) return;
-    const updated = matchups.find(m => m.matchupId === selected.matchupId);
-    if (updated && updated.points.length !== selected.points.length) {
-      setSelected(updated);
-    }
-  }, [matchups, modalOpen, selected]);
-
-  // Lock background scroll when the parent modal (below) opens
-  useEffect(() => {
-    if (modalOpen) {
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overscrollBehavior = "none";
-    } else {
-      document.body.style.overflow = "";
-      document.documentElement.style.overscrollBehavior = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.documentElement.style.overscrollBehavior = "";
-    };
-  }, [modalOpen]);
-
-  // Simple chart download handler (PNG) — iOS-safe
-  const handleDownload = async () => {
-    if (!chartRef.current || !selected) return;
-
-    // Prepare filename before using it
-    const filename = `${selected.team1.name}_vs_${selected.team2.name}_winprob.png`;
-
-    // Open popup immediately on iOS (before any await) to keep user-gesture context
-    const isIOS = isIOSDevice();
-    let popup: Window | null = null;
-    if (isIOS) {
-      popup = openIOSReceiverPopup(filename);
-    }
-
-    const canvasChart = chartRef.current;
-
-    // Use device-pixel size for a crisp export
-    const exportWidth =
-      canvasChart.width ||
-      Math.round(canvasChart.getBoundingClientRect().width * (window.devicePixelRatio || 1));
-    const chartHeight =
-      canvasChart.height ||
-      Math.round(canvasChart.getBoundingClientRect().height * (window.devicePixelRatio || 1));
-
-    // Layout
-    const pad = 24;
-    const titleSize = 30;
-    const metaSize = 20;
-    const logoSize = 64;
-    const headerHeight = Math.max(logoSize + pad * 1.5, pad + titleSize + 6 + metaSize + pad);
-    const footerHeight = logoSize + pad * 1.5;
-    const exportHeight = headerHeight + chartHeight + footerHeight;
-
-    // Export canvas
-    const out = document.createElement("canvas");
-    out.width = exportWidth;
-    out.height = exportHeight;
-    const ctx = out.getContext("2d");
-    if (!ctx) return;
-
-    // Theme
-    const bg = "#0f1115";
-    const titleColor = "#ffffff";
-    const metaColor = "#34d399";
-    const fallback1 = "#60a5fa";
-    const fallback2 = "#f87171";
-
-    // Background
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, exportWidth, exportHeight);
-
-    // Header text (center)
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillStyle = titleColor;
-    ctx.font = `bold ${titleSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.fillText("Win Probability", exportWidth / 2, pad);
-    ctx.fillStyle = metaColor;
-    ctx.font = `600 ${metaSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.fillText(`Week ${week}, ${season}`, exportWidth / 2, pad + titleSize + 6);
+    ctx.font = `bold 36px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`; // Larger and bold
+    ctx.fillText(`Week ${week}, ${season}`, exportWidth / 2, pad);
     ctx.restore();
 
     // Logos (safe load to avoid taint)
     const [topLogo, bottomLogo] = await Promise.all([
-      safeLoadImage(selected.team1.logo),
-      safeLoadImage(selected.team2.logo),
+      safeLoadImage(resolved.team1.logo),
+      safeLoadImage(resolved.team2.logo),
     ]);
 
     const circleAvatar = (
@@ -962,8 +551,7 @@ const WinProbabilityTracker: React.FC = () => {
     // Bottom-left logo
     circleAvatar(bottomLogo, pad, headerHeight + chartHeight + pad / 2, logoSize, fallback2);
 
-    // filename is already declared above
-
+    // Export logic
     const toBlobAsync = () =>
       new Promise<Blob | null>((resolve) => {
         if (out.toBlob) out.toBlob((b) => resolve(b), "image/png");
@@ -978,7 +566,6 @@ const WinProbabilityTracker: React.FC = () => {
         }
       });
 
-    // iOS: prefer Web Share; fallback to popup with image (long-press to save)
     if (isIOS) {
       if ("share" in navigator && "canShare" in navigator) {
         const blob = await toBlobAsync();
@@ -1041,6 +628,150 @@ const WinProbabilityTracker: React.FC = () => {
   };
 
   return (
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={onClose}
+      contentLabel="Win Probability Chart"
+      className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto overscroll-contain relative"
+      overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overscroll-none"
+      ariaHideApp={false}
+      shouldCloseOnOverlayClick={true}
+    >
+      <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+        {/* Download button first */}
+        {resolved?.points?.length ? (
+          <button
+            onClick={handleDownload}
+            aria-label="Download chart"
+            title="Download chart as image"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : null}
+        {/* Close button second */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          title="Close"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 6l12 12" />
+            <path d="M18 6l-12 12" />
+          </svg>
+        </button>
+      </div>
+      {resolved ? (
+        <div>
+          <h3 className="text-xl font-bold text-center text-emerald-300 mb-2 mt-2">Week {week}, {season}</h3>
+          <div className="relative flex flex-col items-center mb-4" style={{ minHeight: "320px" }}>
+            <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
+              <img
+                src={resolved.team1.logo}
+                alt={resolved.team1.name}
+                className="w-12 h-12 rounded-full mb-1"
+                style={{ objectFit: "cover" }}
+              />
+              <span className="font-bold text-blue-300">{resolved.team1.name}</span>
+            </div>
+            <div
+              className="w-full max-w-[900px] md:max-w-[1000px] lg:max-w-[1200px] xl:max-w-[1400px] md:h-[560px] lg:h-[640px] xl:h-[720px]"
+              style={{ width: "100%", height: "320px", position: "relative", zIndex: 1 }}
+              // Prevent modal and background scroll while dragging on chart (mobile/desktop)
+              onPointerDown={e => {
+                // Prevent scroll on pointer down (touch or mouse)
+                document.body.style.overflow = "hidden";
+                document.documentElement.style.overscrollBehavior = "none";
+              }}
+              onPointerUp={() => {
+                document.body.style.overflow = "";
+                document.documentElement.style.overscrollBehavior = "";
+              }}
+              onPointerCancel={() => {
+                document.body.style.overflow = "";
+                document.documentElement.style.overscrollBehavior = "";
+              }}
+              onPointerLeave={() => {
+                document.body.style.overflow = "";
+                document.documentElement.style.overscrollBehavior = "";
+              }}
+            >
+              <canvas ref={chartRef} style={{ width: "100%", height: "100%" }} />
+            </div>
+            <div className="flex flex-col items-center mt-2">
+              <img
+                src={resolved.team2.logo}
+                alt={resolved.team2.name}
+                className="w-12 h-12 rounded-full mb-1"
+                style={{ objectFit: "cover" }}
+              />
+              <span className="font-bold text-red-300">{resolved.team2.name}</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center text-gray-300">No matchup selected.</div>
+      )}
+    </Modal>
+  );
+};
+
+const WinProbabilityTracker: React.FC = () => {
+  const [season, setSeason] = useState<string>("");
+  const [week, setWeek] = useState<number>(1);
+  const [matchups, setMatchups] = useState<MatchupWinProb[]>([]);
+  const [selected, setSelected] = useState<MatchupWinProb | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchMeta() {
+      const s = await getCurrentSeason();
+      setSeason(s);
+      const w = await getCurrentWeek(s);
+      setWeek(w);
+    }
+    fetchMeta();
+  }, []);
+
+  useEffect(() => {
+    if (!season || !week) return;
+    const db = getFirestore();
+    const colRef = collection(db, "WinProbabilities");
+
+    const pollFirestore = () => {
+      getDocs(colRef).then((snapshot) => {
+        const data: MatchupWinProb[] = [];
+        snapshot.forEach((docSnap) => {
+          const d = docSnap.data() as any;
+          if (
+            d.season === season &&
+            d.week === week &&
+            Array.isArray(d.points) &&
+            d.points.length > 0
+          ) {
+            data.push({
+              matchupId: d.matchupId,
+              team1: d.team1,
+              team2: d.team2,
+              points: d.points,
+              final: !!d.final,
+            });
+          }
+        });
+        setMatchups(data);
+      });
+    };
+
+    pollFirestore();
+    const interval = setInterval(pollFirestore, 10000);
+
+    return () => clearInterval(interval);
+  }, [season, week]);
+
+  return (
     <div>
       <h2 className="text-2xl font-bold text-emerald-300 mb-4">Win Probability Charts</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1066,111 +797,26 @@ const WinProbabilityTracker: React.FC = () => {
           </div>
         ))}
       </div>
-
-      <Modal
+      <WinProbChartModal
         isOpen={modalOpen}
-        onRequestClose={() => setModalOpen(false)}
-        contentLabel="Win Probability Chart"
-        className="bg-[#181818] rounded-lg w-full max-w-[92vw] md:max-w-6xl lg:max-w-7xl mx-auto mt-6 md:mt-10 p-6 md:p-10 outline-none max-h-[95vh] overflow-y-auto overscroll-contain relative"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 overscroll-none"
-        ariaHideApp={false}
-        shouldCloseOnOverlayClick={true}
-      >
-        {/* Action buttons (top-right) */}
-        <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
-          <button
-            onClick={handleDownload}
-            aria-label="Download chart"
-            title="Download chart"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 3v12" />
-              <path d="M7 10l5 5 5-5" />
-              <path d="M5 21h14" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setModalOpen(false)}
-            aria-label="Close"
-            title="Close"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-black/40 text-emerald-300 hover:bg-black/60 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 6l12 12" />
-              <path d="M18 6l-12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Close icon */}
-        <button
-          className="absolute top-2 right-4 text-2xl text-emerald-300"
-          onClick={() => setModalOpen(false)}
-          aria-label="Close"
-        >
-          &times;
-        </button>
-
-        {selected && (
-          <div>
-            <h3 className="text-xl font-bold text-center text-white mb-2 mt-2">Win Probability</h3>
-            <div className="text-center text-emerald-300 font-semibold mb-6">
-              Week {week}, {season}
-            </div>
-
-            <div className="relative flex flex-col items-center mb-4" style={{ minHeight: "320px" }}>
-              <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
-                <img
-                  src={selected.team1.logo}
-                  alt={selected.team1.name}
-                  className="w-12 h-12 rounded-full mb-1"
-                  style={{ objectFit: "cover" }}
-                />
-                <span className="font-bold text-blue-300">{selected.team1.name}</span>
-              </div>
-
-              <div
-                // Mobile stays the same height; desktop grows
-                className="w-full max-w-[900px] md:max-w-[1000px] lg:max-w-[1200px] xl:max-w-[1400px] md:h-[560px] lg:h-[640px] xl:h-[720px]"
-                style={{
-                  width: "100%",
-                  height: "320px", // mobile height
-                  position: "relative",
-                  zIndex: 1,
-                }}
-              >
-                <canvas
-                  ref={chartRef}
-                  // Rely on CSS for responsive sizing (remove width/height attrs)
-                  style={{ width: "100%", height: "100%" }}
-                />
-              </div>
-
-              <div className="flex flex-col items-center mt-2">
-                <img
-                  src={selected.team2.logo}
-                  alt={selected.team2.name}
-                  className="w-12 h-12 rounded-full mb-1"
-                  style={{ objectFit: "cover" }}
-                />
-                <span className="font-bold text-red-300">{selected.team2.name}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-center mt-6">
-              <button
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded shadow"
-                onClick={() => setModalOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+        onClose={() => setModalOpen(false)}
+        selected={selected}
+        season={season}
+        week={week}
+      />
     </div>
   );
-}
+};
 
 export default WinProbabilityTracker;
+
+function safeLoadImage(src: string) {
+  return new Promise<HTMLImageElement | null>((resolve) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.src = src;
+    img.crossOrigin = "Anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+}

@@ -499,65 +499,130 @@ const Poll: React.FC<{ ActivePolls?: boolean }> = ({ ActivePolls = false }) => {
             </button>
             {showExpired && expiredPolls.length > 0 && (
               <div className="space-y-6 mt-4">
-                {expiredPolls.map((poll) => {
-                  // Calculate points for each option based on all responses
-                  const optionPoints: { [optionId: number]: number } = {};
-                  poll.options.forEach((option: any) => {
-                    optionPoints[option.id] = 0;
-                  });
+                {[...expiredPolls]
+                  .sort((a, b) => {
+                    // Sort by expirationDate or pollDuration (latest first)
+                    const aDate = new Date(a.expirationDate || a.pollDuration).getTime();
+                    const bDate = new Date(b.expirationDate || b.pollDuration).getTime();
+                    return bDate - aDate;
+                  })
+                  .map((poll) => {
+                    // Calculate points for each option based on all responses
+                    const optionPoints: { [optionId: number]: number } = {};
+                    poll.options.forEach((option: any) => {
+                      optionPoints[option.id] = 0;
+                    });
 
-                  if (poll.rankedVoting && poll.maxSelections > 1 && poll.responses) {
-                    Object.values(poll.responses).forEach((response: any) => {
-                      if (Array.isArray(response.rankings)) {
-                        response.rankings.forEach((optionId: number, idx: number) => {
-                          const scoreToAdd = Math.max(poll.maxSelections - idx, 1);
-                          optionPoints[optionId] += scoreToAdd;
-                        });
-                      }
-                    });
-                  } else if (poll.maxSelections > 1 && poll.responses) {
-                    Object.values(poll.responses).forEach((response: any) => {
-                      if (Array.isArray(response.selectedOptions)) {
-                        response.selectedOptions.forEach((optionId: number) => {
-                          optionPoints[optionId] += 1;
-                        });
-                      }
-                    });
-                  } else if (poll.responses) {
-                    Object.values(poll.responses).forEach((response: any) => {
-                      if (typeof response.optionText === 'string') {
-                        const option = poll.options.find((opt: any) => opt.text === response.optionText);
-                        if (option) {
-                          optionPoints[option.id] += 1;
+                    if (poll.rankedVoting && poll.maxSelections > 1 && poll.responses) {
+                      Object.values(poll.responses).forEach((response: any) => {
+                        if (Array.isArray(response.rankings)) {
+                          response.rankings.forEach((optionId: number, idx: number) => {
+                            const scoreToAdd = Math.max(poll.maxSelections - idx, 1);
+                            optionPoints[optionId] += scoreToAdd;
+                          });
                         }
+                      });
+                    } else if (poll.maxSelections > 1 && poll.responses) {
+                      Object.values(poll.responses).forEach((response: any) => {
+                        if (Array.isArray(response.selectedOptions)) {
+                          response.selectedOptions.forEach((optionId: number) => {
+                            optionPoints[optionId] += 1;
+                          });
+                        }
+                      });
+                    } else if (poll.responses) {
+                      Object.values(poll.responses).forEach((response: any) => {
+                        if (typeof response.optionText === 'string') {
+                          const option = poll.options.find((opt: any) => opt.text === response.optionText);
+                          if (option) {
+                            optionPoints[option.id] += 1;
+                          }
+                        }
+                      });
+                    }
+
+                    // Attach points to options and sort
+                    const sortedOptions = [...poll.options].map((option: any) => ({
+                      ...option,
+                      calculatedPoints: optionPoints[option.id] || 0,
+                    })).sort((a: any, b: any) => b.calculatedPoints - a.calculatedPoints);
+
+                    // --- User's vote summary ---
+                    let userVoteSummary: React.ReactNode = null;
+                    const userResponse = poll.responses && poll.responses[userName];
+                    if (userResponse) {
+                      if (poll.rankedVoting && poll.maxSelections > 1 && Array.isArray(userResponse.rankings)) {
+                        userVoteSummary = (
+                          <div className="mb-2 text-sm text-blue-300 text-center">
+                            <span className="font-semibold">Your Rankings:</span>
+                            <ol className="list-decimal list-inside mt-1">
+                              {userResponse.rankings.map((optionId: number, idx: number) => {
+                                const opt = poll.options.find((o: any) => o.id === optionId);
+                                return (
+                                  <li key={optionId}>
+                                    {opt ? opt.text : "Unknown option"}
+                                  </li>
+                                );
+                              })}
+                            </ol>
+                          </div>
+                        );
+                      } else if (poll.maxSelections > 1 && Array.isArray(userResponse.selectedOptions)) {
+                        userVoteSummary = (
+                          <div className="mb-2 text-sm text-blue-300 text-center">
+                            <span className="font-semibold">Your Selections:</span>
+                            <ul className="list-disc list-inside mt-1">
+                              {userResponse.selectedOptions.map((optionId: number) => {
+                                const opt = poll.options.find((o: any) => o.id === optionId);
+                                return (
+                                  <li key={optionId}>
+                                    {opt ? opt.text : "Unknown option"}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      } else if (typeof userResponse.optionText === "string") {
+                        userVoteSummary = (
+                          <div className="mb-2 text-sm text-blue-300 text-center">
+                            <span className="font-semibold">Your Selection:</span>
+                            <div className="mt-1">{userResponse.optionText}</div>
+                          </div>
+                        );
                       }
-                    });
-                  }
+                      if (userResponse.response) {
+                        userVoteSummary = (
+                          <>
+                            {userVoteSummary}
+                            <div className="mb-2 text-xs text-emerald-300 text-center">
+                              <span className="font-semibold">Your Message:</span>
+                              <div className="mt-1">{userResponse.response}</div>
+                            </div>
+                          </>
+                        );
+                      }
+                    }
 
-                  // Attach points to options and sort
-                  const sortedOptions = [...poll.options].map((option: any) => ({
-                    ...option,
-                    calculatedPoints: optionPoints[option.id] || 0,
-                  })).sort((a: any, b: any) => b.calculatedPoints - a.calculatedPoints);
-
-                  return (
-                    <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
-                      <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
-                      <p className="text-sm text-gray-400 text-center">
-                        Expired on: {poll.expirationDate ? new Date(poll.expirationDate).toLocaleString() : new Date(poll.pollDuration).toLocaleString()}
-                      </p>
-                      <ul className="flex flex-col gap-4">
-                        {sortedOptions.map((option: any, index: number) => (
-                          <li key={`${poll.id}-option-${index}`}>
-                            <span className={`block mt-2 text-center font-medium ${option.calculatedPoints === Math.max(...sortedOptions.map((o: any) => o.calculatedPoints)) ? 'text-yellow-400 font-bold' : 'text-emerald-300'}`}>
-                              {option.text}: {option.calculatedPoints} pts
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div key={poll.id} className="w-full max-w-lg bg-[#232323] border border-[#333] rounded-xl p-6 shadow-lg relative px-4 md:px-6 mx-auto">
+                        <h1 className="text-2xl font-extrabold text-emerald-200 mb-6 mt-6 text-center">{poll.question}</h1>
+                        <p className="text-sm text-gray-400 text-center">
+                          Expired on: {poll.expirationDate ? new Date(poll.expirationDate).toLocaleString() : new Date(poll.pollDuration).toLocaleString()}
+                        </p>
+                        {userVoteSummary}
+                        <ul className="flex flex-col gap-4">
+                          {sortedOptions.map((option: any, index: number) => (
+                            <li key={`${poll.id}-option-${index}`}>
+                              <span className={`block mt-2 text-center font-medium ${option.calculatedPoints === Math.max(...sortedOptions.map((o: any) => o.calculatedPoints)) ? 'text-yellow-400 font-bold' : 'text-emerald-300'}`}>
+                                {option.text}: {option.calculatedPoints} pts
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

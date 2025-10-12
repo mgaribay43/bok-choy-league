@@ -445,7 +445,7 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     };
   }, [isOpen, resolved]);
 
-  // Store scroll position for mobile scroll lock workaround
+  // Store scroll position for scroll lock workaround
   const scrollYRef = useRef(0);
 
   useEffect(() => {
@@ -453,38 +453,22 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       // Save scroll position
       scrollYRef.current = window.scrollY;
 
-      // Detect mobile (width < 768px)
-      const isMobile = window.innerWidth < 768;
-
-      if (isMobile) {
-        // Mobile: only hide overflow, do NOT use position: fixed
-        document.body.style.overflow = "hidden";
-        document.documentElement.style.overflow = "hidden";
-      } else {
-        // Desktop: use fixed positioning
-        document.body.style.overflow = "hidden";
-        document.documentElement.style.overflow = "hidden";
-        document.body.style.position = "fixed";
-        document.body.style.top = `-${scrollYRef.current}px`;
-        document.body.style.width = "100%";
-      }
+      // Lock scroll for all devices using only overflow: hidden (no position: fixed)
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
     } else {
       // Restore styles
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
 
-      // Restore scroll position (for mobile)
+      // Restore scroll position
       window.scrollTo(0, scrollYRef.current);
     }
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
+      // Restore scroll position if modal was open
+      if (isOpen) window.scrollTo(0, scrollYRef.current);
     };
   }, [isOpen]);
 

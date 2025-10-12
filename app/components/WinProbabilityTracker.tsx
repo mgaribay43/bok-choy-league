@@ -445,23 +445,45 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     };
   }, [isOpen, resolved]);
 
+  // Store scroll position for mobile scroll lock workaround
+  const scrollYRef = useRef(0);
+
   useEffect(() => {
     if (isOpen) {
-      // Prevent scroll on all parent elements
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
+      // Save scroll position
+      scrollYRef.current = window.scrollY;
+
+      // Detect mobile (width < 768px)
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        // Mobile: only hide overflow, do NOT use position: fixed
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+      } else {
+        // Desktop: use fixed positioning
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollYRef.current}px`;
+        document.body.style.width = "100%";
+      }
     } else {
+      // Restore styles
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
       document.body.style.position = "";
+      document.body.style.top = "";
       document.body.style.width = "";
+
+      // Restore scroll position (for mobile)
+      window.scrollTo(0, scrollYRef.current);
     }
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
       document.body.style.position = "";
+      document.body.style.top = "";
       document.body.style.width = "";
     };
   }, [isOpen]);

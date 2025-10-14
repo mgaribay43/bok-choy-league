@@ -394,17 +394,3 @@ export default function RosterPage() {
     </div>
   );
 }
-
-function normalizeYahooPlayerUrl(url: string) {
-  const fallbackUrl = "https://s.yimg.com/dh/ap/default/140828/silhouette@2x.png";
-  if (
-    !url ||
-    url === "/fallback-avatar.png" ||
-    url.includes("dh/ap/default/140828/silhouette@2x.png")
-  ) {
-    return fallbackUrl;
-  }
-  const match = url.match(/(https:\/\/s\.yimg\.com\/xe\/i\/us\/sp\/v\/nfl_cutout\/players_l\/[^?]+\.png)/);
-  if (match) return match[1];
-  return url.replace(/(\.png).*$/, '$1');
-}

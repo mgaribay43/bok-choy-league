@@ -3,6 +3,7 @@
 // Imports
 // =======================
 import React, { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -15,6 +16,9 @@ import SeasonCollapse from "./components/SeasonCollapse";
 
 import { useFilters, useManagerWithMostConsecutiveWeeks, useManagerWithMostFlavors, useMostIcesInSingleSeason, useStats, useUniqueFlavors, IceVideo, useMostIcesInSingleWeekAllTeams, useLongestActiveNoIceStreak, useLongestAllTimeNoIceStreaks } from "./hooks/hooks";
 import { getYear, sortSeasons } from "./utils/helpers";
+
+// Dynamically import IceTracker to avoid SSR issues
+const IceTracker = dynamic(() => import("./IceTracker"), { ssr: false, loading: () => <div /> });
 
 // =======================
 // Types
@@ -42,6 +46,16 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [latestIndex, setLatestIndex] = useState(0);
+
+  // Ice Tracker dropdown state
+  const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
+
+  // --- Mount IceTracker always, but only show when open ---
+  // This ensures IceTracker is mounted and polling even when collapsed
+  const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
+  useEffect(() => {
+    setIceTrackerMounted(true);
+  }, []);
 
   // Refs for scrolling
   const videosSectionRef = useRef<HTMLDivElement>(null);
@@ -197,7 +211,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // =======================
   return (
     <>
-      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#0f0f0f]" : "min-h-screen flex flex-col items-center bg-[#0f0f0f]"}>
+      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#232323]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
         {/* Header and Stats */}
         {latestOnly ? (
           <button
@@ -224,8 +238,8 @@ export default function Ices({ latestOnly = false }: IcesProps) {
                 {/* Stats Section: always visible on desktop, collapsible on mobile */}
                 <div
                   className={`transition-all duration-500 ease-in-out w-full overflow-hidden
-                  ${statsExpanded || typeof window === "undefined" || window.innerWidth >= 640 ? "h-auto opacity-100" : "h-0 opacity-0"} sm:h-auto sm:opacity-100`}
-                  style={{ transitionProperty: "height, opacity", marginBottom: (statsExpanded || typeof window === "undefined" || window.innerWidth >= 640) ? "20px" : "0" }}
+                  ${statsExpanded || typeof window === "undefined" || (typeof window !== "undefined" && window.innerWidth >= 640) ? "h-auto opacity-100" : "h-0 opacity-0"} sm:h-auto sm:opacity-100`}
+                  style={{ transitionProperty: "height, opacity", marginBottom: (statsExpanded || typeof window === "undefined" || (typeof window !== "undefined" && window.innerWidth >= 640)) ? "20px" : "0" }}
                 >
                   <StatsSection
                     stats={stats}
@@ -279,6 +293,32 @@ export default function Ices({ latestOnly = false }: IcesProps) {
             </div>
           </div>
         )}
+
+        {/* Ice Tracker Dropdown - moved below filters/records */}
+        <div className="w-full max-w-3xl mx-auto mt-6 mb-6 px-2 sm:px-0">
+          <button
+            className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
+            onClick={() => setIceTrackerOpen((open) => !open)}
+            aria-expanded={iceTrackerOpen}
+            aria-controls="ice-tracker-panel"
+          >
+            <span>Ice Tracker</span>
+            {iceTrackerOpen ? <ChevronUp size={28} /> : <ChevronDown size={28} />}
+          </button>
+          {/* Always mount IceTracker, only show when open */}
+          <div
+            id="ice-tracker-panel"
+            className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"} `}
+            aria-hidden={!iceTrackerOpen}
+          >
+            {iceTrackerMounted && (
+              <div className={`w-full ${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
+                <IceTracker />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Main Videos Section */}
         <main
           ref={videosSectionRef}

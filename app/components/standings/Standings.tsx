@@ -357,18 +357,18 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
       "border-orange-400", // 3rd
     ];
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-2 sm:p-4">
         <Link href="/standings" className="block w-fit mx-auto">
           <h2 className="text-5xl font-extrabold mb-8 text-center text-[#a7f3d0] hover:underline">
             Leaders
           </h2>
         </Link>
-        <div className="flex flex-row justify-center gap-4 sm:gap-6">
+        <div className="flex flex-row justify-center gap-6 sm:gap-6">
           {podium.map((team, idx) => (
             <div
               key={team.id}
               className={`flex flex-col items-center bg-[#181818] rounded-xl border-2 ${colors[idx]} 
-                px-2 py-4 sm:px-6 sm:py-6 w-1/3 min-w-0 max-w-xs flex-shrink`}
+                px-2 py-4 sm:px-6 sm:py-6 flex-1 min-w-0 max-w-[95vw] sm:max-w-xs`}
               style={{ minWidth: 0 }}
             >
               <img

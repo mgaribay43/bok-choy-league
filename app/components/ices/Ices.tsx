@@ -211,7 +211,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // =======================
   return (
     <>
-      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#232323]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
+      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#0f0f0f]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
         {/* Header and Stats */}
         {latestOnly ? (
           <button
@@ -295,29 +295,31 @@ export default function Ices({ latestOnly = false }: IcesProps) {
         )}
 
         {/* Ice Tracker Dropdown - moved below filters/records */}
-        <div className="w-full max-w-3xl mx-auto mt-6 mb-6 px-2 sm:px-0">
-          <button
-            className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
-            onClick={() => setIceTrackerOpen((open) => !open)}
-            aria-expanded={iceTrackerOpen}
-            aria-controls="ice-tracker-panel"
-          >
-            <span>Ice Tracker</span>
-            {iceTrackerOpen ? <ChevronUp size={28} /> : <ChevronDown size={28} />}
-          </button>
-          {/* Always mount IceTracker, only show when open */}
-          <div
-            id="ice-tracker-panel"
-            className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"} `}
-            aria-hidden={!iceTrackerOpen}
-          >
-            {iceTrackerMounted && (
-              <div className={`w-full ${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
-                <IceTracker />
-              </div>
-            )}
+        {!latestOnly && (
+          <div className="w-full max-w-3xl mx-auto mt-6 mb-6 px-2 sm:px-0">
+            <button
+              className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
+              onClick={() => setIceTrackerOpen((open) => !open)}
+              aria-expanded={iceTrackerOpen}
+              aria-controls="ice-tracker-panel"
+            >
+              <span>Ice Tracker</span>
+              {iceTrackerOpen ? <ChevronUp size={28} /> : <ChevronDown size={28} />}
+            </button>
+            {/* Always mount IceTracker, only show when open */}
+            <div
+              id="ice-tracker-panel"
+              className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"} `}
+              aria-hidden={!iceTrackerOpen}
+            >
+              {iceTrackerMounted && (
+                <div className={`w-full ${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
+                  <IceTracker />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Videos Section */}
         <main

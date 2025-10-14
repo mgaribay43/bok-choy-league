@@ -6,6 +6,8 @@ import { getCurrentSeason } from "../globalUtils/getCurrentSeason";
 import { getDisplayManagerName } from "../globalUtils/getManagerNames";
 import { getHighResPlayerImage } from "../globalUtils/getHighResPlayerImage";
 import { isCurrentWeekOver } from "../globalUtils/isCurrentWeekOver";
+import { useAuth } from "../../../context/AuthContext";
+import AddIces from "../addIces"; // Import the AddIces modal directly
 
 // Helper to get all teams and their starters for the current week
 async function fetchAllStarters(season: string, week: number) {
@@ -188,6 +190,12 @@ export default function IceTracker() {
     const [nflGames, setNflGames] = useState<Record<string, any>>({});
     const [shouldPoll, setShouldPoll] = useState<boolean>(false);
 
+    // Add Ice modal state
+    const [showAddIceModal, setShowAddIceModal] = useState(false);
+    const [addIcePrefill, setAddIcePrefill] = useState<any>(null);
+
+    const { user } = useAuth() || {};
+
     useEffect(() => {
         let isMounted = true;
         let interval: NodeJS.Timeout | null = null;
@@ -307,9 +315,52 @@ export default function IceTracker() {
         playersByManager[displayName].push(p);
     });
 
+    // Helper to get the game end date in YYYY-MM-DD format
+    function getGameEndDate(game: any): string {
+        if (!game) return "";
+        // Prefer game.endTime if available, else fallback to game.date or statusDetail
+        let dateStr = "";
+        if (game.endTime) {
+            // endTime is likely an ISO string or timestamp
+            const d = new Date(game.endTime);
+            dateStr = d.toISOString().slice(0, 10);
+        } else if (game.date) {
+            // Sometimes just a date string
+            const d = new Date(game.date);
+            dateStr = d.toISOString().slice(0, 10);
+        } else if (game.statusDetail && /\d{1,2}\/\d{1,2}\/\d{4}/.test(game.statusDetail)) {
+            // e.g. "Final - 10/14/2025"
+            const match = game.statusDetail.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (match) {
+                const [_, mm, dd, yyyy] = match;
+                dateStr = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+            }
+        }
+        // Fallback to today if nothing found
+        if (!dateStr) {
+            const d = new Date();
+            dateStr = d.toISOString().slice(0, 10);
+        }
+        return dateStr;
+    }
+
+    // Handler for Add Ice button
+    function handleAddIce(p: any) {
+        const game = nflGames && p.team ? getNflGameForPlayerTeam(nflGames, p.team) : null;
+        const date = getGameEndDate(game);
+        setAddIcePrefill({
+            player: p.name,
+            manager: p.managerName,
+            week: currentWeek?.toString() || "",
+            team: p.team,
+            date,
+        });
+        setShowAddIceModal(true);
+    }
+
     return (
-        <div className="max-w-3xl mx-auto mt-8 bg-[#181818] rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-emerald-300 mb-2 text-center">
+        <div className="max-w-3xl mx-auto mt-4 bg-[#181818] rounded-xl shadow-lg px-2 sm:px-6">
+            <h2 className="text-2xl font-bold text-emerald-300 mb-1 text-center">
                 🧊 Ice Tracker
                 {currentWeek && (
                     <span className="block text-base font-semibold text-emerald-200 mt-1">
@@ -321,7 +372,7 @@ export default function IceTracker() {
                 Players in starting lineups with <span className="font-semibold text-emerald-200">0 points</span> this week.
             </p>
             {lastUpdated && (
-                <div className="text-xs text-gray-500 text-center mb-4">
+                <div className="text-xs text-gray-500 text-center mb-10">
                     Last updated: {lastUpdated.toLocaleTimeString()}
                 </div>
             )}
@@ -418,6 +469,16 @@ export default function IceTracker() {
                                                         : "0.00"}
                                                 </span>
                                                 {gameInfo}
+                                                {/* Add Ice button for mikeyjordan43@gmail.com */}
+                                                {isIced && user?.email === "mikeyjordan43@gmail.com" && (
+                                                    <button
+                                                        className="mt-2 px-3 py-1 rounded bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition"
+                                                        onClick={() => handleAddIce(p)}
+                                                        type="button"
+                                                    >
+                                                        Add Ice
+                                                    </button>
+                                                )}
                                             </div>
                                         </li>
                                     );
@@ -426,6 +487,14 @@ export default function IceTracker() {
                         </div>
                     ))}
                 </div>
+            )}
+            {/* Add Ice Modal */}
+            {showAddIceModal && (
+                <AddIces
+                    open={showAddIceModal}
+                    onClose={() => setShowAddIceModal(false)}
+                    prefill={addIcePrefill}
+                />
             )}
         </div>
     );

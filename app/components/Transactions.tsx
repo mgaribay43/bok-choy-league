@@ -183,44 +183,46 @@ const TransactionsBox: React.FC = () => {
                     Transactions
                 </h2>
             </div>
-            <div className="bg-[#18191b] rounded-2xl shadow-lg p-4 w-full max-w-lg mx-auto mb-10">
-                <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-bold text-emerald-300">Latest Transactions</h3>
-                    <button
-                        className="text-blue-400 font-semibold flex items-center gap-1 text-base"
-                        onClick={() => setShowModal(true)}
-                    >
-                        View All <span className="text-blue-400 text-xl">&rarr;</span>
-                    </button>
-                </div>
-                {loading ? (
-                    <div className="text-gray-400 py-8 text-center">Loading...</div>
-                ) : transactions.length === 0 ? (
-                    <div className="text-gray-400 py-8 text-center">No transactions found.</div>
-                ) : (
-                    <ul>
-                        {transactions.slice(0, 5).map(renderTransactionRow)}
-                    </ul>
-                )}
-                {showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                        <div className="bg-[#23252b] rounded-xl shadow-xl w-full max-w-lg mx-2 p-4 relative">
-                            <button
-                                className="absolute top-3 right-3 text-gray-400 hover:text-emerald-400 text-2xl font-bold"
-                                onClick={() => setShowModal(false)}
-                                aria-label="Close"
-                            >
-                                &times;
-                            </button>
-                            <h3 className="text-xl font-bold text-emerald-300 mb-4 text-center">All Transactions</h3>
-                            <div className="max-h-[70vh] overflow-y-auto">
-                                <ul>
-                                    {transactions.map(renderTransactionRow)}
-                                </ul>
+            <div className="w-full px-2 sm:px-0">
+                <div className="bg-[#18191b] rounded-2xl shadow-lg p-4 w-full max-w-lg mx-auto mb-10 sm:px-4 px-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-emerald-300">Latest Transactions</h3>
+                        <button
+                            className="text-blue-400 font-semibold flex items-center gap-1 text-base"
+                            onClick={() => setShowModal(true)}
+                        >
+                            View All <span className="text-blue-400 text-xl">&rarr;</span>
+                        </button>
+                    </div>
+                    {loading ? (
+                        <div className="text-gray-400 py-8 text-center">Loading...</div>
+                    ) : transactions.length === 0 ? (
+                        <div className="text-gray-400 py-8 text-center">No transactions found.</div>
+                    ) : (
+                        <ul>
+                            {transactions.slice(0, 5).map(renderTransactionRow)}
+                        </ul>
+                    )}
+                    {showModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                            <div className="bg-[#23252b] rounded-xl shadow-xl w-full max-w-lg mx-2 p-4 relative">
+                                <button
+                                    className="absolute top-3 right-3 text-gray-400 hover:text-emerald-400 text-2xl font-bold"
+                                    onClick={() => setShowModal(false)}
+                                    aria-label="Close"
+                                >
+                                    &times;
+                                </button>
+                                <h3 className="text-xl font-bold text-emerald-300 mb-4 text-center">All Transactions</h3>
+                                <div className="max-h-[70vh] overflow-y-auto">
+                                    <ul>
+                                        {transactions.map(renderTransactionRow)}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

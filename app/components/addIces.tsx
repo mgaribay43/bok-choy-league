@@ -244,29 +244,41 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                             <label className="block text-emerald-300 font-medium mb-2">
                                 Date
                             </label>
-                            <input
-                                type="date"
-                                name="date"
-                                value={form.date}
-                                onChange={e => setForm({ ...form, date: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
-                                disabled={loading || !selectedId}
-                                required
-                            />
+                            <div className="w-full flex">
+                                <input
+                                    type="date"
+                                    name="date"
+                                    value={form.date}
+                                    onChange={e => setForm({ ...form, date: e.target.value })}
+                                    className="w-full max-w-[300px] sm:max-w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    disabled={loading || !selectedId}
+                                    required
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-emerald-300 font-medium mb-2">
                                 Flavor
                             </label>
-                            <input
-                                type="text"
+                            <select
                                 name="flavor"
                                 value={form.flavor}
                                 onChange={e => setForm({ ...form, flavor: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 disabled={loading || !selectedId}
                                 required
-                            />
+                            >
+                                <option value="">Select flavor</option>
+                                <option value="Standard">Standard</option>
+                                <option value="Green Apple">Green Apple</option>
+                                <option value="Raspberry">Raspberry</option>
+                                <option value="Pink Lemonade">Pink Lemonade</option>
+                                <option value="Screwdriver">Screwdriver</option>
+                                <option value="Red, White & Berry">Red, White & Berry</option>
+                                <option value="Grape">Grape</option>
+                                <option value="Watermelon">Watermelon</option>
+                                <option value="Pineapple">Pineapple</option>
+                            </select>
                         </div>
                         <div>
                             <label className="block text-emerald-300 font-medium mb-2">
@@ -276,7 +288,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 name="manager"
                                 value={form.manager}
                                 onChange={e => setForm({ ...form, manager: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 disabled={loading || !selectedId}
                                 required
                             >
@@ -295,7 +307,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 name="player"
                                 value={form.player}
                                 onChange={e => setForm({ ...form, player: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 disabled={loading || !selectedId}
                                 required
                             />
@@ -313,7 +325,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                     const extracted = extractYouTubeId(e.target.value);
                                     setForm({ ...form, id: extracted || e.target.value });
                                 }}
-                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 disabled={loading || !selectedId}
                                 required
                             />
@@ -326,7 +338,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 name="week"
                                 value={form.week}
                                 onChange={e => setForm({ ...form, week: e.target.value })}
-                                className="w-full px-4 py-2 mb-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444]"
+                                className="w-full px-4 py-2 mb-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 disabled={loading || !selectedId}
                                 required
                             >
@@ -340,7 +352,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                         </div>
 
                         {/* NEW: 24-hour penalty checkbox */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 mb-4">
                             <input
                                 id="penalty24-edit"
                                 type="checkbox"
@@ -353,6 +365,7 @@ function EditIceModal({ open, onClose }: { open: boolean; onClose: () => void })
                                 24-hour penalty ice
                             </label>
                         </div>
+                        <div className="pb-6" />
 
                         {message && <div className="text-red-400 mt-2">{message}</div>}
                     </form>
@@ -394,7 +407,15 @@ function extractYouTubeId(input: string): string {
     return input;
 }
 
-export default function AddIces() {
+export default function AddIces({
+    open,
+    onClose,
+    prefill
+}: {
+    open?: boolean;
+    onClose?: () => void;
+    prefill?: any;
+}) {
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({
         date: "",
@@ -404,14 +425,26 @@ export default function AddIces() {
         player: "",
         week: "",
         year: new Date().getFullYear().toString(),
-        penalty24: false, // NEW
+        penalty24: false,
     });
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
     const [showEditModal, setShowEditModal] = useState(false);
     const [leagueMembers, setLeagueMembers] = useState<string[]>([]);
 
-    useBodyScrollLock(showModal);
+    useBodyScrollLock(open ?? showModal);
+
+    // Prefill logic
+    useEffect(() => {
+        if (open && prefill) {
+            setShowModal(true);
+            setForm((prev) => ({
+                ...prev,
+                ...prefill,
+                year: prefill.year || new Date().getFullYear().toString(),
+            }));
+        }
+    }, [open, prefill]);
 
     // Fetch league members for Add modal
     useEffect(() => {
@@ -445,11 +478,12 @@ export default function AddIces() {
 
     const handleOpen = () => {
         setShowModal(true);
-        setMessage(""); // Clear message when opening
+        setMessage("");
     };
 
     const handleClose = () => {
         setShowModal(false);
+        if (onClose) onClose();
         setForm({
             date: "",
             flavor: "",
@@ -458,9 +492,9 @@ export default function AddIces() {
             player: "",
             week: "",
             year: new Date().getFullYear().toString(),
-            penalty24: false, // NEW
+            penalty24: false,
         });
-        setMessage(""); // Clear message when closing
+        setMessage("");
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -502,23 +536,25 @@ export default function AddIces() {
 
     return (
         <>
-            <div className="w-full flex flex-col items-center gap-4">
-                <button
-                    className="w-48 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition text-lg"
-                    onClick={handleOpen}
-                >
-                    Add Ice
-                </button>
-                <button
-                    className="w-48 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-lg"
-                    onClick={() => setShowEditModal(true)}
-                >
-                    Edit Ice
-                </button>
-            </div>
-            {showModal && (
+            {!open && (
+                <div className="w-full flex flex-col items-center gap-4">
+                    <button
+                        className="w-48 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition text-lg"
+                        onClick={handleOpen}
+                    >
+                        Add Ice
+                    </button>
+                    <button
+                        className="w-48 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-lg"
+                        onClick={() => setShowEditModal(true)}
+                    >
+                        Edit Ice
+                    </button>
+                </div>
+            )}
+            {(showModal || open) && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                    <div className={modalClassName}>
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto flex flex-col">
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 border-b border-slate-600 flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-white">
@@ -532,36 +568,48 @@ export default function AddIces() {
                                 &times;
                             </button>
                         </div>
-                        <div className="p-6 pb-0 flex-1 overflow-y-auto">
+                        <div className="p-6 pb-0 flex-1 overflow-y-auto" style={{ paddingBottom: "1.5rem" }}>
                             <form onSubmit={handleSubmit} className="space-y-4" id="ice-form">
                                 <div>
                                     <label className="block text-emerald-300 font-medium mb-2">
                                         Date
                                     </label>
-                                    <input
-                                        type="date"
-                                        name="date"
-                                        value={form.date}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        disabled={submitting}
-                                        required
-                                    />
+                                    <div className="w-full flex">
+                                        <input
+                                            type="date"
+                                            name="date"
+                                            value={form.date}
+                                            onChange={handleChange}
+                                            className="w-full max-w-[300px] sm:max-w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            disabled={submitting}
+                                            required
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-emerald-300 font-medium mb-2">
                                         Flavor
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         name="flavor"
-                                        placeholder="Flavor"
                                         value={form.flavor}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 rounded-lg bg-[#333] text-emerald-100 border border-[#444] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         disabled={submitting}
                                         required
-                                    />
+                                    >
+                                        <option value="">Select flavor</option>
+                                        <option value="Standard">Standard</option>
+                                        <option value="Green Apple">Green Apple</option>
+                                        <option value="Raspberry">Raspberry</option>
+                                        <option value="Pink Lemonade">Pink Lemonade</option>
+                                        <option value="Screwdriver">Screwdriver</option>
+                                        <option value="Red, White & Berry">Red, White & Berry</option>
+                                        <option value="Red, White & Berry">Red, White & Merry Holiday Punch</option>
+                                        <option value="Grape">Grape</option>
+                                        <option value="Watermelon">Watermelon</option>
+                                        <option value="Pineapple">Pineapple</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="block text-emerald-300 font-medium mb-2">
@@ -632,7 +680,7 @@ export default function AddIces() {
                                 </div>
 
                                 {/* NEW: 24-hour penalty checkbox */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mb-4">
                                     <input
                                         id="penalty24-add"
                                         type="checkbox"

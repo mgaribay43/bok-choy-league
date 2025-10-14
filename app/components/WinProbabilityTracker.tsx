@@ -445,24 +445,30 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     };
   }, [isOpen, resolved]);
 
+  // Store scroll position for scroll lock workaround
+  const scrollYRef = useRef(0);
+
   useEffect(() => {
     if (isOpen) {
-      // Prevent scroll on all parent elements
+      // Save scroll position
+      scrollYRef.current = window.scrollY;
+
+      // Lock scroll for all devices using only overflow: hidden (no position: fixed)
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
     } else {
+      // Restore styles
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
+
+      // Restore scroll position
+      window.scrollTo(0, scrollYRef.current);
     }
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
+      // Restore scroll position if modal was open
+      if (isOpen) window.scrollTo(0, scrollYRef.current);
     };
   }, [isOpen]);
 

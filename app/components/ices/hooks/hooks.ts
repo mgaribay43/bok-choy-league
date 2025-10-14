@@ -74,8 +74,7 @@ export function useFilters(videos: IceVideo[]) {
 // Unique Ice Flavors Calculation Hook
 // =======================
 export function useUniqueFlavors(videos: IceVideo[]) {
-  const uniqueFlavors = getUnique(videos.map(video => video.flavor).filter(Boolean));
-  return uniqueFlavors.length;
+  return getUnique(videos.map(video => video.flavor).filter(Boolean));
 }
 
 // =======================

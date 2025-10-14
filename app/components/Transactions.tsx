@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getLeagueKey } from "./globalUtils/getLeagueKey";
 
 type PlayerData = {
     player_id: string;

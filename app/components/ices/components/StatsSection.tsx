@@ -23,7 +23,7 @@ export default function StatsSection({
   managerWithMostConsecutiveWeeks,
   setCollapsedSeasons,
   mostIcesInSingleSeason,
-  mostIcesInSingleWeekAllTeams, // <-- use this prop only
+  mostIcesInSingleWeekAllTeams,
   longestActiveNoIceStreak,
   longestAllTimeNoIceStreaks,
 }: any) {
@@ -55,6 +55,16 @@ export default function StatsSection({
     // Only top 3
     return deduped.slice(0, 3);
   }, [longestAllTimeNoIceStreaks, longestActiveNoIceStreak]);
+
+  // Handler for clicking a flavor badge in the "Flavors Consumed by League Members" card
+  function handleFlavorBadgeClick(flavor: string) {
+    setSelectedFlavor(flavor);
+    setSelectedManager("All");
+    setSelectedSeason("All");
+    setSelectedPlayer("All");
+    setSelectedWeek("All");
+    scrollToVideos();
+  }
 
   return (
     <div className="w-full mb-6">
@@ -451,9 +461,68 @@ export default function StatsSection({
               <h3 className="text-emerald-400 font-semibold mb-3 text-center text-sm sm:text-base border-b border-[#444] pb-2">
                 Flavors Consumed by League Members
               </h3>
-              <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-emerald-400 mb-1">{uniqueFlavorsCount}</div>
-                <div className="text-emerald-300 text-xs">Different flavors</div>
+              <div className="flex flex-wrap justify-center gap-2 mt-2">
+                {(Array.isArray(uniqueFlavorsCount) ? uniqueFlavorsCount : []).map((flavor: string) => {
+                  const flavorLower = flavor.toLowerCase();
+                  const badgeProps = {
+                    className: "px-3 py-1 rounded-full font-bold text-xs cursor-pointer transition hover:scale-105",
+                    onClick: () => handleFlavorBadgeClick(flavor),
+                  };
+                  if (flavorLower === "red, white & berry") {
+                    return (
+                      <span
+                        key={flavor}
+                        {...badgeProps}
+                        style={{
+                          background: "linear-gradient(90deg, #e53e3e 0%, #fff 50%, #3182ce 100%)",
+                          color: "#353535ff",
+                          border: "1px solid #141414ff",
+                        }}
+                      >
+                        {flavor}
+                      </span>
+                    );
+                  } else if (flavorLower === "red, white & merry holiday punch") {
+                    return (
+                      <span
+                        key={flavor}
+                        {...badgeProps}
+                        style={{
+                          background: "#ab2308",
+                          color: "#ffffffff",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {flavor}
+                      </span>
+                    );
+                  } else if (flavorLower === "screwdriver") {
+                    return (
+                      <span
+                        key={flavor}
+                        {...badgeProps}
+                        style={{
+                          background: "#ffbc13ff",
+                          color: "#ffffffff",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {flavor}
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span
+                        key={flavor}
+                        {...badgeProps}
+                        style={{ }}
+                        className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs cursor-pointer transition hover:scale-105"
+                      >
+                        {flavor}
+                      </span>
+                    );
+                  }
+                })}
               </div>
             </div>
 

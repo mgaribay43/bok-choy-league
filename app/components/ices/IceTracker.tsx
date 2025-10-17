@@ -190,6 +190,9 @@ export default function IceTracker() {
     const [nflGames, setNflGames] = useState<Record<string, any>>({});
     const [shouldPoll, setShouldPoll] = useState<boolean>(false);
 
+    // track whether the initial load has completed so subsequent updates don't show full-screen spinner
+    const [initialLoadDone, setInitialLoadDone] = useState(false);
+
     // Add Ice modal state
     const [showAddIceModal, setShowAddIceModal] = useState(false);
     const [addIcePrefill, setAddIcePrefill] = useState<any>(null);
@@ -200,8 +203,10 @@ export default function IceTracker() {
         let isMounted = true;
         let interval: NodeJS.Timeout | null = null;
 
-        async function loadIcePlayers() {
-            setLoading(true);
+        async function loadIcePlayers({ background = false } : { background?: boolean } = {}) {
+            // show spinner only for the initial load (or when explicitly not background)
+            if (!initialLoadDone && !background) setLoading(true);
+
             const season = await getCurrentSeason();
             const week = await getCurrentWeek(season);
             if (isMounted) setCurrentWeek(week);
@@ -212,6 +217,7 @@ export default function IceTracker() {
                 if (isMounted) {
                     setShouldPoll(false);
                     setLoading(false);
+                    setInitialLoadDone(true);
                 }
                 return;
             }
@@ -241,7 +247,10 @@ export default function IceTracker() {
 
             // If no games are happening, don't fetch further or poll
             if (!gamesActive) {
-                if (isMounted) setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                    setInitialLoadDone(true);
+                }
                 return;
             }
 
@@ -290,15 +299,19 @@ export default function IceTracker() {
                 setIcePlayers(zeroPlayers);
                 setPointsMap(pointsMapResult);
                 setLastUpdated(new Date());
+                // hide spinner and mark initial load done
                 setLoading(false);
+                setInitialLoadDone(true);
             }
         }
 
+        // initial load: show spinner on first load
         loadIcePlayers();
 
         // Only poll if there are NFL games happening
         if (shouldPoll) {
-            interval = setInterval(loadIcePlayers, 300000); // 5 minutes
+            // background updates: do not show full-screen spinner
+            interval = setInterval(() => loadIcePlayers({ background: true }), 300000); // 5 minutes
         }
 
         return () => {
@@ -350,7 +363,8 @@ export default function IceTracker() {
         const date = getGameEndDate(game);
         setAddIcePrefill({
             player: p.name,
-            manager: p.managerName,
+            // normalize manager name through the utility (display mapping)
+            manager: getDisplayManagerName(p.managerName),
             week: currentWeek?.toString() || "",
             team: p.team,
             date,
@@ -361,28 +375,25 @@ export default function IceTracker() {
     return (
         <div className="max-w-3xl mx-auto mt-4 bg-[#181818] rounded-xl shadow-lg px-2 sm:px-6">
             <h2 className="text-2xl font-bold text-emerald-300 mb-1 text-center">
-                🧊 Ice Tracker
+                🧊 Ice Watch
                 {currentWeek && (
                     <span className="block text-base font-semibold text-emerald-200 mt-1">
                         Week {currentWeek}
                     </span>
                 )}
             </h2>
-            <p className="text-center text-gray-400 mb-2">
-                Players in starting lineups with <span className="font-semibold text-emerald-200">0 points</span> this week.
-            </p>
             {lastUpdated && (
                 <div className="text-xs text-gray-500 text-center mb-10">
                     Last updated: {lastUpdated.toLocaleTimeString()}
                 </div>
             )}
-            {loading ? (
+            {loading && !initialLoadDone ? (
                 <div className="flex justify-center items-center py-12">
                     <div className="w-10 h-10 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
                 </div>
             ) : icePlayers.length === 0 ? (
                 <div className="text-center text-emerald-400 font-semibold py-8">
-                    No starters are currently on ice! 🥶
+                    Nobody is currently on ice watch!
                 </div>
             ) : (
                 <div>
@@ -408,21 +419,19 @@ export default function IceTracker() {
                                             statusDetail.includes("in progress");
                                         isGameActiveOrFinal = isFinal || isInProgress;
 
+                                        // Show teams on top line, then only show a single status line (Final or Live)
                                         gameInfo = (
                                             <div className="text-xs text-right mt-1">
                                                 <div className="text-gray-300 font-semibold">
                                                     {game.awayTeam?.abbreviation} @ {game.homeTeam?.abbreviation}
                                                 </div>
-                                                <div className="text-gray-400">
-                                                    {game.statusDetail || game.status}
-                                                </div>
                                                 {isFinal ? (
-                                                    <span className="text-red-400 font-semibold">Game Final – Iced ❄️</span>
+                                                    <div className="text-red-400 font-semibold">Game Final – Iced ❄️</div>
                                                 ) : isInProgress ? (
-                                                    <span className="text-blue-300 font-semibold">
-                                                        Live: {game.statusDetail}
-                                                    </span>
-                                                ) : null}
+                                                    <div className="text-blue-300 font-semibold">Live: {game.statusDetail}</div>
+                                                ) : (
+                                                    <div className="text-gray-400">{game.status}</div>
+                                                )}
                                             </div>
                                         );
                                     } else {

@@ -214,10 +214,15 @@ export const yahooAPI = functions.https.onRequest(
 
                     // Compose a cache key based on year, week, and playerKeys
                     const cacheKey = `playerstats_${year}_${weekParam || ""}_${playerKeys}`;
-                    const cached = await getCache(cacheKey);
-                    if (cached) {
-                        res.status(200).json(cached);
-                        return;
+
+                    // Skip reading cache for 2025 (live data)
+                    let cached = null;
+                    if (year !== 2025) {
+                        cached = await getCache(cacheKey);
+                        if (cached) {
+                            res.status(200).json(cached);
+                            return;
+                        }
                     }
 
                     // batch player keys in groups of 25 max
@@ -264,8 +269,10 @@ export const yahooAPI = functions.https.onRequest(
                         },
                     };
 
-                    // Cache the combined response as a string
-                    await setCache(cacheKey, combinedResponse);
+                    // Cache the combined response except for 2025 (live data)
+                    if (year !== 2025) {
+                        await setCache(cacheKey, combinedResponse);
+                    }
 
                     res.status(200).json(combinedResponse);
                     return;

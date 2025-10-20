@@ -16,6 +16,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <html>
+      <>
+        <title>The Bok Choy League</title>
+        <meta name="description" content="The Bok Choy League — fantasy football" />
+      </>
       <body>
         <AuthProvider>
           {isUnprotected ? (

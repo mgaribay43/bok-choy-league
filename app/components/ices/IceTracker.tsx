@@ -261,6 +261,7 @@ export default function IceTracker() {
                                         const isInProgress = status.includes("in progress") || statusDetail.includes("in progress");
                                         isGameActiveOrFinal = isFinal || isInProgress;
 
+                                        // Show teams on top line, then only show a single status line (Final or Live)
                                         gameInfo = (
                                             <div className="text-xs text-right mt-1">
                                                 <div className="text-gray-300 font-semibold">
@@ -268,7 +269,7 @@ export default function IceTracker() {
                                                 </div>
                                                 <div className="text-gray-400">{game.statusDetail || game.status}</div>
                                                 {isFinal ? (
-                                                    <span className="text-red-400 font-semibold">Game Final – Iced ❄️</span>
+                                                    <div className="text-red-400 font-semibold">Game Final – Iced ❄️</div>
                                                 ) : isInProgress ? (
                                                     <span className="text-blue-300 font-semibold">Live: {game.statusDetail}</span>
                                                 ) : null}

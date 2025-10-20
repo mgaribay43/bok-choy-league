@@ -11,4 +11,4 @@ export { refreshTokens } from './refreshTokens';
 export { yahooAPI } from './yahooAPI';
 export { pollWinProbabilities } from './pollWinProbabilities';
 export { nflMatchups } from "./nflMatchups";
-export { iceTracker } from "./IceTracker";
+export * from "./IceTracker";

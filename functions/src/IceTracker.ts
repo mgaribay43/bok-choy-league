@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import type { Request, Response } from "express";
 
 if (!admin.apps.length) admin.initializeApp();
@@ -269,6 +270,88 @@ async function fetchPlayerPoints(season: string, week: number, playerKeys: strin
 }
 
 /**
+ * Core runner for IceTracker logic. Returns summary object.
+ * Accepts optional season/week overrides.
+ */
+async function runIceTracker(seasonArg?: string, weekArg?: number) {
+  // use same logic as the HTTP handler used to do
+  const season = seasonArg || new Date().getFullYear().toString();
+
+  // get settings (also used to find current week if not provided)
+  const settingsRes = await fetch(
+    `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${season}`
+  );
+  if (!settingsRes.ok) {
+    throw new Error(`Yahoo settings fetch failed: ${settingsRes.status}`);
+  }
+  const settingsJson = await settingsRes.json();
+
+  // determine week: prefer argument, else attempt to extract from settings
+  let currentWeek = Number.isFinite(Number(weekArg || NaN)) ? Number(weekArg) : NaN;
+  if (!Number.isFinite(currentWeek)) {
+    currentWeek = parseInt(
+      (settingsJson?.fantasy_content?.league?.[0]?.current_week ||
+        settingsJson?.fantasy_content?.league?.[1]?.settings?.[0]?.current_week ||
+        settingsJson?.fantasy_content?.league?.[0]?.current_week_num ||
+        "1"
+      ).toString(),
+      10
+    );
+  }
+  if (!Number.isFinite(currentWeek) || currentWeek <= 0) currentWeek = 1;
+
+  // fetch NFL games for the week
+  const year = new Date().getFullYear();
+  const nflGamesMap = await fetchNFLGamesForWeek(currentWeek, year);
+
+  // build scoring map
+  const scoringMap = buildScoringMap(settingsJson);
+
+  // fetch all starters and points
+  const allStarters = await fetchAllStarters(season, currentWeek);
+  const allPlayers = allStarters.flatMap((t) =>
+    t.starters.map((p) => ({
+      ...p,
+      teamName: t.teamName,
+      managerName: t.managerName,
+      teamLogo: t.teamLogo,
+    }))
+  );
+  const playerKeys = allPlayers.map((p) => p.playerKey).filter(Boolean);
+
+  const pointsMapResult = await fetchPlayerPoints(season, currentWeek, playerKeys, scoringMap);
+
+  // Determine iced players (game in progress or final and pts <= 0 or undefined)
+  const zeroPlayers = allPlayers.filter((p) => {
+    const pts = pointsMapResult[p.playerKey];
+    const game = getNflGameForPlayerTeam(nflGamesMap, p.team, p.teamName);
+    if (!game) return false;
+    const status = (game.status || "").toLowerCase();
+    const statusDetail = (game.statusDetail || "").toLowerCase();
+    const isFinal = status.includes("final") || statusDetail.includes("final");
+    const isInProgress = status.includes("in progress") || statusDetail.includes("in progress");
+    return (isFinal || isInProgress) && (pts <= 0 || pts === undefined);
+  });
+
+  // Write to Firestore
+  const docRef = FIRESTORE.doc("iceTracker/current");
+  await docRef.set(
+    {
+      players: zeroPlayers,
+      pointsMap: pointsMapResult,
+      nflGames: nflGamesMap,
+      currentWeek,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      season,
+    },
+    { merge: true }
+  );
+
+  functions.logger.log("IceTracker write complete", { players: zeroPlayers.length });
+  return { success: true, count: zeroPlayers.length, season, currentWeek };
+}
+
+/**
  * HTTP function to run IceTracker logic on demand (useful for testing).
  * Query params:
  *  - season (optional, defaults to current year)
@@ -282,8 +365,7 @@ export const iceTracker = onRequest(
     memory: "512MiB",
   },
   async (req: Request, res: Response) => {
-    console.log("IceTracker HTTP invoked");
-
+    functions.logger.log("IceTracker HTTP invoked");
     // basic CORS handling for testing from browser/tools
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -294,80 +376,37 @@ export const iceTracker = onRequest(
     }
 
     try {
-      const season = (req.query.season as string) || new Date().getFullYear().toString();
+      const season = (req.query.season as string) || undefined;
+      const week = req.query.week ? parseInt(String(req.query.week), 10) : undefined;
 
-      // get settings (also used to find current week if not provided)
-      const settingsRes = await fetch(
-        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=settings&year=${season}`
-      );
-      const settingsJson = await settingsRes.json();
-
-      // determine week: prefer query param, else attempt to extract from settings
-      let currentWeek = req.query.week ? parseInt(String(req.query.week), 10) : NaN;
-      if (!Number.isFinite(currentWeek)) {
-        currentWeek = parseInt(
-          (settingsJson?.fantasy_content?.league?.[0]?.current_week ||
-            settingsJson?.fantasy_content?.league?.[1]?.settings?.[0]?.current_week ||
-            settingsJson?.fantasy_content?.league?.[0]?.current_week_num ||
-            "1"
-          ).toString(),
-          10
-        );
-      }
-      if (!Number.isFinite(currentWeek) || currentWeek <= 0) currentWeek = 1;
-
-      // fetch NFL games for the week
-      const year = new Date().getFullYear();
-      const nflGamesMap = await fetchNFLGamesForWeek(currentWeek, year);
-
-      // build scoring map
-      const scoringMap = buildScoringMap(settingsJson);
-
-      // fetch all starters and points
-      const allStarters = await fetchAllStarters(season, currentWeek);
-      const allPlayers = allStarters.flatMap((t) =>
-        t.starters.map((p) => ({
-          ...p,
-          teamName: t.teamName,
-          managerName: t.managerName,
-          teamLogo: t.teamLogo,
-        }))
-      );
-      const playerKeys = allPlayers.map((p) => p.playerKey).filter(Boolean);
-
-      const pointsMapResult = await fetchPlayerPoints(season, currentWeek, playerKeys, scoringMap);
-
-      // Determine iced players (game in progress or final and pts <= 0 or undefined)
-      const zeroPlayers = allPlayers.filter((p) => {
-        const pts = pointsMapResult[p.playerKey];
-        const game = getNflGameForPlayerTeam(nflGamesMap, p.team, p.teamName);
-        if (!game) return false;
-        const status = (game.status || "").toLowerCase();
-        const statusDetail = (game.statusDetail || "").toLowerCase();
-        const isFinal = status.includes("final") || statusDetail.includes("final");
-        const isInProgress = status.includes("in progress") || statusDetail.includes("in progress");
-        return (isFinal || isInProgress) && (pts <= 0 || pts === undefined);
-      });
-
-      // Write to Firestore
-      const docRef = FIRESTORE.doc("iceTracker/current");
-      await docRef.set(
-        {
-          players: zeroPlayers,
-          pointsMap: pointsMapResult,
-          nflGames: nflGamesMap,
-          currentWeek,
-          lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-          season,
-        },
-        { merge: true }
-      );
-
-      functions.logger.log("IceTracker write complete", { players: zeroPlayers.length });
-      res.status(200).json({ success: true, count: zeroPlayers.length });
+      const result = await runIceTracker(season, week);
+      res.status(200).json(result);
     } catch (err) {
-      console.error("IceTracker HTTP error", { err: String(err) });
+      functions.logger.error("IceTracker HTTP error", { err: String(err) });
       res.status(500).json({ success: false, error: String(err) });
+    }
+  }
+);
+
+/**
+ * Scheduled function - runs every 5 minutes and calls the same logic as the HTTP function.
+ * This mirrors pollWinProbabilities scheduling approach.
+ */
+export const iceTrackerScheduled = onSchedule(
+  {
+    schedule: "every 5 minutes",
+    region: "us-central1",
+    timeoutSeconds: 120,
+    memory: "512MiB",
+    invoker: "public",
+  },
+  async (event) => {
+    functions.logger.log("iceTrackerScheduled invoked", { event });
+    try {
+      const result = await runIceTracker();
+      functions.logger.log("iceTrackerScheduled completed", result);
+    } catch (err) {
+      functions.logger.error("iceTrackerScheduled error", { err: String(err) });
     }
   }
 );

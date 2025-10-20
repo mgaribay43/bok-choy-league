@@ -199,7 +199,7 @@ export default function IceTracker() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto mt-4 bg-[#181818] rounded-xl shadow-lg px-2 sm:px-6">
+        <div className="max-w-4xl mx-auto mt-4 bg-[#181818] rounded-xl shadow-lg px-2 sm:px-6">
             {/* grid ensures the header stays centered regardless of button width */}
             <div className="relative">
                 <div className="grid grid-cols-3 items-center">
@@ -242,7 +242,8 @@ export default function IceTracker() {
             ) : icePlayers.length === 0 ? (
                 <div className="text-center text-emerald-400 font-semibold py-8">Nobody on Ice Watch</div>
             ) : (
-                <div>
+                // make the players list vertically scrollable, prevent horizontal clipping
+                <div className="max-h-[60vh] sm:max-h-[70vh] overflow-y-auto overflow-x-hidden px-2 box-border">
                     {Object.entries(playersByManager).map(([manager, players]) => (
                         <div key={manager} className="mb-8">
                             <h3 className="text-xl font-bold text-emerald-200 mb-4 border-b border-emerald-800 pb-1 text-center">

@@ -119,7 +119,7 @@ export default function IceTracker() {
             },
             (err) => {
                 console.error("IceTracker snapshot error:", err);
-                setLoading(false);
+                setLoading(false); //testing
             }
         );
 

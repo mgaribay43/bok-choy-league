@@ -286,16 +286,18 @@ export default function IceTracker() {
                                     }
 
                                     const pts = typeof pointsMap?.[p.playerKey] === "number" ? pointsMap[p.playerKey] : undefined;
-                                    // Mark iced when the game is in-progress or final and player has 0 or fewer points
-                                    const isIced = isGameActiveOrFinal && pts !== undefined && pts <= 0;
+                                    // Keep action/selection logic (e.g., Add Ice) for in-progress OR final games
+                                    const isIcedAction = isGameActiveOrFinal && pts !== undefined && pts <= 0;
+                                    // Styling: only give the blue "iced" card background for FINAL games with 0 or fewer points
+                                    const isFinalIced = isGameFinal && pts !== undefined && pts <= 0;
 
                                     return (
                                         <li
                                             key={p.playerKey + "-" + idx}
-                                            className={`flex flex-row items-center gap-3 sm:gap-6 py-4 px-2 sm:px-4 ${isIced
+                                            className={`flex flex-row items-center gap-3 sm:gap-6 py-4 px-2 sm:px-4 ${isFinalIced
                                                 ? "border-2 border-transparent bg-[#181818] shadow-[0_0_12px_4px_#22d3ee]"
                                                 : "border-transparent bg-[#181818]"
-                                                } rounded-xl sm:rounded-lg transition-all mb-6`}
+                                                 } rounded-xl sm:rounded-lg transition-all mb-6`}
                                         >
                                             <div className="flex items-center justify-center flex-shrink-0">
                                                 <img src={getHighResPlayerImage(p)} alt={p.name} className="h-16 w-16 sm:h-24 sm:w-24 object-contain" />
@@ -311,7 +313,7 @@ export default function IceTracker() {
                                                     {typeof pts === "number" ? pts.toFixed(2) : "0.00"}
                                                 </span>
                                                 {gameInfo}
-                                                {isIced && user?.email === "mikeyjordan43@gmail.com" && (
+                                                {isIcedAction && user?.email === "mikeyjordan43@gmail.com" && (
                                                     <button
                                                         className="mt-2 px-3 py-1 rounded bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition"
                                                         onClick={() => handleAddIce(p)}

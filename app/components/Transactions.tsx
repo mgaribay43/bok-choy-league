@@ -21,13 +21,44 @@ type Transaction = {
 function parseTransactions(json: any): Transaction[] {
     const txnsObj = json?.fantasy_content?.league?.[1]?.transactions || {};
     const txns: Transaction[] = [];
+
     Object.values(txnsObj)
-        .filter((v: any) => v && v.transaction)
+        .filter((v: any) => v && (v.transaction || v.transaction_id || v.transaction_key))
         .forEach((txnObj: any) => {
+            // txnObj can be in different shapes depending on Yahoo response:
+            // - txnObj.transaction = [ metaObj, { players: { ... } } ]
+            // - or txnObj itself may contain transaction_id/trader_team_name and a separate players object
             const txnArr = txnObj.transaction;
-            const meta = txnArr[0];
-            if (meta.type === "commish") return; // Ignore commish transactions
-            const playersObj = txnArr[1]?.players || {};
+            // robust meta extraction
+            const meta =
+                (Array.isArray(txnArr) && txnArr.find((x: any) => x && x.transaction_id)) ||
+                (Array.isArray(txnArr) && txnArr[0]) ||
+                txnObj;
+
+            // robust players container extraction
+            const playersContainer =
+                (Array.isArray(txnArr) && (txnArr.find((x: any) => x && x.players) || txnArr[1])) ||
+                txnObj.players ||
+                (txnObj.transaction && txnObj.transaction[1]) ||
+                {};
+
+            const playersObj = playersContainer?.players || playersContainer || {};
+
+            // Normalize meta fields for trades that include trader/tradee names at top-level
+            const normalizedMeta = {
+                transaction_id: meta?.transaction_id ?? meta?.transaction_id,
+                type: meta?.type ?? meta?.transaction_type ?? "unknown",
+                status: meta?.status ?? "unknown",
+                timestamp: meta?.timestamp ?? meta?.time_stamp ?? "",
+                trader_team_key: meta?.trader_team_key ?? txnObj?.trader_team_key,
+                trader_team_name: meta?.trader_team_name ?? txnObj?.trader_team_name,
+                tradee_team_key: meta?.tradee_team_key ?? txnObj?.tradee_team_key,
+                tradee_team_name: meta?.tradee_team_name ?? txnObj?.tradee_team_name,
+            };
+
+            // Skip commish entries
+            if (normalizedMeta.type === "commish") return;
+
             const players: PlayerData[] = [];
             Object.values(playersObj)
                 .filter((p: any) => p && p.player)
@@ -36,6 +67,7 @@ function parseTransactions(json: any): Transaction[] {
                     const info = arr[0];
                     let data = arr[1]?.transaction_data;
                     if (Array.isArray(data)) data = data[0];
+
                     players.push({
                         player_id: info?.find((x: any) => x.player_id)?.player_id ?? "",
                         name: info?.find((x: any) => x.name)?.name ?? { full: "" },
@@ -44,14 +76,19 @@ function parseTransactions(json: any): Transaction[] {
                         transaction_data: data,
                     });
                 });
+
             txns.push({
-                transaction_id: meta.transaction_id,
-                type: meta.type,
-                status: meta.status,
-                timestamp: meta.timestamp,
+                transaction_id: normalizedMeta.transaction_id,
+                type: normalizedMeta.type,
+                status: normalizedMeta.status,
+                timestamp: normalizedMeta.timestamp,
                 players,
+                // include trade team names if present (useful for display later)
+                ...(normalizedMeta.trader_team_name ? { trader_team_name: normalizedMeta.trader_team_name } : {}),
+                ...(normalizedMeta.tradee_team_name ? { tradee_team_name: normalizedMeta.tradee_team_name } : {}),
             });
         });
+
     return txns.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
 }
 
@@ -112,7 +149,99 @@ const TransactionsBox: React.FC = () => {
         fetchTransactions();
     }, []);
 
-    function renderTransactionPlayers(players: PlayerData[]) {
+    function renderTransactionPlayers(players: PlayerData[], txn?: Transaction) {
+        // Handle trades specially: show players from each side with a trade icon between them
+        const isTrade = (txn?.type || "").toString().toLowerCase() === "trade" || players.some((p) => (p.transaction_data?.type || "").toString().toLowerCase() === "trade");
+        if (isTrade) {
+            const norm = (s?: any) => (s || "").toString().trim();
+
+            // Determine team A/B names & keys from txn metadata first, then from player entries
+            const teamAName = norm((txn as any)?.trader_team_name) || (() => {
+                for (const p of players) if (p.transaction_data?.source_team_name) return norm(p.transaction_data.source_team_name);
+                return "";
+            })();
+            const teamBName = norm((txn as any)?.tradee_team_name) || (() => {
+                for (const p of players) if (p.transaction_data?.destination_team_name && norm(p.transaction_data.destination_team_name) !== teamAName) return norm(p.transaction_data.destination_team_name);
+                // fallback: pick any destination team name
+                for (const p of players) if (p.transaction_data?.destination_team_name) return norm(p.transaction_data.destination_team_name);
+                return "";
+            })();
+
+            const teamAKey = norm((txn as any)?.trader_team_key);
+            const teamBKey = norm((txn as any)?.tradee_team_key);
+
+            const fromPlayers: PlayerData[] = [];
+            const toPlayers: PlayerData[] = [];
+
+            for (const p of players) {
+                const td = p.transaction_data || {};
+                const srcName = norm(td.source_team_name);
+                const dstName = norm(td.destination_team_name);
+                const srcKey = norm(td.source_team_key);
+                const dstKey = norm(td.destination_team_key);
+
+                // match source == teamA and destination == teamB
+                const srcIsA = teamAKey ? srcKey === teamAKey : (teamAName ? srcName === teamAName : false);
+                const dstIsB = teamBKey ? dstKey === teamBKey : (teamBName ? dstName === teamBName : false);
+
+                // match source == teamB and destination == teamA
+                const srcIsB = teamBKey ? srcKey === teamBKey : (teamBName ? srcName === teamBName : false);
+                const dstIsA = teamAKey ? dstKey === teamAKey : (teamAName ? dstName === teamAName : false);
+
+                if (srcIsA && dstIsB) {
+                    fromPlayers.push(p);
+                } else if (srcIsB && dstIsA) {
+                    toPlayers.push(p);
+                } else {
+                    // If no clear mapping, attempt to infer by comparing against txn-level names
+                    if (teamAName && srcName === teamAName) fromPlayers.push(p);
+                    else if (teamBName && srcName === teamBName) toPlayers.push(p);
+                }
+            }
+
+            // final fallbacks: if one side ended up empty, attempt to split by transaction_data direction
+            if (fromPlayers.length === 0 && toPlayers.length === 0) {
+                players.forEach((p, i) => {
+                    if (i % 2 === 0) fromPlayers.push(p);
+                    else toPlayers.push(p);
+                });
+            }
+
+            const leftName = teamAName || teamBName || "Team A";
+            const rightName = teamBName || teamAName || "Team B";
+
+            return (
+                <div className="mt-2">
+                    <div className="flex items-start gap-4">
+                        <div className="flex-1">
+                            <div className="text-sm text-gray-300 font-semibold mb-1">{leftName}</div>
+                            {fromPlayers.map((p) => (
+                                <div key={`from-${p.player_id}`} className="flex items-center mb-1">
+                                    <span className="font-bold text-white text-base mr-2">{getInitial(p.name.full, p.display_position)}</span>
+                                    <span className="text-gray-300 text-base mr-2">{p.display_position}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center px-2">
+                            <span className="text-2xl text-yellow-300">⇄</span>
+                        </div>
+
+                        <div className="flex-1">
+                            <div className="text-sm text-gray-300 font-semibold mb-1 text-right">{rightName}</div>
+                            {toPlayers.map((p) => (
+                                <div key={`to-${p.player_id}`} className="flex items-center mb-1 justify-end">
+                                    <span className="text-gray-300 text-base mr-2">{p.display_position}</span>
+                                    <span className="font-bold text-white text-base">{getInitial(p.name.full, p.display_position)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // fallback: normal adds/drops rendering
         const adds = players.filter((p) => p.transaction_data?.type === "add");
         const drops = players.filter((p) => p.transaction_data?.type === "drop");
         return (
@@ -154,6 +283,12 @@ const TransactionsBox: React.FC = () => {
             }
         }
 
+        // If this is a trade transaction, show a generic "Trade" header
+        const isTrade = (txn.type || "").toString().toLowerCase() === "trade";
+        if (isTrade) {
+            teamName = "Trade";
+        }
+        
         // Responsive font size: shrink if team name is long
         const isLong = teamName.length > 18;
         const teamNameClass = isLong
@@ -161,18 +296,18 @@ const TransactionsBox: React.FC = () => {
             : "font-bold text-lg text-white truncate max-w-[60vw] sm:max-w-none";
 
         return (
-            <li
-                key={txn.transaction_id}
-                className="rounded-xl bg-[#101214] mb-3 px-4 py-3 flex flex-col"
-            >
+             <li
+                 key={txn.transaction_id}
+                 className="rounded-xl bg-[#101214] mb-3 px-4 py-3 flex flex-col"
+             >
                 <div className="flex flex-row items-center justify-between flex-nowrap">
                     <span className={teamNameClass}>{teamName}</span>
                     <span className="text-gray-300 text-sm ml-2 whitespace-nowrap flex-shrink-0">{formatDate(txn.timestamp)}</span>
                 </div>
-                {renderTransactionPlayers(txn.players)}
-            </li>
-        );
-    }
+                {renderTransactionPlayers(txn.players, txn)}
+             </li>
+         );
+     }
 
     return (
         <>

@@ -255,12 +255,15 @@ export default function IceTracker() {
 
                                     let gameInfo = null;
                                     let isGameActiveOrFinal = false;
+                                    // track whether the game's final (only finals should get the blue "iced" background)
+                                    let isGameFinal = false;
                                     if (game) {
                                         const status = (game.status || "").toLowerCase();
                                         const statusDetail = (game.statusDetail || "").toLowerCase();
                                         const isFinal = status.includes("final") || statusDetail.includes("final");
                                         const isInProgress = status.includes("in progress") || statusDetail.includes("in progress");
                                         isGameActiveOrFinal = isFinal || isInProgress;
+                                        isGameFinal = isFinal;
 
                                         // Show teams on top line, then only show a single status line (Final or Live)
                                         gameInfo = (
@@ -283,7 +286,8 @@ export default function IceTracker() {
                                     }
 
                                     const pts = typeof pointsMap?.[p.playerKey] === "number" ? pointsMap[p.playerKey] : undefined;
-                                    const isIced = isGameActiveOrFinal && pts !== undefined && pts <= 0;
+                                    // Only mark iced (blue background) when the game is FINAL and player has 0 or fewer points
+                                    const isIced = isGameFinal && pts !== undefined && pts <= 0;
 
                                     return (
                                         <li

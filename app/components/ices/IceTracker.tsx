@@ -286,8 +286,8 @@ export default function IceTracker() {
                                     }
 
                                     const pts = typeof pointsMap?.[p.playerKey] === "number" ? pointsMap[p.playerKey] : undefined;
-                                    // Only mark iced (blue background) when the game is FINAL and player has 0 or fewer points
-                                    const isIced = isGameFinal && pts !== undefined && pts <= 0;
+                                    // Mark iced when the game is in-progress or final and player has 0 or fewer points
+                                    const isIced = isGameActiveOrFinal && pts !== undefined && pts <= 0;
 
                                     return (
                                         <li

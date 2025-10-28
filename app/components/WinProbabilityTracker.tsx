@@ -229,8 +229,8 @@ function openIOSReceiverPopup(filename: string) {
 
 export type WinProbChartSelection = {
   matchupId?: string;
-  team1: { name: string; logo: string };
-  team2: { name: string; logo: string };
+  team1: { name: string; logo: string; id?: string | number };
+  team2: { name: string; logo: string; id?: string | number };
   points?: WinProbPoint[];
   final?: boolean;
 };
@@ -254,38 +254,53 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
   const chartInstance = useRef<Chart | null>(null);
 
   const [resolved, setResolved] = useState<WinProbChartSelection | null>(selected);
+  
   useEffect(() => {
     let mounted = true;
     const fetchIfNeeded = async () => {
       if (!isOpen || !selected) return;
+      
+      // If points are already provided, use them
       if (selected.points?.length) {
         setResolved(selected);
         return;
       }
+      
+      // Otherwise fetch from Firestore, but use the team names/logos from selected
       try {
         const db = getFirestore();
         const snap = await getDocs(collection(db, "WinProbabilities"));
         let match: any = null;
+        
         snap.forEach((docSnap) => {
           const d = docSnap.data() as any;
           if (
             d.season === season &&
             d.week === week &&
-            d.points?.length &&
-            (
-              (d.team1?.name === selected.team1.name && d.team2?.name === selected.team2.name) ||
-              (d.team1?.name === selected.team2.name && d.team2?.name === selected.team1.name)
-            )
+            d.points?.length
           ) {
-            match = d;
+            // Match by team IDs only
+            const matchByIds = selected.team1.id && selected.team2.id &&
+              (
+                (String(d.team1?.id) === String(selected.team1.id) && String(d.team2?.id) === String(selected.team2.id)) ||
+                (String(d.team1?.id) === String(selected.team2.id) && String(d.team2?.id) === String(selected.team1.id))
+              );
+
+            if (matchByIds) {
+              match = d;
+            }
           }
         });
+        
         if (!mounted) return;
+        
         if (match) {
+          // Use the names and logos from the selected prop (from MatchupCard)
+          // Only use the points data from Firestore
           setResolved({
             matchupId: match.matchupId,
-            team1: match.team1,
-            team2: match.team2,
+            team1: selected.team1, // Keep the name and logo from MatchupCard
+            team2: selected.team2, // Keep the name and logo from MatchupCard
             points: match.points,
             final: !!match.final,
           });
@@ -456,10 +471,19 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
       // Lock scroll for all devices using only overflow: hidden (no position: fixed)
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
+
+      // Preserve scrollbar gap to avoid layout shift (prevents header/nav flash)
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+        document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
+      }
     } else {
       // Restore styles
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
+      document.body.style.paddingRight = "";
+      document.documentElement.style.paddingRight = "";
 
       // Restore scroll position
       window.scrollTo(0, scrollYRef.current);
@@ -467,6 +491,8 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
+      document.body.style.paddingRight = "";
+      document.documentElement.style.paddingRight = "";
       // Restore scroll position if modal was open
       if (isOpen) window.scrollTo(0, scrollYRef.current);
     };
@@ -688,20 +714,17 @@ export const WinProbChartModal: React.FC<WinProbChartModalProps> = ({
               style={{ width: "100%", height: "320px", position: "relative", zIndex: 1 }}
               // Prevent modal and background scroll while dragging on chart (mobile/desktop)
               onPointerDown={e => {
-                // Prevent scroll on pointer down (touch or mouse)
-                document.body.style.overflow = "hidden";
+                // Prevent native overscroll/bounce while interacting with chart
+                // don't change overflow here (caused layout shifts); only disable overscroll
                 document.documentElement.style.overscrollBehavior = "none";
               }}
               onPointerUp={() => {
-                document.body.style.overflow = "";
                 document.documentElement.style.overscrollBehavior = "";
               }}
               onPointerCancel={() => {
-                document.body.style.overflow = "";
                 document.documentElement.style.overscrollBehavior = "";
               }}
               onPointerLeave={() => {
-                document.body.style.overflow = "";
                 document.documentElement.style.overscrollBehavior = "";
               }}
             >
@@ -817,12 +840,38 @@ const WinProbabilityTracker: React.FC = () => {
 export default WinProbabilityTracker;
 
 function safeLoadImage(src: string) {
-  return new Promise<HTMLImageElement | null>((resolve) => {
+  return new Promise<HTMLImageElement | null>(async (resolve) => {
     if (!src) return resolve(null);
-    const img = new Image();
-    img.src = src;
-    img.crossOrigin = "Anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+
+    try {
+      // Try normal Image() load with crossOrigin set BEFORE src
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = async () => {
+        // Fallback: try fetching the image as a blob and load via object URL
+        try {
+          const resp = await fetch(src);
+          if (!resp.ok) return resolve(null);
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const img2 = new Image();
+          img2.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img2);
+          };
+          img2.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(null);
+          };
+          img2.src = url;
+        } catch {
+          resolve(null);
+        }
+      };
+      img.src = src;
+    } catch {
+      resolve(null);
+    }
   });
 }

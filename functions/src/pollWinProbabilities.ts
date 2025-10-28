@@ -192,13 +192,13 @@ export const pollWinProbabilities = onSchedule(
         const team1Pct = team1WinProb;
         const team2Pct = team2WinProb;
 
-        // Get team info
+        // Get team info - only ID and logo needed
         const team1Meta = team1?.[0] || [];
         const team2Meta = team2?.[0] || [];
-        const team1Name = team1Meta.find((item: any) => item.name)?.name ?? "Team 1";
-        const team2Name = team2Meta.find((item: any) => item.name)?.name ?? "Team 2";
         const team1Logo = team1Meta.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
         const team2Logo = team2Meta.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
+        const team1Id = team1Meta.find((item: any) => item.team_id)?.team_id ?? "";
+        const team2Id = team2Meta.find((item: any) => item.team_id)?.team_id ?? "";
 
         // Create timestamp in EST
         const timeLabel = new Date().toLocaleString("en-US", {
@@ -235,15 +235,15 @@ export const pollWinProbabilities = onSchedule(
 
           await docRef.set({
             matchupId,
-            team1: { name: team1Name, logo: team1Logo },
-            team2: { name: team2Name, logo: team2Logo },
+            team1: { logo: team1Logo, id: team1Id },
+            team2: { logo: team2Logo, id: team2Id },
             points: newPoints,
             final: matchup[1]?.status === "postevent",
             season,
             week,
           }, { merge: true });
 
-          console.log(`[WinProb] Stored final win probability for ${team1Name} (${team1Pct}) vs ${team2Name} (${team2Pct})`);
+          console.log(`[WinProb] Stored final win probability for Team ${team1Id} (${team1Pct}) vs Team ${team2Id} (${team2Pct})`);
           continue;
         }
 
@@ -253,18 +253,18 @@ export const pollWinProbabilities = onSchedule(
           { time: timeLabel, team1Pct, team2Pct }
         ];
 
-        // Save to Firestore
+        // Save to Firestore - only store ID and logo
         await docRef.set({
           matchupId,
-          team1: { name: team1Name, logo: team1Logo },
-          team2: { name: team2Name, logo: team2Logo },
+          team1: { logo: team1Logo, id: team1Id },
+          team2: { logo: team2Logo, id: team2Id },
           points: newPoints,
           final: matchup[1]?.status === "postevent",
           season,
           week,
         }, { merge: true });
 
-        console.log(`[WinProb] Updated ${team1Name} (${team1Pct}) vs ${team2Name} (${team2Pct})`);
+        console.log(`[WinProb] Updated Team ${team1Id} (${team1Pct}) vs Team ${team2Id} (${team2Pct})`);
       }
 
       console.log(`[WinProb] ✅ Poll completed - processed ${matchupCount} matchups`);

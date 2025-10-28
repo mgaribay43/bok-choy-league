@@ -7,6 +7,7 @@ import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityT
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import IceTracker from "./ices/IceTracker";
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -124,8 +125,8 @@ const getNFLLogo = (teamName: string) =>
 // Auto-shrink text to fit one line without truncation
 const AutoFitText: React.FC<{
   text: string;
-  max: number; // max font size in px
-  min: number; // min font size in px
+  max: number;
+  min: number;
   weight?: number;
   color?: string;
   align?: "left" | "right" | "center";
@@ -142,7 +143,6 @@ const AutoFitText: React.FC<{
     el.style.fontSize = `${s}px`;
     el.style.whiteSpace = "nowrap";
 
-    // Shrink until it fits or we hit min
     while (s > min && el.scrollWidth > parent.clientWidth) {
       s -= 1;
       el.style.fontSize = `${s}px`;
@@ -184,14 +184,14 @@ const ScoreBox = ({
   <div
     style={{
       fontWeight: 800,
-      fontSize: "clamp(20px, 6.5vw, 36px)", // responsive, smaller on narrow screens
+      fontSize: "clamp(20px, 6.5vw, 36px)",
       color:
         highlight === "win"
           ? "#22c55e"
           : highlight === "lose"
             ? "#dc2626"
             : "#e5e7eb",
-      minWidth: "clamp(52px, 16vw, 84px)", // reserve width for scores
+      minWidth: "clamp(52px, 16vw, 84px)",
       textAlign: align,
       display: "flex",
       flexDirection: "column",
@@ -216,7 +216,6 @@ const ScoreBox = ({
   </div>
 );
 
-// Records: remove parentheses and force one line
 const AvatarBox = ({
   src,
   alt,
@@ -226,7 +225,7 @@ const AvatarBox = ({
   alt: string;
   record: string;
 }) => {
-  const cleanRecord = (record || "").replace(/[()]/g, ""); // no parentheses
+  const cleanRecord = (record || "").replace(/[()]/g, "");
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <img
@@ -248,7 +247,7 @@ const AvatarBox = ({
           fontWeight: 600,
           marginTop: 2,
           letterSpacing: 0.5,
-          whiteSpace: "nowrap",         // always one line
+          whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -338,17 +337,14 @@ const WinBar = ({
   </div>
 );
 
-// Helper function to determine if a game is completed
 const isGameCompleted = (game: NFLGame): boolean => {
   return game.status === "Final" || game.status.includes("Final");
 };
 
-// Helper function to determine if a game is live or upcoming
 const isGameLiveOrUpcoming = (game: NFLGame): boolean => {
   return !isGameCompleted(game);
 };
 
-// NFL Game Card Component
 const NFLGameCard = ({ game }: { game: NFLGame }) => {
   const awayScore = parseInt(game.awayTeam.score) || 0;
   const homeScore = parseInt(game.homeTeam.score) || 0;
@@ -359,7 +355,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
   const isLive = game.status === "In Progress" || game.status.includes("Quarter");
   const isFinished = game.status === "Final";
 
-  // ESPN game page URL - uses the game ID from the API
   const espnGameUrl = `https://www.espn.com/nfl/game/_/gameId/${game.id}`;
 
   return (
@@ -384,7 +379,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
           cursor: "pointer",
         }}
       >
-        {/* Game status bar */}
         <div
           style={{
             background: isLive ? "#dc2626" : isFinished ? "#059669" : "#6b7280",
@@ -399,7 +393,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
         >
           {game.status} {game.broadcast && `• ${game.broadcast}`}
 
-          {/* ESPN logo indicator */}
           <div
             style={{
               position: "absolute",
@@ -415,7 +408,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
           </div>
         </div>
 
-        {/* Teams and scores */}
         <div
           style={{
             display: "flex",
@@ -470,7 +462,6 @@ const NFLGameCard = ({ game }: { game: NFLGame }) => {
           />
         </div>
 
-        {/* Game details */}
         <div
           style={{
             background: "#1f2024",
@@ -537,7 +528,6 @@ const MatchupCard = ({
         ...style,
       }}
     >
-      {/* Top bar: recap (left) and chart (right). Buttons are confined to their own area */}
       {(showChartIcon || showRecapButton) && (
         <div
           style={{
@@ -547,7 +537,6 @@ const MatchupCard = ({
             padding: "10px 10px 0 10px",
           }}
         >
-          {/* Week Recap left */}
           <button
             disabled={!m.recapUrl}
             onClick={() => {
@@ -579,7 +568,6 @@ const MatchupCard = ({
             <span>Week Recap</span>
           </button>
 
-          {/* Chart button right */}
           {showChartIcon && (
             <button
               onClick={(e) => {
@@ -617,7 +605,6 @@ const MatchupCard = ({
         </div>
       )}
 
-      {/* Make the card itself link to Yahoo matchup */}
       <a
         href={matchupUrl}
         target="_blank"
@@ -698,15 +685,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [nflLoading, setNflLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
-  const weekDropdownRef = useRef<HTMLDivElement>(null); // <-- add ref
+  const weekDropdownRef = useRef<HTMLDivElement>(null);
   const [viewWeek, setViewWeek] = useState<number | null>(null);
   const [chartOpen, setChartOpen] = useState(false);
   const [chartSel, setChartSel] = useState<WinProbChartSelection | null>(null);
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
-  const router = useRouter(); // <-- add this here
+  const router = useRouter();
 
-  // Responsive state
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
@@ -715,22 +701,25 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   );
   const [hideCompletedGames, setHideCompletedGames] = useState(true);
 
-  // Responsive: update isDesktop and showNFL on resize
+  // Ice Tracker dropdown state (mirror behavior in Ices.tsx)
+  const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
+  // ensure IceTracker is mounted even when collapsed (so it can poll)
+  const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
+  useEffect(() => setIceTrackerMounted(true), []);
+
   useEffect(() => {
     const handleResize = () => {
       const desktop = window.innerWidth >= 1024;
       setIsDesktop(desktop);
       if (desktop) {
-        setShowNFL(true); // Always show NFL games on desktop
+        setShowNFL(true);
       }
     };
     window.addEventListener("resize", handleResize);
-    // Set initial state
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch NFL games from your cloud function
   const fetchNFLGames = async (weekOverride?: number, updateOnly = false) => {
     if (!updateOnly) setNflLoading(true);
     try {
@@ -752,7 +741,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       if (updateOnly) {
         setNflGames(prevGames => {
           if (!prevGames.length) return games;
-          // Update scores and status if changed
           return prevGames.map((old, i) => {
             const fresh = games[i];
             if (!fresh) return old;
@@ -774,7 +762,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     }
   };
 
-  // Helper to fetch and handle week advancement
   const fetchMatchups = async (
     weekOverride?: number,
     updateOnlyScores = false,
@@ -782,7 +769,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   ) => {
     if (!updateOnlyScores) setLoading(true);
     try {
-      // Always use weekOverride if provided, otherwise fall back to currentWeek
       const weekParam = typeof weekOverride === "number"
         ? weekOverride
         : currentWeek;
@@ -933,9 +919,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
       if (updateOnlyScores) {
         setMatchups((prevMatchups) => {
-          // If no previous matchups, set all
           if (!prevMatchups.length) return formattedMatchups;
-          // Only update scores, projected scores, and win probabilities if changed
           return prevMatchups.map((old, i) => {
             const fresh = formattedMatchups[i];
             if (!fresh) return old;
@@ -972,7 +956,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     }
   };
 
-  // On mount, fetch the current week from the global util
   useEffect(() => {
     async function fetchInitialWeek() {
       try {
@@ -980,27 +963,24 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         const week = await getCurrentWeek(season);
         setCurrentWeek(week);
         localStorage.setItem("currentWeek", String(week));
-        await fetchMatchups(week);        // await initial load
-        await fetchNFLGames(week);        // fetch NFL games too
+        await fetchMatchups(week);
+        await fetchNFLGames(week);
       } catch {
-        await fetchMatchups(1);           // await fallback
-        await fetchNFLGames(1);           // fallback NFL
+        await fetchMatchups(1);
+        await fetchNFLGames(1);
       } finally {
-        setInitializing(false);           // show controls after first load
+        setInitializing(false);
       }
     }
     fetchInitialWeek();
     // eslint-disable-next-line
   }, []);
 
-  // POLLING LOGIC
   useEffect(() => {
-    // Always poll every 15 seconds, regardless of matchup status
     pollingRef.current = setInterval(() => {
       fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
     }, 15000);
 
-    // Poll NFL games every 30 seconds
     nflPollingRef.current = setInterval(() => {
       fetchNFLGames(viewWeek !== null ? viewWeek : currentWeek, true);
     }, 30000);
@@ -1015,7 +995,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         nflPollingRef.current = null;
       }
     };
-    // Only rerun when week changes
     // eslint-disable-next-line
   }, [viewWeek, currentWeek]);
 
@@ -1044,7 +1023,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     fetchNFLGames(w, false);
   };
 
-  // Close week dropdown when clicking outside
   useEffect(() => {
     if (!weekDropdownOpen) return;
     function handleClick(e: MouseEvent) {
@@ -1059,19 +1037,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     return () => document.removeEventListener("mousedown", handleClick);
   }, [weekDropdownOpen]);
 
-  // If user navigates away from week navigation, reset viewWeek to null (show currentWeek)
-  useEffect(() => {
-    if (!weekDropdownOpen && viewWeek !== null) {
-      // Optionally, you can reset viewWeek to null when dropdown closes
-      // setViewWeek(null);
-    }
-  }, [weekDropdownOpen, viewWeek]);
+  const pairKeyById = (id1: string | number | undefined, id2: string | number | undefined) => {
+    if (!id1 || !id2) return null;
+    return [String(id1), String(id2)].sort().join(" | ");
+  };
 
-  // Normalize a matchup key (order-independent)
-  const pairKey = (a: string, b: string) =>
-    [a?.toLowerCase().trim(), b?.toLowerCase().trim()].sort().join(" | ");
-
-  // Fetch which matchups have WinProbabilities in Firestore for the current season/week
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
@@ -1081,14 +1051,15 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         const set = new Set<string>();
         snap.forEach((docSnap) => {
           const d: any = docSnap.data();
-          // Guard against missing fields
           const hasPoints = Array.isArray(d.points) && d.points.length > 0;
           const wk = Number(d.week);
           const seasonOk = String(d.season) === seasonYear;
           if (!seasonOk || wk !== (viewWeek !== null ? viewWeek : currentWeek) || !hasPoints) return;
-          const t1 = d.team1?.name ?? d.team1;
-          const t2 = d.team2?.name ?? d.team2;
-          if (t1 && t2) set.add(pairKey(t1, t2));
+          
+          if (d.team1?.id && d.team2?.id) {
+            const key = pairKeyById(d.team1.id, d.team2.id);
+            if (key) set.add(key);
+          }
         });
         setWpAvailableKeys(set);
       } catch {
@@ -1099,7 +1070,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     // eslint-disable-next-line
   }, [currentWeek, viewWeek]);
 
-  // Filter NFL games based on completion status
   const filteredNFLGames = hideCompletedGames
     ? nflGames.filter(isGameLiveOrUpcoming)
     : nflGames;
@@ -1135,7 +1105,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       >
         <Marquee gradient={false} speed={60} pauseOnHover pauseOnClick>
           {repeatedMatchups.map((m, idx) => {
-            const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
+            const keyById = pairKeyById(m.team1Id, m.team2Id);
+            const hasChart = Boolean(keyById && wpAvailableKeys.has(keyById));
             return (
               <div
                 key={`${m.team1}-${m.team2}-${idx}`}
@@ -1212,28 +1183,20 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                 </button>
 
                 {weekDropdownOpen && (
-                  <div
-                    className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg min-w-[100px] max-h-60 overflow-y-auto shadow-xl z-30"
-                  >
-                    {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
-                      const isPlayoffWeek = w >= 15;
-                      const isLocked = isPlayoffWeek && currentWeek < 15;
-                      return (
-                        <button
-                          key={w}
-                          onClick={() => !isLocked && w !== weekToShow && handleWeekDropdown(w)}
-                          disabled={isLocked}
-                          className={`w-full px-4 py-2 text-left transition-colors ${w === weekToShow
+                  <div className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg min-w-[100px] max-h-60 overflow-y-auto shadow-xl z-30">
+                    {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => (
+                      <button
+                        key={w}
+                        onClick={() => w !== weekToShow && handleWeekDropdown(w)}
+                        className={`w-full px-4 py-2 text-left transition-colors ${
+                          w === weekToShow
                             ? "bg-emerald-600 text-white"
-                            : isLocked
-                              ? "text-gray-500 cursor-not-allowed"
-                              : "text-white hover:bg-gray-700"
-                            }`}
-                        >
-                          Week {w}
-                        </button>
-                      );
-                    })}
+                            : "text-white hover:bg-gray-700"
+                        }`}
+                      >
+                        Week {w}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1252,14 +1215,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
             {/* Filter Controls */}
             <div className="flex items-center gap-3">
-              {/* Only show NFL Games toggle on mobile/tablet */}
               {!isDesktop && (
                 <button
                   onClick={() => setShowNFL((prev) => !prev)}
-                  className={`px-4 py-2 rounded-lg border font-medium transition-colors ${showNFL
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                    }`}
+                  className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                    showNFL
+                      ? "bg-blue-600 border-blue-500 text-white"
+                      : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                  }`}
                 >
                   <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1267,14 +1230,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   NFL Games
                 </button>
               )}
-              {/* Hide Final toggle remains */}
               {showNFL && (
                 <button
                   onClick={() => setHideCompletedGames((prev) => !prev)}
-                  className={`px-4 py-2 rounded-lg border font-medium transition-colors flex items-center gap-2 ${hideCompletedGames
-                    ? "bg-orange-600 border-orange-500 text-white"
-                    : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                    }`}
+                  className={`px-4 py-2 rounded-lg border font-medium transition-colors flex items-center gap-2 ${
+                    hideCompletedGames
+                      ? "bg-orange-600 border-orange-500 text-white"
+                      : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                  }`}
                   style={{ lineHeight: 1, height: 40, minHeight: 40 }}
                 >
                   <span className="flex items-center justify-center" style={{ height: 20, width: 20 }}>
@@ -1288,8 +1251,37 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         )}
       </div>
 
+      {/* Ice Tracker (centered below the header and above the controls/matchups) */}
+      <div className="mb-6">
+        <div className="flex justify-center">
+          <div className="w-full max-w-3xl mx-auto mt-0 mb-6 px-2 sm:px-0">
+            <button
+              className="w-full sm:w-auto flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none mx-auto"
+              onClick={() => setIceTrackerOpen((open) => !open)}
+              aria-expanded={iceTrackerOpen}
+              aria-controls="ice-tracker-panel"
+              style={{ minWidth: 280 }}
+            >
+              <span>Ice Tracker</span>
+              <span style={{ fontSize: 20 }}>{iceTrackerOpen ? "▲" : "▼"}</span>
+            </button>
+            <div
+              id="ice-tracker-panel"
+              className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"}`}
+              aria-hidden={!iceTrackerOpen}
+            >
+              {iceTrackerMounted && (
+                <div className={`w-full ${iceTrackerOpen ? "" : "pointer-events-none select-none"} mx-auto`}>
+                  <IceTracker />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content - Grid Layout */}
-      <div className="max-w-7xl mx-auto px-4 pb-8">
+      <div className="max-w-7xl mx-auto px- pb-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* NFL Games Column */}
           {showNFL && (
@@ -1346,7 +1338,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             ) : (
               <div className="space-y-4">
                 {matchups.map((m, idx) => {
-                  const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
+                  const keyById = pairKeyById(m.team1Id, m.team2Id);
+                  const hasChart = Boolean(keyById && wpAvailableKeys.has(keyById));
                   return (
                     <MatchupCard
                       key={idx}
@@ -1358,8 +1351,16 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                       onOpenChart={(mm) => {
                         if (!hasChart) return;
                         setChartSel({
-                          team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
-                          team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
+                          team1: { 
+                            name: mm.team1, 
+                            logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                            id: mm.team1Id
+                          },
+                          team2: { 
+                            name: mm.team2, 
+                            logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                            id: mm.team2Id
+                          },
                         });
                         setChartOpen(true);
                       }}

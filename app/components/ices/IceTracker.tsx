@@ -206,26 +206,12 @@ export default function IceTracker() {
                     <div /> {/* left placeholder to balance grid */}
 
                     <h2 className="text-2xl font-bold text-emerald-300 mb-1 text-center">
-                        🧊 Ice Tracker
                         {currentWeek && (
-                            <span className="block text-base font-semibold text-emerald-200 mt-1">
+                            <span className="block text-base font-semibold text-emerald-200 mt-4">
                                 Week {currentWeek}
                             </span>
                         )}
                     </h2>
-
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={handleManualRefresh}
-                            disabled={isRefreshing}
-                            aria-label="Refresh now"
-                            title="Refresh now"
-                            className="inline-flex items-center justify-center w-10 h-10 rounded bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50 transition"
-                        >
-                            <FiRefreshCw className={`${isRefreshing ? "animate-spin" : ""} h-5 w-5`} aria-hidden="true" />
-                        </button>
-                    </div>
                 </div>
             </div>
 

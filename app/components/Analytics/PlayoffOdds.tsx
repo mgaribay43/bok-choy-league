@@ -356,7 +356,7 @@ export default function PlayoffOdds({
                   </div>
                 </div>
 
-                <div className="mt-3 overflow-x-auto">
+                <div className="mt-3 overflow-x-auto pb-4">
                   <div className="flex gap-2">
                     {r.placeDistribution.map((p, i) => (
                       <div key={i} className="min-w-[72px]">

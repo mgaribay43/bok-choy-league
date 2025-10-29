@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { getCurrentSeason } from "../globalUtils/getCurrentSeason";
 import { getCurrentWeek } from "../globalUtils/getCurrentWeek";
 import { getDisplayManagerName, getInternalManagerName } from "../globalUtils/getManagerNames";
@@ -255,6 +255,82 @@ const NewStandings: React.FC<NewStandingsProps> = ({ topThree = false }) => {
     }
     return () => { isMounted = false; };
   }, [year, topThree]);
+
+  // New background-check effect inserted after the standings-fetch effect and before sorting state
+  const checkedRemoteRef = useRef(false);
+
+  useEffect(() => {
+    // Only run for non-topThree, when we have teams and a year.
+    if (topThree) return;
+    if (!year || teams.length === 0) return;
+
+    let isMounted = true;
+    const checkedRef = checkedRemoteRef; // alias for clarity
+
+    (async () => {
+      try {
+        const currentSeason = await getCurrentSeason();
+        if (year !== currentSeason) return; // only for current season
+        if (checkedRef.current) return; // already checked once
+
+        checkedRef.current = true;
+
+        const resp = await fetch(
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${year}`
+        );
+        if (!resp.ok) return;
+        const json = await resp.json();
+        const rawTeams = json.fantasy_content?.league?.[1]?.standings?.[0]?.teams;
+        const teamCount = parseInt(rawTeams?.count ?? "0", 10);
+
+        if (!rawTeams || teamCount <= 0) return;
+
+        // Build a map of current teams for quick lookup
+        const updated = teams.map(t => ({ ...t })); // shallow copy
+        let changed = false;
+
+        for (let i = 0; i < teamCount; i++) {
+          const teamData = rawTeams[i.toString()]?.team;
+          if (!teamData) continue;
+          const metadata = teamData[0];
+          const id = metadata.find((item: any) => item.team_id)?.team_id ?? `${i + 1}`;
+          const name = metadata.find((item: any) => item.name)?.name ?? "Unknown Team";
+          const logo =
+            metadata.find((item: any) => item.team_logos)?.team_logos?.[0]?.team_logo?.url ??
+            "https://via.placeholder.com/100";
+
+          const idx = updated.findIndex(u => u.id === id);
+          if (idx !== -1) {
+            if (updated[idx].name !== name || updated[idx].logo !== logo) {
+              updated[idx].name = name;
+              updated[idx].logo = logo;
+              changed = true;
+            }
+          }
+        }
+
+        if (changed && isMounted) {
+          // Update UI immediately
+          setTeams(updated);
+
+          // Persist minimal change to Firestore (merge to avoid overwriting other fields)
+          try {
+            const standingsRef = doc(db, "standings", year);
+            await setDoc(standingsRef, { teams: updated }, { merge: true });
+          } catch {
+            // swallow Firestore errors silently for background sync
+          }
+        }
+      } catch {
+        // ignore network/parse errors for background sync
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, teams, topThree]);
 
   // --- Sorting state ---
   type SortKey =

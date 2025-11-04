@@ -33,10 +33,10 @@ export default function HomePage() {
   useEffect(() => {
     const img = new Image();
     // public/ files are served from the site root — use an absolute path
-    img.src = '/images/the_fellas.jpg';
+    img.src = '/images/the_fellas_plus_jakes.jpg';
     img.onload = () => setHeroLoaded(true);
     img.onerror = () => {
-      console.error('Hero image failed to load from /images/the_fellas.jpg — ensure file exists in public/images/ and filename/casing matches.');
+      console.error('Hero image failed to load from /images/the_fellas_plus_jakes.jpg — ensure file exists in public/images/ and filename/casing matches.');
       setHeroLoaded(false);
     };
   }, []);
@@ -84,7 +84,7 @@ export default function HomePage() {
           }
           // use the public/ root path
           style={{
-            backgroundImage: "url('/images/the_fellas.jpg')",
+            backgroundImage: "url('/images/the_fellas_plus_jakes.jpg')",
             // bias the background toward the top so more of the upper part of the photo is visible.
             // on very narrow viewports keep the image centered vertically a bit to avoid chopping heads;
             // on wider viewports nudge the image upward (small percentage) to reveal more top.

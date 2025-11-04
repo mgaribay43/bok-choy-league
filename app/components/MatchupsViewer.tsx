@@ -2,11 +2,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
+import dynamic from "next/dynamic";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+
+// Dynamically load IceTracker to avoid SSR/polling issues
+const IceTracker = dynamic(() => import("./ices/IceTracker"), { ssr: false, loading: () => <div /> });
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -706,6 +711,13 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [initializing, setInitializing] = useState(true);
   const router = useRouter(); // <-- add this here
 
+  // IceTracker dropdown state (mirror Ices.tsx behaviour)
+  const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
+  const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
+  useEffect(() => {
+    setIceTrackerMounted(true);
+  }, []);
+
   // Responsive state
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
@@ -1404,6 +1416,34 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         )}
       </div>
 
+
+        {/* Ice Tracker dropdown (same UX as Ices page) */}
+        <div className="max-w-3xl mx-auto mb-6 px-4">
+          <div className="w-full">
+            <button
+              className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
+              onClick={() => setIceTrackerOpen((open) => !open)}
+              aria-expanded={iceTrackerOpen}
+              aria-controls="ice-tracker-panel"
+            >
+              <span>Ice Tracker</span>
+              {iceTrackerOpen ? <ChevronUp size={28} /> : <ChevronDown size={28} />}
+            </button>
+
+            <div
+              id="ice-tracker-panel"
+              className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"}`}
+              aria-hidden={!iceTrackerOpen}
+            >
+              {iceTrackerMounted && (
+                <div className={`${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
+                  <IceTracker />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
       {/* Main Content - Grid Layout */}
       <div className="max-w-7xl mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

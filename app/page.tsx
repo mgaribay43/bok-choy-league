@@ -15,6 +15,8 @@ export default function HomePage() {
 
   // NEW: track narrow/mobile viewport to adjust hero presentation
   const [isNarrow, setIsNarrow] = useState<boolean>(false);
+  const [heroHeight, setHeroHeight] = useState<number>(360);
+  const [heroTopOffset, setHeroTopOffset] = useState<number>(0);
 
   useEffect(() => {
     // Simulate waiting for all components to load (replace with real checks if needed)
@@ -22,11 +24,43 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // compute narrow/mobile flag and hero height so the fixed hero matches layout sizing
   useEffect(() => {
-    const update = () => setIsNarrow(window.innerWidth < 640); // Tailwind 'sm' breakpoint ~= 640px
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    const compute = () => {
+      const w = window.innerWidth;
+      const narrow = w < 640; // Tailwind sm
+      setIsNarrow(narrow);
+      let h = 360;
+      if (w >= 1024) h = 980;
+      else if (w >= 768) h = 380;
+      else if (w >= 640) h = 340;
+      else h = 360;
+      setHeroHeight(h);
+
+
+      // measure top nav/header if present and use its height as a top offset for the fixed hero.
+      // This prevents the hero from appearing underneath a fixed/sticky navbar on mobile.
+      try {
+        const sel = ['header', 'nav', '.site-header', '.main-header', '#navbar'];
+        let foundHeight = 0;
+        for (const s of sel) {
+          const el = document.querySelector(s) as HTMLElement | null;
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.height > 0) {
+              foundHeight = rect.height;
+              break;
+            }
+          }
+        }
+        setHeroTopOffset(foundHeight || 0);
+      } catch (err) {
+        setHeroTopOffset(0);
+      }
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
   }, []);
 
   // preload hero image to help diagnose loading issues
@@ -60,51 +94,63 @@ export default function HomePage() {
             to the full page width. Keep overflow-hidden on the absolute container so
             duplicated marquee children don't widen the page. */}
         {/* Desktop marquee: sits on top of hero (desktop only) */}
-        <div className="hidden sm:flex absolute inset-x-0 top-4 z-30 pointer-events-auto overflow-hidden">
+        <div
+          className="hidden sm:flex absolute inset-x-0 z-40 pointer-events-auto overflow-hidden"
+          style={{ top: `${Math.max(heroTopOffset - 60, 0)}px` }}
+        >
           <div className="w-full">
             <MatchupsMarquee Marquee />
           </div>
         </div>
 
         {/* Mobile compact marquee: full-bleed, compact items (logos + scores) */}
-        <div className="sm:hidden absolute inset-x-0 top-2 z-30 pointer-events-auto overflow-hidden">
+        <div
+          className="sm:hidden absolute inset-x-0 z-40 pointer-events-auto overflow-hidden"
+          style={{ top: `${Math.max(heroTopOffset - 60, 0)}px` }}
+        >
           <div className="w-full px-3">
             <MatchupsMarquee Marquee />
           </div>
         </div>
 
-        {/* Hero image area using background-image (more robust for cover placement)
-            MOBILE-FRIENDLY: reduce vertical height on narrow screens so more horizontal image area is visible.
-            Also adjust backgroundPosition when narrow to prioritize horizontal framing. */}
-        <div
-          className={
-            // reduce extreme tall heights and bias the crop to show more of the top of the photo.
-            // smaller heights mean the image is cropped tighter at the bottom so the top becomes more visible.
-            "w-full h-[360px] sm:h-[340px] md:h-[380px] lg:h-[980px] overflow-hidden bg-cover"
-          }
-          // use the public/ root path
-          style={{
-            backgroundImage: "url('/images/the_fellas_plus_jakes.jpg')",
-            // bias the background toward the top so more of the upper part of the photo is visible.
-            // on very narrow viewports keep the image centered vertically a bit to avoid chopping heads;
-            // on wider viewports nudge the image upward (small percentage) to reveal more top.
-            backgroundPosition: isNarrow ? 'center 28%' : 'center 8%',
-            backgroundRepeat: 'no-repeat'
-          }}
-          aria-hidden={heroLoaded === false}
-        >
-          {/* If image fails to load, you can show a subtle fallback color */}
-          <div className="w-full h-full bg-[#0f0f0f] bg-opacity-10" />
-          {/* subtle dark gradient at bottom so the standings blend over it */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
-        </div>
+        {/* Fixed hero background that stays in place while other elements scroll over it.
+            We render a fixed-position background element sized to the hero height and keep a
+            placeholder element in flow so layout/spacing matches Tailwind sizing. */}
+        <div aria-hidden={heroLoaded === false}>
+          {/* fixed hero (image + gradient together) — nothing else should render a gradient here */}
+          <div
+             aria-hidden
+             style={{
+              position: "fixed",
+              top: `${heroTopOffset}px`,
+               left: 0,
+               right: 0,
+               height: `${heroHeight}px`,
+               zIndex: -1,
+               pointerEvents: "none",
+               backgroundImage: `linear-gradient(to bottom, rgba(15,15,15,0) 45%, rgba(15,15,15,1) 100%), url('/images/the_fellas_plus_jakes.jpg')`,
+               backgroundSize: "cover",
+               backgroundRepeat: "no-repeat",
+               backgroundPosition: isNarrow ? "center 48%" : "center 8%",
+               transform: "translateZ(0)",
+               // force GPU compositing in problematic browsers
+               willChange: "transform, opacity",
+             }}
+           />
+
+          {/* spacer reserves the hero vertical space plus the top offset so layout doesn't jump */}
+          <div style={{ height: heroHeight + heroTopOffset }} aria-hidden />
+         </div>
 
         {/* Pull the Standings up so its bottom overlaps the hero image.
             The Standings component is rendered above the bottom of the image (z-20)
             and sits visually in front of the page content below. Adjust -mt values to taste. */}
-        <div className="relative z-20 -mt-28 sm:-mt-36 md:-mt-44 lg:-mt-56 px-4">
-          <Standings topThree />
-        </div>
+        <div className="relative z-20 -mt-28 sm:-mt-36 md:-mt-44 lg:-mt-72 xl:-mt-96 px-4">
+           {/* Keep Standings fully transparent (no translucent background) */}
+           <div className="w-full bg-transparent">
+             <Standings topThree />
+           </div>
+         </div>
       </section>
 
       {/* other page content */}

@@ -211,7 +211,7 @@ export default function Ices({ latestOnly = false }: IcesProps) {
   // =======================
   return (
     <>
-      <div className={latestOnly ? "w-full flex flex-col items-center bg-[#0f0f0f]" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
+      <div className={latestOnly ? "w-full flex flex-col items-center bg-transparent" : "min-h-screen flex flex-col items-center bg-[#181818]"}>
         {/* Header and Stats */}
         {latestOnly ? (
           <button

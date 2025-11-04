@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Trophy, Users, Calendar, Award, ChevronUp } from 'lucide-react';
+import { ChevronDown, Trophy, Users, Calendar, Award, ChevronUp, Clipboard, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -10,10 +10,12 @@ import { useRouter } from 'next/navigation';
 import Image from "next/image";
 
 let leagueTimeout: NodeJS.Timeout;
+let analyzerTimeout: NodeJS.Timeout;
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLeagueOpen, setIsLeagueOpen] = useState(false);
+  const [isAnalyzerOpen, setIsAnalyzerOpen] = useState(false);
   const [isNameHovered, setIsNameHovered] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -80,6 +82,53 @@ export default function Navbar() {
                 {userDisplay === "Michael" && (
                   <NavLink href="/admin" icon={<span className="text-lg">🛡️</span>} text="Admin" />
                 )}
+                {/* League Analyzer Dropdown (duplicate of League dropdown, label changed) */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => {
+                    clearTimeout(analyzerTimeout);
+                    setIsAnalyzerOpen(true);
+                  }}
+                  onMouseLeave={() => {
+                    analyzerTimeout = setTimeout(() => setIsAnalyzerOpen(false), 100);
+                  }}
+                >
+                  <button
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-emerald-100 hover:bg-[#232323] hover:text-emerald-200 transition-all duration-200 font-medium"
+                    tabIndex={0}
+                    aria-haspopup="true"
+                    aria-expanded={isAnalyzerOpen}
+                  >
+                    <Clipboard size={18} />
+                    <span>Analysis</span>
+                    <ChevronUp size={16} className={`${isAnalyzerOpen ? 'rotate-180' : ''} transition-transform duration-200`} />
+                  </button>
+                  <div
+                    className={`absolute right-0 top-full mt-2 w-72 transition-all duration-200 transform ${isAnalyzerOpen
+                      ? 'opacity-100 visible translate-y-0 pointer-events-auto'
+                      : 'opacity-0 invisible translate-y-2 pointer-events-none'
+                      }`}
+                  >
+                    <div className="bg-[#232323] rounded-2xl shadow-2xl border border-[#333] overflow-hidden backdrop-blur-sm">
+                      <div className="px-4 py-4 text-emerald-100 font-bold text-lg border-b border-[#333] bg-emerald-900/80 flex items-center gap-2">
+                        <Clipboard size={20} />
+                        League Analysis
+                      </div>
+                      <div className="flex flex-col">
+                        <Link
+                          href="/playoffOdds"
+                          className="flex items-center space-x-3 px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                        >
+                          <div className="w-6 h-6 flex items-center justify-center bg-yellow-900 rounded">
+                            <BarChart2 size={16} />
+                          </div>
+                          <span className="font-medium">Playoff Odds</span>
+                        </Link>
+                        {/* Polls link removed from Analyzer dropdown */}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {/* League Dropdown */}
                 <div
                   className="relative"
@@ -163,6 +212,7 @@ export default function Navbar() {
                     </div>
                   </div>
                 </div>
+
                 {/* User Name */}
                 <div
                   className="ml-6 px-4 py-2 pr-10 rounded-xl text-emerald-100 font-semibold relative cursor-pointer transition-all duration-300"
@@ -284,6 +334,33 @@ export default function Navbar() {
                       <span className="font-medium">Managers</span>
                     </Link>
                     {/* Polls link removed from League dropdown */}
+                  </div>
+                </div>
+                {/* League Analyzer mobile section (duplicate of League mobile section) */}
+                <div className="border-t border-[#333]">
+                  <button
+                    onClick={() => setIsAnalyzerOpen(!isAnalyzerOpen)}
+                    className="flex items-center justify-between w-full px-4 py-4 text-emerald-100 hover:bg-emerald-900 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Clipboard size={20} />
+                      <span className="font-medium">Analysis</span>
+                    </div>
+                    <ChevronDown size={16} className={`transition-transform duration-200 ${isAnalyzerOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`transition-all duration-200 ${isAnalyzerOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden py-0`}>
+                    <div className="flex flex-col">
+                      <Link
+                        href="/playoffOdds"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center space-x-3 px-4 pl-8 h-10 text-emerald-100 hover:bg-emerald-900 transition-colors border-b border-[#333]"
+                      >
+                        <div className="w-6 h-6 flex items-center justify-center bg-yellow-900 rounded">
+                          <BarChart2 size={16} />
+                        </div>
+                        <span className="font-medium">Playoff Odds</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

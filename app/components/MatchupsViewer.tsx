@@ -1004,6 +1004,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
   // POLLING LOGIC
   useEffect(() => {
+    // don't start polling until initial fetch finished
+    if (initializing) return;
+
     // Always poll every 15 seconds, regardless of matchup status
     pollingRef.current = setInterval(() => {
       fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
@@ -1024,9 +1027,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         nflPollingRef.current = null;
       }
     };
-    // Only rerun when week changes
-    // eslint-disable-next-line
-  }, [viewWeek, currentWeek]);
+  }, [viewWeek, currentWeek, initializing]);
 
   const handlePrevWeek = () => {
     const week = (viewWeek !== null ? viewWeek : currentWeek) - 1;
@@ -1377,7 +1378,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     }`}
                 >
                   <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   NFL Games
                 </button>

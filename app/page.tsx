@@ -80,7 +80,7 @@ export default function HomePage() {
           className={
             // reduce extreme tall heights and bias the crop to show more of the top of the photo.
             // smaller heights mean the image is cropped tighter at the bottom so the top becomes more visible.
-            "w-full h-[360px] sm:h-[340px] md:h-[380px] lg:h-[680px] overflow-hidden bg-cover"
+            "w-full h-[360px] sm:h-[340px] md:h-[380px] lg:h-[980px] overflow-hidden bg-cover"
           }
           // use the public/ root path
           style={{
@@ -102,7 +102,7 @@ export default function HomePage() {
         {/* Pull the Standings up so its bottom overlaps the hero image.
             The Standings component is rendered above the bottom of the image (z-20)
             and sits visually in front of the page content below. Adjust -mt values to taste. */}
-        <div className="relative z-20 -mt-20 sm:-mt-28 md:-mt-36 lg:-mt-44 px-4">
+        <div className="relative z-20 -mt-28 sm:-mt-36 md:-mt-44 lg:-mt-56 px-4">
           <Standings topThree />
         </div>
       </section>

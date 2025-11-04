@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import MatchupsMarquee from './components/MatchupsViewer';
 import Ices from './components/ices/Ices';
 import Standings from './components/standings/Standings';
 import Events from './components/Events';
 import KeeperBanner from './components/KeeperMarquee';
-import MatchupsMarquee from './components/MatchupsViewer';
 import Polls from './components/Poll';
 import Transactions from './components/Transactions';
 
@@ -55,9 +55,20 @@ export default function HomePage() {
 
       {/* Hero image behind the Standings top-three */}
       <section className="relative w-full">
-        {/* Matchups marquee sits visually on top of the hero on desktop only */}
-        <div className="hidden sm:flex absolute top-4 justify-center z-30 pointer-events-auto">
-          <div className=" w-full">
+        {/* Matchups marquee sits visually on top of the hero on desktop only.
+            Make it full-bleed by removing the max-width wrapper so the marquee extends
+            to the full page width. Keep overflow-hidden on the absolute container so
+            duplicated marquee children don't widen the page. */}
+        {/* Desktop marquee: sits on top of hero (desktop only) */}
+        <div className="hidden sm:flex absolute inset-x-0 top-4 z-30 pointer-events-auto overflow-hidden">
+          <div className="w-full">
+            <MatchupsMarquee Marquee />
+          </div>
+        </div>
+
+        {/* Mobile compact marquee: full-bleed, compact items (logos + scores) */}
+        <div className="sm:hidden absolute inset-x-0 top-2 z-30 pointer-events-auto overflow-hidden">
+          <div className="w-full px-3">
             <MatchupsMarquee Marquee />
           </div>
         </div>
@@ -67,17 +78,17 @@ export default function HomePage() {
             Also adjust backgroundPosition when narrow to prioritize horizontal framing. */}
         <div
           className={
-            // default (mobile) shorter height so more width of the image is visible,
-            // then progressively larger on bigger viewports.
-            // h-[280px] on mobile shows more horizontal composition instead of tall crop.
-            "w-full h-[280px] sm:h-[360px] md:h-[420px] lg:h-[850px] overflow-hidden bg-cover"
+            // reduce extreme tall heights and bias the crop to show more of the top of the photo.
+            // smaller heights mean the image is cropped tighter at the bottom so the top becomes more visible.
+            "w-full h-[360px] sm:h-[340px] md:h-[380px] lg:h-[680px] overflow-hidden bg-cover"
           }
           // use the public/ root path
           style={{
             backgroundImage: "url('/images/the_fellas.jpg')",
-            // If narrow, favor a slightly left/center horizontal framing so more of the sides show.
-            // On wider screens use center top so standings overlay aligns well.
-            backgroundPosition: isNarrow ? 'center center' : 'center top',
+            // bias the background toward the top so more of the upper part of the photo is visible.
+            // on very narrow viewports keep the image centered vertically a bit to avoid chopping heads;
+            // on wider viewports nudge the image upward (small percentage) to reveal more top.
+            backgroundPosition: isNarrow ? 'center 28%' : 'center 8%',
             backgroundRepeat: 'no-repeat'
           }}
           aria-hidden={heroLoaded === false}
@@ -99,7 +110,6 @@ export default function HomePage() {
       {/* other page content */}
       <div className="mt-8">
         <Polls ActivePolls={true} />
-        {/* keep normal spacing below the overlapping standings */}
         <div className="mt-6">
           <Ices latestOnly />
           <Transactions />

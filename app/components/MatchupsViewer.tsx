@@ -705,6 +705,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
   // ensure IceTracker is mounted even when collapsed (so it can poll)
   const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
+
+  // ensure marquee can be force-restarted to create a true "infinite" loop
+  const [marqueeKey, setMarqueeKey] = useState(0);
+  const restartMarquee = () => setMarqueeKey((k) => k + 1);
+
   useEffect(() => setIceTrackerMounted(true), []);
 
   useEffect(() => {
@@ -1093,56 +1098,71 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     const repeatedMatchups = [...matchups, ...matchups, ...matchups];
 
     return (
+      // make marquee wrapper background transparent so hero/underlay shows through
       <div
-        style={{ background: "#0f0f0f", padding: "8px", cursor: "pointer" }}
-        onClick={() => router.push("/matchups")}
-        tabIndex={0}
-        role="button"
-        aria-label="Go to matchups"
-        onKeyDown={e => {
-          if (e.key === "Enter" || e.key === " ") router.push("/matchups");
-        }}
-      >
-        <Marquee gradient={false} speed={60} pauseOnHover pauseOnClick>
-          {repeatedMatchups.map((m, idx) => {
-            const keyById = pairKeyById(m.team1Id, m.team2Id);
-            const hasChart = Boolean(keyById && wpAvailableKeys.has(keyById));
-            return (
-              <div
-                key={`${m.team1}-${m.team2}-${idx}`}
-                style={{ display: "inline-block", marginRight: 32 }}
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  router.push("/matchups");
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label="Go to matchups"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") router.push("/matchups");
-                }}
-              >
-                <MatchupCard
-                  m={m}
-                  style={{
-                    width: cardWidth,
-                    minWidth: cardWidth,
-                    maxWidth: cardWidth,
-                    display: "inline-block",
-                    verticalAlign: "top"
-                  }}
-                  hasChart={hasChart}
-                  showChartIcon={false}
-                  week={""}
-                />
-              </div>
-            );
-          })}
-        </Marquee>
-      </div>
-    );
-  }
+        style={{ background: "transparent", padding: "8px", cursor: "pointer" }}
+         onClick={() => router.push("/matchups")}
+         tabIndex={0}
+         role="button"
+         aria-label="Go to matchups"
+         onKeyDown={e => {
+           if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+         }}
+       >
+        {/* use loop={1} + onFinish to remount the Marquee repeatedly (true infinite loop) */}
+        <Marquee
+          key={marqueeKey}
+          gradient={false}
+          speed={60}
+          pauseOnHover
+          pauseOnClick
+          loop={1}
+          play={true}
+          onFinish={() => {
+            // restart marquee when a single loop completes
+            // this works around varying library behaviors for "infinite" looping
+            restartMarquee();
+          }}
+        >
+           {repeatedMatchups.map((m, idx) => {
+             const keyById = pairKeyById(m.team1Id, m.team2Id);
+             const hasChart = Boolean(keyById && wpAvailableKeys.has(keyById));
+             return (
+               <div
+                 key={`${m.team1}-${m.team2}-${idx}`}
+                 style={{ display: "inline-block", marginRight: 32 }}
+                 onClick={e => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   router.push("/matchups");
+                 }}
+                 tabIndex={0}
+                 role="button"
+                 aria-label="Go to matchups"
+                 onKeyDown={e => {
+                   if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+                 }}
+               >
+                 <MatchupCard
+                   m={m}
+                   style={{
+                     width: cardWidth,
+                     minWidth: cardWidth,
+                     maxWidth: cardWidth,
+                     display: "inline-block",
+                     verticalAlign: "top"
+                   }}
+                   hasChart={hasChart}
+                   showChartIcon={false}
+                   week={""}
+                 />
+               </div>
+             );
+           })}
+         </Marquee>
+       </div>
+     );
+   }
 
   const weekToShow = viewWeek !== null ? viewWeek : currentWeek;
 

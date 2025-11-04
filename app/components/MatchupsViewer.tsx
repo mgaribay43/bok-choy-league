@@ -1080,6 +1080,14 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const pairKey = (a: string, b: string) =>
     [a?.toLowerCase().trim(), b?.toLowerCase().trim()].sort().join(" | ");
 
+  // Order-independent key for team IDs (use when win-probability documents store ids)
+  const pairKeyById = (a?: string | number | null, b?: string | number | null) => {
+    const sa = a == null ? "" : String(a).trim();
+    const sb = b == null ? "" : String(b).trim();
+    // sort so order doesn't matter
+    return [sa, sb].sort().join(" | ");
+  };
+
   // Fetch which matchups have WinProbabilities in Firestore for the current season/week
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -1095,10 +1103,17 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           const wk = Number(d.week);
           const seasonOk = String(d.season) === seasonYear;
           if (!seasonOk || wk !== (viewWeek !== null ? viewWeek : currentWeek) || !hasPoints) return;
+          // Prefer team IDs stored in documents (team1.id / team2.id). Fallback to team names if ids missing.
+          const team1Id = d.team1?.id ?? d.team1 ?? null;
+          const team2Id = d.team2?.id ?? d.team2 ?? null;
+          if (team1Id != null && team2Id != null) {
+            set.add(pairKeyById(team1Id, team2Id));
+            return;
+          }
           const t1 = d.team1?.name ?? d.team1;
           const t2 = d.team2?.name ?? d.team2;
           if (t1 && t2) set.add(pairKey(t1, t2));
-        });
+         });
         setWpAvailableKeys(set);
       } catch {
         setWpAvailableKeys(new Set());
@@ -1231,39 +1246,43 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           {isSmall
             ? repeatedMatchups.map((m, idx) => <CompactItem key={`${m.team1}-${m.team2}-${idx}`} m={m} idx={idx} />)
             : repeatedMatchups.map((m, idx) => {
-                const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
-                return (
-                  <div
-                    key={`${m.team1}-${m.team2}-${idx}`}
-                    style={{ display: "inline-block", marginRight: 32 }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      router.push("/matchups");
-                    }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label="Go to matchups"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") router.push("/matchups");
-                    }}
-                  >
-                    <MatchupCard
-                      m={m}
-                      style={{
-                        width: cardWidth,
-                        minWidth: cardWidth,
-                        maxWidth: cardWidth,
-                        display: "inline-block",
-                        verticalAlign: "top",
-                      }}
-                      hasChart={hasChart}
-                      showChartIcon={false}
-                      week={""}
-                    />
-                  </div>
-                );
-              })}
+                // prefer ID-based lookup when available, fall back to name-based key
+                const hasChart =
+                  (m.team1Id || m.team2Id)
+                    ? wpAvailableKeys.has(pairKeyById(m.team1Id, m.team2Id))
+                    : wpAvailableKeys.has(pairKey(m.team1, m.team2));
+                 return (
+                   <div
+                     key={`${m.team1}-${m.team2}-${idx}`}
+                     style={{ display: "inline-block", marginRight: 32 }}
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       router.push("/matchups");
+                     }}
+                     tabIndex={0}
+                     role="button"
+                     aria-label="Go to matchups"
+                     onKeyDown={(e) => {
+                       if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+                     }}
+                   >
+                     <MatchupCard
+                       m={m}
+                       style={{
+                         width: cardWidth,
+                         minWidth: cardWidth,
+                         maxWidth: cardWidth,
+                         display: "inline-block",
+                         verticalAlign: "top",
+                       }}
+                       hasChart={hasChart}
+                       showChartIcon={false}
+                       week={""}
+                     />
+                   </div>
+                 );
+               })}
         </Marquee>
       </div>
     );
@@ -1442,26 +1461,30 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             ) : (
               <div className="space-y-4">
                 {matchups.map((m, idx) => {
-                  const hasChart = wpAvailableKeys.has(pairKey(m.team1, m.team2));
-                  return (
-                    <MatchupCard
-                      key={idx}
-                      m={m}
-                      showNames
-                      hasChart={hasChart}
-                      showRecapButton
-                      week={weekToShow}
-                      onOpenChart={(mm) => {
-                        if (!hasChart) return;
-                        setChartSel({
-                          team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
-                          team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png" },
-                        });
-                        setChartOpen(true);
-                      }}
-                    />
-                  );
-                })}
+                  const hasChart =
+                    (m.team1Id || m.team2Id)
+                      ? wpAvailableKeys.has(pairKeyById(m.team1Id, m.team2Id))
+                      : wpAvailableKeys.has(pairKey(m.team1, m.team2));
+                   return (
+                     <MatchupCard
+                       key={idx}
+                       m={m}
+                       showNames
+                       hasChart={hasChart}
+                       showRecapButton
+                       week={weekToShow}
+                       onOpenChart={(mm) => {
+                         if (!hasChart) return;
+                         // include team IDs so the WinProb modal can find Firestore docs
+                         setChartSel({
+                           team1: { name: mm.team1, logo: mm.avatar1 || "https://cdn-icons-png.flaticon.com/512/149/149071.png", id: mm.team1Id },
+                           team2: { name: mm.team2, logo: mm.avatar2 || "https://cdn-icons-png.flaticon.com/512/149/149071.png", id: mm.team2Id },
+                         });
+                         setChartOpen(true);
+                       }}
+                     />
+                   );
+                 })}
               </div>
             )}
           </div>

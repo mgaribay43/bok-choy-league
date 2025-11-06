@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Image from "next/image";
 import yahooDefImagesJson from "../data/yahooDefImages.json";
+import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
 
 // Helper to build statId -> statName map from league settings
 async function fetchLeagueSettings(year: string) {
@@ -61,12 +62,17 @@ function getTotalStats(weekStats: any[], statColumns: { id: string; label: strin
         let hasValue = false;
         weekStats.forEach(week => {
             const val = week[col.id];
+            // treat "-" or zero as no-value for display/total purposes
             if (val !== undefined && val !== null && val !== "-" && !isNaN(Number(val))) {
-                sum += Number(val);
-                hasValue = true;
+                const num = Number(val);
+                if (num !== 0) {
+                    sum += num;
+                    hasValue = true;
+                }
             }
         });
-        totals[col.id] = hasValue ? sum.toFixed(2) : "-";
+        // If the computed total is zero, show "-" (per rule: stats with value 0 display as dash).
+        totals[col.id] = hasValue && Number(sum) !== 0 ? sum.toFixed(2) : "-";
     });
     return totals;
 }
@@ -94,23 +100,13 @@ export default function PlayerViewer({
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeAllowed, setSwipeAllowed] = useState(true);
 
-    // Collapsible logic for expanded row
+    // Collapsible logic for expanded row (per-row refs + measured heights to avoid midway jump)
     const [expandedRow, setExpandedRow] = useState<number | null>(null);
-    const collapseRef = useRef<HTMLDivElement>(null);
-    const contentRef = useRef<HTMLDivElement>(null);
+    const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
+    const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
 
-    // Animate collapsible expanded row
-    useEffect(() => {
-        const collapseEl = collapseRef.current;
-        const contentEl = contentRef.current;
-        if (!collapseEl || !contentEl) return;
-
-        if (expandedRow !== null) {
-            collapseEl.style.maxHeight = contentEl.scrollHeight + "px";
-        } else {
-            collapseEl.style.maxHeight = "0px";
-        }
-    }, [expandedRow]);
+    // Measure expanded row content height synchronously so CSS transition has an exact target
+    // (moved below so it can safely depend on computed weekStats)
 
     // Fetch league settings from API instead of local JSON
     useEffect(() => {
@@ -150,34 +146,72 @@ export default function PlayerViewer({
         fetchModifiers();
     }, [player?.season]);
 
-    // Transform stats prop to a map of stat_id -> value for each week and calculate fantasy points
+    // Current week for the player's season (used to mark future weeks)
+    const [currentWeek, setCurrentWeek] = useState<number | null>(null);
+    useEffect(() => {
+        let mounted = true;
+        async function fetchCW() {
+            try {
+                const year = player?.season ?? new Date().getFullYear().toString();
+                const cw = await getCurrentWeek(year);
+                if (mounted) setCurrentWeek(Number(cw) || null);
+            } catch {
+                if (mounted) setCurrentWeek(null);
+            }
+        }
+        fetchCW();
+        return () => { mounted = false; };
+    }, [player?.season]);
+
+    // Transform stats prop to a map of stat_id -> value for each week and calculate fantasy points.
+    // Weeks that are the current week or in the future will display "-" for stat columns and fan points.
+    // Per requirement: individual stat zeros show "-" but per-week Fan Pts should be numeric for completed weeks (including 0.00).
     const weekStats = stats?.map((week: any) => {
         const statMap: Record<string, any> = {};
         let fantasyPoints: number = 0;
-        if (Array.isArray(week.stats)) {
+        const hasStatsArray = Array.isArray(week.stats) && week.stats.length > 0;
+        // Treat current week and future weeks as not-yet-played
+        const isFutureOrCurrent = currentWeek !== null && Number(week.week) >= currentWeek;
+
+        // Derive bye flag: either provided in week (week.bye === 1) OR matches player.byeWeek
+        const playerBye = player?.byeWeek ?? player?.stats?.byeWeek;
+        const byeFlag = (Number(week.bye) === 1) || (playerBye != null && String(playerBye) !== "" && Number(playerBye) === Number(week.week));
+
+        if (hasStatsArray && !isFutureOrCurrent && !byeFlag) {
             week.stats.forEach((s: any) => {
                 if (s?.stat?.stat_id) {
-                    statMap[s.stat.stat_id] = s.stat.value;
-                    // Calculate fantasy points for this stat
-                    const modifier = statModifiers[s.stat.stat_id] ?? 0;
-                    const value = parseFloat(s.stat.value ?? "0");
-                    fantasyPoints += modifier * value;
+                    const id = s.stat.stat_id;
+                    const raw = s.stat.value ?? "0";
+                    const numVal = parseFloat(raw);
+                    // Always accumulate numeric value for fantasy point calcs (treat NaN as 0)
+                    const addVal = isNaN(numVal) ? 0 : numVal;
+                    const modifier = statModifiers[id] ?? 0;
+                    fantasyPoints += modifier * addVal;
+
+                    // For display: individual stat zeros become "-", non-zero keep original raw value
+                    statMap[id] = !isNaN(numVal) && numVal === 0 ? "-" : raw;
                 }
             });
         }
-        // If it's a bye week, set all stat values to "-" and fantasy points to "-"
+
+        // Determine display value for per-week fantasy points:
+        // - Bye weeks, current, or future weeks -> "-"
+        // - Completed weeks -> numeric string (including "0.00")
         let fantasyPointsDisplay: number | string;
-        if (week.bye === 1) {
+        if (byeFlag || isFutureOrCurrent) {
+            // mark all stat fields as "-" for bye, current, or future weeks
             Object.keys(statMap).forEach(key => {
                 statMap[key] = "-";
             });
             fantasyPointsDisplay = "-";
         } else {
-            fantasyPointsDisplay = fantasyPoints.toFixed(2);
+            // Completed week: always numeric (including 0.00)
+            fantasyPointsDisplay = (Number.isNaN(Number(fantasyPoints)) ? 0 : fantasyPoints).toFixed(2);
         }
+
         return {
             week: week.week,
-            bye: week.bye,
+            bye: byeFlag ? 1 : 0,
             fantasyPoints: fantasyPointsDisplay,
             ...statMap,
         };
@@ -327,7 +361,7 @@ export default function PlayerViewer({
                                 {player.position} - {player.team}
                             </div>
                             <div className="text-slate-400 text-xs mt-1">
-                                Bye Week: {player.stats?.byeWeek ?? "-"}
+                                Bye Week: {player.byeWeek ?? player.stats?.byeWeek ?? "-"}
                             </div>
                         </div>
                         {(
@@ -433,7 +467,15 @@ export default function PlayerViewer({
                                                     onClick={() => setExpandedRow(expandedRow === idx ? null : idx)}
                                                 >
                                                     <td className="py-2 whitespace-nowrap text-center">{g.week}</td>
-                                                    <td className="py-2 whitespace-nowrap text-center font-bold">{g.fantasyPoints}</td>
+                                                    <td className="py-2 whitespace-nowrap text-center font-bold">
+                                                        {(() => {
+                                                            const fp = g.fantasyPoints;
+                                                            // Future/current/bye weeks use "-" as set above
+                                                            if (fp === "-" || fp === undefined || fp === null) return "-";
+                                                            const n = Number(fp);
+                                                            return isNaN(n) ? "0.00" : n.toFixed(2);
+                                                        })()}
+                                                    </td>
                                                     {statColumns
                                                         .filter(field =>
                                                             weekStats.some((row: any) =>
@@ -455,28 +497,31 @@ export default function PlayerViewer({
                                                         ))}
                                                 </tr>
                                                 {/* Animated collapsible expanded row */}
-                                                <tr>
-                                                    <td colSpan={2 + statColumns.length} className="bg-slate-800 px-4 py-2">
+                                                <tr className="border-0">
+                                                    <td colSpan={2 + statColumns.length} className="p-0 border-0">
+                                                        {/* Collapsible content: when collapsed this wrapper has maxHeight 0 and no padding so rows sit flush */}
                                                         <div
-                                                            ref={expandedRow === idx ? collapseRef : undefined}
-                                                            className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${expandedRow === idx ? "opacity-100" : "opacity-0"}`}
+                                                            className="overflow-hidden w-full"
                                                             style={{
-                                                                transitionProperty: "max-height, opacity",
-                                                                maxHeight: expandedRow === idx ? undefined : "0px",
+                                                                transition: "max-height 300ms ease, opacity 200ms ease",
+                                                                maxHeight: expandedRow === idx ? `${rowHeights[idx] ?? (contentRefs.current[idx]?.scrollHeight ?? 0)}px` : "0px",
+                                                                opacity: expandedRow === idx ? 1 : 0,
                                                             }}
+                                                            aria-hidden={expandedRow !== idx}
                                                         >
-                                                            <div ref={expandedRow === idx ? contentRef : undefined} className="flex flex-wrap gap-4">
-                                                                {expandedRow === idx && (
-                                                                    getSummaryStats(g, statColumns).length === 0 ? (
-                                                                        <span className="text-slate-400">-</span>
-                                                                    ) : (
-                                                                        getSummaryStats(g, statColumns).map((stat, i) => (
-                                                                            <div key={i} className="flex gap-2 items-center">
-                                                                                <span className="font-semibold text-blue-300">{stat.label}:</span>
-                                                                                <span className="text-white">{stat.value}</span>
-                                                                            </div>
-                                                                        ))
-                                                                    )
+                                                            <div
+                                                                ref={(el) => { contentRefs.current[idx] = el; }}
+                                                                className="px-4 py-2 bg-slate-800 flex flex-wrap gap-4"
+                                                            >
+                                                                {getSummaryStats(g, statColumns).length === 0 ? (
+                                                                    <span className="text-slate-400">-</span>
+                                                                ) : (
+                                                                    getSummaryStats(g, statColumns).map((stat, i) => (
+                                                                        <div key={i} className="flex gap-2 items-center">
+                                                                            <span className="font-semibold text-blue-300">{stat.label}:</span>
+                                                                            <span className="text-white">{stat.value}</span>
+                                                                        </div>
+                                                                    ))
                                                                 )}
                                                             </div>
                                                         </div>
@@ -522,12 +567,16 @@ export default function PlayerViewer({
                                             <td className="py-2 whitespace-nowrap text-center font-bold">Season</td>
                                             <td className="py-2 whitespace-nowrap text-center font-bold">
                                                 {
-                                                    // Total fantasy points
-                                                    weekStats.reduce((sum, g) =>
-                                                        g && typeof g.fantasyPoints === "string" && g.fantasyPoints !== "-"
-                                                            ? sum + Number(g.fantasyPoints)
-                                                            : sum
-                                                        , 0).toFixed(2)
+                                                    // Total fantasy points (display "-" if total is zero)
+                                                    (() => {
+                                                        const sum = weekStats.reduce((sumAcc, g) => {
+                                                            if (!g || g.fantasyPoints === "-" || g.fantasyPoints === undefined || g.fantasyPoints === null) return sumAcc;
+                                                            const n = Number(g.fantasyPoints);
+                                                            return sumAcc + (isNaN(n) ? 0 : n);
+                                                        }, 0);
+                                                        // Exception: total fantasy points should always display a numeric value (including 0.00)
+                                                        return sum.toFixed(2);
+                                                    })()
                                                 }
                                             </td>
                                             {(() => {

@@ -29,6 +29,7 @@ interface Player {
     pick: number;
     round: number;
   };
+  byeWeek?: string;
 }
 
 interface Team {
@@ -158,9 +159,19 @@ export default function KeepersPage() {
   const keeperMap: Record<string, string> = {};
   const keeperTeams = keepers[selectedYear]?.Teams ?? [];
   keeperTeams.forEach((team: { TeamID: string; keeper: string }) => {
-    if (team.keeper) {
-      keeperMap[team.TeamID] = team.keeper;
-    }
+    if (team.keeper) keeperMap[team.TeamID] = team.keeper;
+  });
+
+  // Build sets of keepers for the previous two seasons (any manager)
+  const prevYear = selectedYear ? String(Number(selectedYear) - 1) : "";
+  const prevPrevYear = selectedYear ? String(Number(selectedYear) - 2) : "";
+  const prevKeeperSet = new Set<string>();
+  const prevPrevKeeperSet = new Set<string>();
+  (keepers[prevYear]?.Teams ?? []).forEach((t: { TeamID: string; keeper: string }) => {
+    if (t.keeper) prevKeeperSet.add(t.keeper);
+  });
+  (keepers[prevPrevYear]?.Teams ?? []).forEach((t: { TeamID: string; keeper: string }) => {
+    if (t.keeper) prevPrevKeeperSet.add(t.keeper);
   });
 
   const visibleTeams = selectedTeamId
@@ -169,11 +180,19 @@ export default function KeepersPage() {
 
   const handlePlayerClick = async (player: Player, teamAbbr: string) => {
     setModalLoading(true);
+    const byeWeek =
+      (player as any).byeWeek ??
+      (player as any).bye_weeks ??
+      (player as any).stats?.byeWeek ??
+      (player as any).stats?.bye_weeks?.week ??
+      null;
+
     setModalPlayer({
       ...player,
       season: String(Number(selectedYear) - 1),
       headshotUrl: player.image_url,
       team: teamAbbr,
+      byeWeek,
     });
     try {
       const year = String(Number(selectedYear) - 1);
@@ -244,12 +263,19 @@ export default function KeepersPage() {
       }
 
       setModalStats(weeks);
+      const byeWeekFinal =
+        (player as any).byeWeek ??
+        (player as any).bye_weeks ??
+        (player as any).stats?.byeWeek ??
+        (player as any).stats?.bye_weeks?.week ??
+        null;
       setModalPlayer({
         ...player,
         season: String(Number(selectedYear) - 1),
         headshotUrl: player.image_url,
         team: teamAbbr,
         stats: { fanPts: seasonFanPoints }, // <-- pass to PlayerViewer
+        byeWeek: byeWeekFinal,
       });
     } catch {
       setModalStats([]);
@@ -392,19 +418,22 @@ export default function KeepersPage() {
                   {/* Players List - Single column on mobile, responsive grid */}
                   <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                     {team.players.map((player) => {
-                      // Is this player the keeper?
+                      // Is this player the keeper? Also detect if they were kept the previous two seasons (any manager)
                       const isKeeper = keeperName && player.name === keeperName;
+                      const keptPreviousTwoSeasons = prevKeeperSet.has(player.name) && prevPrevKeeperSet.has(player.name);
                       return (
                         <li
                           key={`${team.id}-${player.player_id || player.name}`}
                           className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm min-w-0
-                            ${isKeeper
-                              ? "bg-yellow-700 border-yellow-600"
-                              : player.draftPick
-                                ? player.draftPick.round >= 2
-                                  ? "bg-emerald-900 border-emerald-700"
-                                  : "bg-red-900 border-red-700"
-                                : "bg-[#232323] border-[#333]"
+                            ${keptPreviousTwoSeasons
+                              ? "bg-red-900 border-red-700" // force ineligible style if kept in both prior seasons
+                              : isKeeper
+                                ? "bg-yellow-700 border-yellow-600"
+                                : player.draftPick
+                                  ? player.draftPick.round >= 2
+                                    ? "bg-emerald-900 border-emerald-700"
+                                    : "bg-red-900 border-red-700"
+                                  : "bg-[#232323] border-[#333]"
                             }`}
                         >
                           {/* Player Image - Smaller on mobile */}
@@ -506,19 +535,22 @@ export default function KeepersPage() {
                   {/* Players List - Single column on mobile, responsive grid */}
                   <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                     {team.players.map((player) => {
-                      // Is this player the keeper?
+                      // Is this player the keeper? Also detect if they were kept the previous two seasons (any manager)
                       const isKeeper = keeperName && player.name === keeperName;
+                      const keptPreviousTwoSeasons = prevKeeperSet.has(player.name) && prevPrevKeeperSet.has(player.name);
                       return (
                         <li
                           key={`${team.id}-${player.player_id || player.name}`}
                           className={`flex items-center gap-3 border rounded-lg p-3 shadow-sm min-w-0
-                            ${isKeeper
-                              ? "bg-yellow-700 border-yellow-600"
-                              : player.draftPick
-                                ? player.draftPick.round >= 2
-                                  ? "bg-emerald-900 border-emerald-700"
-                                  : "bg-red-900 border-red-700"
-                                : "bg-[#232323] border-[#333]"
+                            ${keptPreviousTwoSeasons
+                              ? "bg-red-900 border-red-700" // force ineligible style if kept in both prior seasons
+                              : isKeeper
+                                ? "bg-yellow-700 border-yellow-600"
+                                : player.draftPick
+                                  ? player.draftPick.round >= 2
+                                    ? "bg-emerald-900 border-emerald-700"
+                                    : "bg-red-900 border-red-700"
+                                  : "bg-[#232323] border-[#333]"
                             }`}
                         >
                           {/* Player Image - Smaller on mobile */}
@@ -687,6 +719,11 @@ function mergeRosterWithDraft(rosterData: any, draftPicks: DraftPick[]): Team[] 
     const position = base.find((obj: any) => obj.display_position)?.display_position || "";
     const teamAbbr = base.find((obj: any) => obj.editorial_team_abbr)?.editorial_team_abbr || "";
     const imageUrl = base.find((obj: any) => obj.image_url)?.image_url || "";
+    // Extract bye week from the player base object when present
+    const byeObj = base.find((obj: any) => obj && obj.bye_weeks);
+    const byeValue = byeObj && byeObj.bye_weeks && byeObj.bye_weeks.week
+      ? String(byeObj.bye_weeks.week)
+      : undefined;
 
     const fullPlayerKey = `${leaguePrefix}.p.${playerId}`;
     const draftPick = draftPicks.find((pick) => pick.player_key === fullPlayerKey);
@@ -697,6 +734,7 @@ function mergeRosterWithDraft(rosterData: any, draftPicks: DraftPick[]): Team[] 
       position,
       team_abbr: teamAbbr,
       image_url: imageUrl,
+      byeWeek: byeValue,
       draftPick: draftPick
         ? { pick: draftPick.pick, round: draftPick.round }
         : undefined,

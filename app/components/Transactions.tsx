@@ -135,6 +135,19 @@ const TransactionsBox: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [playerFilter, setPlayerFilter] = useState<string>("");
+
+    // Derived lists / counts
+    const totalTransactions = transactions.length;
+    // Only apply the playerFilter when the "View All" modal is open — compute modalFilteredTransactions for modal usage
+    const modalFilteredTransactions = playerFilter.trim()
+        ? transactions.filter(txn =>
+            txn.players.some(p =>
+                (p.name?.full || "").toString().toLowerCase().includes(playerFilter.toLowerCase())
+            )
+        )
+        : transactions;
+    const modalVisibleCount = modalFilteredTransactions.length;
 
     useEffect(() => {
         async function fetchTransactions() {
@@ -288,7 +301,7 @@ const TransactionsBox: React.FC = () => {
         if (isTrade) {
             teamName = "Trade";
         }
-        
+
         // Responsive font size: shrink if team name is long
         const isLong = teamName.length > 18;
         const teamNameClass = isLong
@@ -296,18 +309,18 @@ const TransactionsBox: React.FC = () => {
             : "font-bold text-lg text-white truncate max-w-[60vw] sm:max-w-none";
 
         return (
-             <li
-                 key={txn.transaction_id}
-                 className="rounded-xl bg-[#101214] mb-3 px-4 py-3 flex flex-col"
-             >
+            <li
+                key={txn.transaction_id}
+                className="rounded-xl bg-[#101214] mb-3 px-4 py-3 flex flex-col"
+            >
                 <div className="flex flex-row items-center justify-between flex-nowrap">
                     <span className={teamNameClass}>{teamName}</span>
                     <span className="text-gray-300 text-sm ml-2 whitespace-nowrap flex-shrink-0">{formatDate(txn.timestamp)}</span>
                 </div>
                 {renderTransactionPlayers(txn.players, txn)}
-             </li>
-         );
-     }
+            </li>
+        );
+    }
 
     return (
         <>
@@ -321,13 +334,19 @@ const TransactionsBox: React.FC = () => {
                 <div className="bg-[#18191b] rounded-2xl shadow-lg p-4 w-full max-w-lg mx-auto mb-10 sm:px-4 px-3">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold text-emerald-300">Latest Transactions</h3>
-                        <button
-                            className="text-blue-400 font-semibold flex items-center gap-1 text-base"
-                            onClick={() => setShowModal(true)}
-                        >
-                            View All <span className="text-blue-400 text-xl">&rarr;</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <div className="text-sm text-gray-300 mr-2">Total: <span className="font-semibold text-white">{totalTransactions}</span></div>
+                            <button
+                                className="text-blue-400 font-semibold flex items-center gap-1 text-base"
+                                onClick={() => setShowModal(true)}
+                            >
+                                View All <span className="text-blue-400 text-xl">&rarr;</span>
+                            </button>
+                        </div>
                     </div>
+
+                    {/* NOTE: Filter input moved into the "View All" modal. Preview shows the latest 5 transactions unfiltered */}
+
                     {loading ? (
                         <div className="text-gray-400 py-8 text-center">Loading...</div>
                     ) : transactions.length === 0 ? (
@@ -347,10 +366,29 @@ const TransactionsBox: React.FC = () => {
                                 >
                                     &times;
                                 </button>
-                                <h3 className="text-xl font-bold text-emerald-300 mb-4 text-center">All Transactions</h3>
+                                <h3 className="text-xl font-bold text-emerald-300 mb-4 text-center">All Transactions ({modalVisibleCount} of {totalTransactions})</h3>
+                                {/* Filter input (only in modal) */}
+                                <div className="mb-3 flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Filter by player name..."
+                                        value={playerFilter}
+                                        onChange={(e) => setPlayerFilter(e.target.value)}
+                                        className="w-full bg-[#0f1720] text-sm text-gray-200 placeholder-gray-500 border border-[#2b3137] rounded px-3 py-2 focus:outline-none"
+                                    />
+                                    {playerFilter && (
+                                        <button
+                                            onClick={() => setPlayerFilter("")}
+                                            className="text-sm text-gray-400 hover:text-gray-200"
+                                            aria-label="Clear filter"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="max-h-[70vh] overflow-y-auto">
                                     <ul>
-                                        {transactions.map(renderTransactionRow)}
+                                        {modalFilteredTransactions.map(renderTransactionRow)}
                                     </ul>
                                 </div>
                             </div>

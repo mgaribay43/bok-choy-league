@@ -251,18 +251,22 @@ export default function IceTracker() {
                                         isGameActiveOrFinal = isFinal || isInProgress;
                                         isGameFinal = isFinal;
 
-                                        // Show teams on top line, then only show a single status line (Final or Live)
+                                        // Show teams on top line, then a single status line:
+                                        // - If final -> show "Game Final – Iced"
+                                        // - If in progress -> show "Live: <statusDetail>"
+                                        // - Otherwise -> show the plain status/statusDetail once
                                         gameInfo = (
                                             <div className="text-xs text-right mt-1">
                                                 <div className="text-gray-300 font-semibold">
                                                     {game.awayTeam?.abbreviation} @ {game.homeTeam?.abbreviation}
                                                 </div>
-                                                <div className="text-gray-400">{game.statusDetail || game.status}</div>
                                                 {isFinal ? (
                                                     <div className="text-red-400 font-semibold">Game Final – Iced ❄️</div>
                                                 ) : isInProgress ? (
-                                                    <span className="text-blue-300 font-semibold">Live: {game.statusDetail}</span>
-                                                ) : null}
+                                                    <div className="text-blue-300 font-semibold">Live: {game.statusDetail || game.status}</div>
+                                                ) : (
+                                                    <div className="text-gray-400">{game.statusDetail || game.status}</div>
+                                                )}
                                             </div>
                                         );
                                     } else {

@@ -2,16 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
-import dynamic from "next/dynamic";
 import { getCurrentWeek } from "./globalUtils/getCurrentWeek";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityTracker";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-
-// Dynamically load IceTracker to avoid SSR/polling issues
-const IceTracker = dynamic(() => import("./ices/IceTracker"), { ssr: false, loading: () => <div /> });
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -233,7 +228,7 @@ const AvatarBox = ({
 }) => {
   const cleanRecord = (record || "").replace(/[()]/g, ""); // no parentheses
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <img
         src={src}
         alt={alt}
@@ -244,8 +239,6 @@ const AvatarBox = ({
           objectFit: "cover",
           border: "none",
           background: "#18191b",
-          display: "block",
-          flexShrink: 0,
         }}
       />
       <span
@@ -700,8 +693,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [matchups, setMatchups] = useState<Matchup[]>([]);
   const [nflGames, setNflGames] = useState<NFLGame[]>([]);
   const [currentWeek, setCurrentWeek] = useState<number>(1);
-  // default to full regular season so dropdown shows weeks immediately
-  const [maxWeek, setMaxWeek] = useState<number>(17);
+  const [maxWeek, setMaxWeek] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [nflLoading, setNflLoading] = useState(true);
   const [isMatchupStarted, setIsMatchupStarted] = useState(false);
@@ -713,13 +705,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
   const router = useRouter(); // <-- add this here
-
-  // IceTracker dropdown state (mirror Ices.tsx behaviour)
-  const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
-  const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
-  useEffect(() => {
-    setIceTrackerMounted(true);
-  }, []);
 
   // Responsive state
   const [isDesktop, setIsDesktop] = useState(
@@ -813,174 +798,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
       if (!updateOnlyScores && !useViewWeek) setCurrentWeek(weekParam);
 
-      // Try to read cached matchups from Firestore first
-      const season = String(new Date().getFullYear());
-      const db = getFirestore();
-      const cacheDocRef = doc(db, "Matchups", `${season}_${weekParam}`);
-      let usedCached = false;
-      try {
-        const cacheSnap = await getDoc(cacheDocRef);
-        const cached = cacheSnap.exists() ? (cacheSnap.data() as any) : null;
-        if (cached && (cached.rawMatchupsJson || cached.rawMatchups)) {
-          // pollMatchupsData now stores rawMatchupsJson (string). Support legacy rawMatchups (object) too.
-          let matchupsData: any = null;
-          if (cached.rawMatchupsJson) {
-            try {
-              matchupsData = JSON.parse(cached.rawMatchupsJson);
-            } catch (err) {
-              console.warn("Failed to parse cached rawMatchupsJson, falling back to rawMatchups object:", err);
-              matchupsData = cached.rawMatchups ?? null;
-            }
-          } else {
-            matchupsData = cached.rawMatchups;
-          }
-          // If parsing failed or no usable data, fall through to live fetch
-          if (!matchupsData) {
-            throw new Error("No usable cached matchups");
-          }
-           const scoreboard = cached.rawScoreboard ?? null; // optional
-           const formattedMatchups = Object.values(matchupsData)
-             .filter(
-               (matchup: any) =>
-                 matchup &&
-                 matchup.matchup &&
-                 matchup.matchup["0"] &&
-                 matchup.matchup["0"].teams
-             )
-             .map((matchup: any) => {
-               const teams = matchup.matchup["0"].teams;
-               const team1 = teams["0"].team;
-               const team2 = teams["1"].team;
-               const started = matchup.matchup.status !== "preevent";
-               const recapAvailable =
-                 matchup.matchup.is_matchup_recap_available === 1 ||
-                 matchup.matchup.is_matchup_recap_available === "1";
-               const recapUrl = recapAvailable ? matchup.matchup.matchup_recap_url : undefined;
-
-               const team1Name =
-                 team1?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 1";
-               const team2Name =
-                 team2?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 2";
-               const team1Score = started
-                 ? parseFloat(team1?.[1]?.team_points?.total || "0")
-                 : 0;
-               const team2Score = started
-                 ? parseFloat(team2?.[1]?.team_points?.total || "0")
-                 : 0;
-               const team1Logo =
-                 team1?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
-                   ?.team_logo?.url ||
-                 "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-               const team2Logo =
-                 team2?.[0]?.find((item: any) => item.team_logos)?.team_logos?.[0]
-                   ?.team_logo?.url ||
-                 "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-               const isFinished = scoreboard?.is_finished === 1;
-               let winnerOnTop = false;
-               let t1 = team1Name,
-                 t2 = team2Name,
-                 s1 = team1Score,
-                 s2 = team2Score,
-                 r1 = "",
-                 r2 = "",
-                 a1 = team1Logo,
-                 a2 = team2Logo;
-               // cached data may not include standings -> skip reordering by winner if records missing
-               const team1WinProbRaw = team1?.[1]?.win_probability;
-               const team2WinProbRaw = team2?.[1]?.win_probability;
-               const team1WinPct =
-                 typeof team1WinProbRaw === "number"
-                   ? team1WinProbRaw * 100
-                   : 0;
-               const team2WinPct =
-                 typeof team2WinProbRaw === "number"
-                   ? team2WinProbRaw * 100
-                   : 0;
-               const team1Proj = team1?.[1]?.team_projected_points?.total || "";
-               const team2Proj = team2?.[1]?.team_projected_points?.total || "";
-               const team1Id = team1?.[0]?.find((item: any) => item.team_id)?.team_id ?? 1;
-               const team2Id = team2?.[0]?.find((item: any) => item.team_id)?.team_id ?? 2;
-               const weekNum = weekParam;
-               return {
-                 team1: t1,
-                 team2: t2,
-                 displayValue1: s1.toFixed(2),
-                 displayValue2: s2.toFixed(2),
-                 record1: r1,
-                 record2: r2,
-                 avatar1: a1,
-                 avatar2: a2,
-                 winnerOnTop,
-                 winPct1: team1WinPct,
-                 winPct2: team2WinPct,
-                 projected1: team1Proj,
-                 projected2: team2Proj,
-                 recapUrl,
-                 recapAvailable,
-                 team1Id,
-                 team2Id,
-                 week: weekNum,
-               };
-             });
-
-          if (updateOnlyScores) {
-            setMatchups((prevMatchups) => {
-              if (!prevMatchups.length) return formattedMatchups;
-              return prevMatchups.map((old, i) => {
-                const fresh = formattedMatchups[i];
-                if (!fresh) return old;
-                const changed =
-                  old.displayValue1 !== fresh.displayValue1 ||
-                  old.displayValue2 !== fresh.displayValue2 ||
-                  old.projected1 !== fresh.projected1 ||
-                  old.projected2 !== fresh.projected2 ||
-                  old.winPct1 !== fresh.winPct1 ||
-                  old.winPct2 !== fresh.winPct2 ||
-                  old.winnerOnTop !== fresh.winnerOnTop;
-                if (changed) {
-                  return {
-                    ...old,
-                    displayValue1: fresh.displayValue1,
-                    displayValue2: fresh.displayValue2,
-                    projected1: fresh.projected1,
-                    projected2: fresh.projected2,
-                    winPct1: fresh.winPct1,
-                    winPct2: fresh.winPct2,
-                    winnerOnTop: fresh.winnerOnTop,
-                  };
-                }
-                return old;
-              });
-            });
-          } else {
-            setMatchups(formattedMatchups);
-          }
-
-          usedCached = true;
-        }
-      } catch (err) {
-        // ignore cache read errors and fall back to live fetch
-        console.warn("Error reading matchups cache:", err);
-      }
-
-      if (usedCached) {
-        // we used cached data; done
-        setLoading(false);
-        return;
-      }
-
-      // If not cached, fetch live scoreboard and cache it for future requests
       const response = await fetch(
-        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=${season}&week=${weekParam}`
+        `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=scoreboard&year=2025&week=${weekParam}`
       );
-
-      if (!response.ok) {
-        console.error(`[Matchups] Yahoo scoreboard API error: ${response.status}`);
-        if (!updateOnlyScores) setMatchups([]);
-        setLoading(false);
-        return;
-      }
-
       const data = await response.json();
       const scoreboard = data?.fantasy_content?.league?.[1]?.scoreboard?.["0"];
       const maxW =
@@ -1002,7 +822,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       let records: Record<string, string> = {};
       if (!updateOnlyScores) {
         const standingsRes = await fetch(
-          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=${season}`
+          `https://us-central1-bokchoyleague.cloudfunctions.net/yahooAPI?type=standings&year=2025`
         );
         const standingsJson = await standingsRes.json();
         const teamsObj =
@@ -1034,11 +854,23 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           const teams = matchup.matchup["0"].teams;
           const team1 = teams["0"].team;
           const team2 = teams["1"].team;
-          const started = matchup.matchup.status !== "preevent";
-          const recapAvailable =
-            matchup.matchup.is_matchup_recap_available === 1 ||
-            matchup.matchup.is_matchup_recap_available === "1";
-          const recapUrl = recapAvailable ? matchup.matchup.matchup_recap_url : undefined;
+          const started = (matchup.matchup.status || matchup.matchup["0"]?.status) !== "preevent";
+          const rawRecapFlag =
+            matchup.matchup.is_matchup_recap_available ??
+            matchup.matchup["0"]?.is_matchup_recap_available ??
+            false;
+          const rawRecapUrl =
+            matchup.matchup.matchup_recap_url ??
+            matchup.matchup["0"]?.matchup_recap_url ??
+            matchup.matchup.recap_url ??
+            matchup.matchup.matchup_recap;
+          const recapAvailable = !!(
+            rawRecapUrl ||
+            rawRecapFlag === 1 ||
+            rawRecapFlag === "1" ||
+            rawRecapFlag === true
+          );
+          const recapUrl = recapAvailable ? String(rawRecapUrl || "") : undefined;
 
           const team1Name =
             team1?.[0]?.find((item: any) => item.name)?.name || "Unknown Team 1";
@@ -1122,7 +954,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
       if (updateOnlyScores) {
         setMatchups((prevMatchups) => {
+          // If no previous matchups, set all
           if (!prevMatchups.length) return formattedMatchups;
+          // Only update scores, projected scores, and win probabilities if changed
           return prevMatchups.map((old, i) => {
             const fresh = formattedMatchups[i];
             if (!fresh) return old;
@@ -1152,71 +986,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       } else {
         setMatchups(formattedMatchups);
       }
-
-      // Cache simplified + raw matchups to Firestore so future loads read from cache
-      try {
-        const simplified: any[] = [];
-        const matchupCount = parseInt(Object.keys(matchupsData).length ? (matchupsData.count ?? Object.keys(matchupsData).length) : "0", 10);
-        for (let i = 0; i < matchupCount; i++) {
-          const raw = matchupsData[i.toString()]?.matchup;
-          if (!raw) continue;
-          const matchupId = raw[1]?.matchup_id ?? `${i}`;
-          const status = raw[1]?.status ?? "preevent";
-          const teamsRaw = raw[0]?.teams;
-          const teams: any[] = [];
-          if (Array.isArray(teamsRaw)) {
-            for (const t of teamsRaw) {
-              const team = t?.team;
-              const meta = team?.[0] || [];
-              const stats = team?.[1] || {};
-              const teamId = meta.find((it: any) => it.team_id)?.team_id ?? "";
-              const name = meta.find((it: any) => it.name)?.name ?? meta.find((it: any) => it.nickname)?.nickname ?? "";
-              const logo = meta.find((it: any) => it.team_logos)?.team_logos?.[0]?.team_logo?.url ?? "";
-              const currentScore = stats.home_or_away_score ?? stats.current_score ?? stats?.team_points ?? "";
-              teams.push({
-                teamId,
-                name,
-                logo,
-                currentScore,
-              });
-            }
-          }
-          simplified.push({
-            matchupId,
-            status,
-            teams,
-          });
-        }
-
-        // Firestore can reject deeply nested objects from the Yahoo payload.
-        // Store the raw payload as a JSON string to avoid "invalid nested entity" errors.
-        let rawMatchupsJson = "";
-        try {
-          rawMatchupsJson = JSON.stringify(matchupsData);
-        } catch (err) {
-          console.warn("Failed to stringify matchupsData before caching:", err);
-          rawMatchupsJson = "";
-        }
-
-        await setDoc(cacheDocRef, {
-          season,
-          week: weekParam,
-          updatedAt: serverTimestamp(),
-          estTimeLabel: new Date().toLocaleString("en-US", {
-            timeZone: "America/New_York",
-            weekday: "short",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true,
-          }),
-          simplifiedMatchups: simplified,
-          rawMatchupsJson,
-        }, { merge: true });
-      } catch (err) {
-        console.warn("Failed to write matchups cache:", err);
-      }
-
     } catch {
       if (!updateOnlyScores) setMatchups([]);
     } finally {
@@ -1247,9 +1016,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
   // POLLING LOGIC
   useEffect(() => {
-    // don't start polling until initial fetch finished
-    if (initializing) return;
-
     // Always poll every 15 seconds, regardless of matchup status
     pollingRef.current = setInterval(() => {
       fetchMatchups(viewWeek !== null ? viewWeek : currentWeek, true, !!viewWeek);
@@ -1270,7 +1036,9 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         nflPollingRef.current = null;
       }
     };
-  }, [viewWeek, currentWeek, initializing]);
+    // Only rerun when week changes
+    // eslint-disable-next-line
+  }, [viewWeek, currentWeek]);
 
   const handlePrevWeek = () => {
     const week = (viewWeek !== null ? viewWeek : currentWeek) - 1;
@@ -1386,7 +1154,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
       (max, m) => Math.max(max, getCardContentLength(m)),
       0
     );
-    const baseWidth = 400;
+    const baseWidth = 300;
     const widthPerChar = 8;
     const cardWidth = baseWidth + Math.max(0, maxContentLength - 20) * widthPerChar;
 
@@ -1395,7 +1163,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
     // For both variants, repeat items enough so marquee content is longer than viewport
     const marginBetween = 20;
-    const singleCardTotal = (isSmall ? 160 : cardWidth) + marginBetween;
+    const singleCardTotal = (isSmall ? 140 : cardWidth) + marginBetween;
     const count = matchups.length;
     const viewport = typeof window !== "undefined" ? window.innerWidth : 1200;
     const targetWidth = viewport * 1.5;
@@ -1419,13 +1187,11 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             alignItems: "center",
             gap: 10,
             marginRight: marginBetween,
-            minWidth: 160,
+            minWidth: 120,
             padding: "6px 8px",
             borderRadius: 12,
             background: "rgba(16,17,18,0.35)",
             border: "1px solid rgba(60,60,60,0.6)",
-            flex: "0 0 auto", // prevent shrink/grow in marquee
-            verticalAlign: "middle",
           }}
           onClick={(e) => {
             e.preventDefault();
@@ -1442,7 +1208,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           <img
             src={logo1}
             alt={m.team1}
-            style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block", flexShrink: 0 }}
+            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
           />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 46 }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#e5e7eb", lineHeight: 1 }}>{score1}</div>
@@ -1454,84 +1220,81 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
           <img
             src={logo2}
             alt={m.team2}
-            style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block", flexShrink: 0 }}
+            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
           />
         </div>
       );
     };
 
-    // increase base width so marquee cards have more horizontal room and avoid clipping
-        // (duplicate declarations removed; card width uses the earlier cardBaseWidth variable)
-         // outer wrapper: full width, clip duplicated content, prevent horizontal touch pan
-         return (
-           <div
-             style={{
-           width: "100%",
-           background: "transparent",
-           padding: isSmall ? "6px 6px" : "8px 0",
-           cursor: "pointer",
-           overflowX: "hidden",
-           WebkitOverflowScrolling: "auto",
-           touchAction: "pan-y",
-         }}
-         onClick={() => router.push("/matchups")}
-         tabIndex={0}
-         role="button"
-         aria-label="Go to matchups"
-         onKeyDown={(e) => {
-           if (e.key === "Enter" || e.key === " ") router.push("/matchups");
-         }}
-       >
-         <Marquee
-           gradient={false}
-           speed={isSmall ? 35 : 60}
-           pauseOnHover
-           pauseOnClick
-           loop={0}
-           play
-           style={{ width: "100%", overflow: "hidden", background: "transparent" }}
-         >
+    // outer wrapper: full width, clip duplicated content, prevent horizontal touch pan
+    return (
+      <div
+        style={{
+          width: "100%",
+          background: "transparent",
+          padding: isSmall ? "6px 6px" : "8px 0",
+          cursor: "pointer",
+          overflowX: "hidden",
+          WebkitOverflowScrolling: "auto",
+          touchAction: "pan-y",
+        }}
+        onClick={() => router.push("/matchups")}
+        tabIndex={0}
+        role="button"
+        aria-label="Go to matchups"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+        }}
+      >
+        <Marquee
+          gradient={false}
+          speed={isSmall ? 35 : 60}
+          pauseOnHover
+          pauseOnClick
+          loop={0}
+          play
+          style={{ width: "100%", overflow: "hidden", background: "transparent" }}
+        >
           {isSmall
             ? repeatedMatchups.map((m, idx) => <CompactItem key={`${m.team1}-${m.team2}-${idx}`} m={m} idx={idx} />)
             : repeatedMatchups.map((m, idx) => {
-                 // prefer ID-based lookup when available, fall back to name-based key
-                 const hasChart =
-                   (m.team1Id || m.team2Id)
-                     ? wpAvailableKeys.has(pairKeyById(m.team1Id, m.team2Id))
-                     : wpAvailableKeys.has(pairKey(m.team1, m.team2));
-                  return (
-                    <div
-                      key={`${m.team1}-${m.team2}-${idx}`}
-                     style={{ display: "inline-flex", alignItems: "stretch", marginRight: 32, flex: "0 0 auto" }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        router.push("/matchups");
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      aria-label="Go to matchups"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") router.push("/matchups");
-                      }}
-                    >
-                      <MatchupCard
-                        m={m}
-                        style={{
-                          width: cardWidth,
-                          minWidth: cardWidth,
-                          maxWidth: cardWidth,
-                          boxSizing: "border-box",
-                          display: "inline-block",
-                          verticalAlign: "top",
-                        }}
-                        hasChart={hasChart}
-                        showChartIcon={false}
-                        week={""}
-                      />
-                    </div>
-                  );
-                })}
+                // prefer ID-based lookup when available, fall back to name-based key
+                const hasChart =
+                  (m.team1Id || m.team2Id)
+                    ? wpAvailableKeys.has(pairKeyById(m.team1Id, m.team2Id))
+                    : wpAvailableKeys.has(pairKey(m.team1, m.team2));
+                 return (
+                   <div
+                     key={`${m.team1}-${m.team2}-${idx}`}
+                     style={{ display: "inline-block", marginRight: 32 }}
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       router.push("/matchups");
+                     }}
+                     tabIndex={0}
+                     role="button"
+                     aria-label="Go to matchups"
+                     onKeyDown={(e) => {
+                       if (e.key === "Enter" || e.key === " ") router.push("/matchups");
+                     }}
+                   >
+                     <MatchupCard
+                       m={m}
+                       style={{
+                         width: cardWidth,
+                         minWidth: cardWidth,
+                         maxWidth: cardWidth,
+                         display: "inline-block",
+                         verticalAlign: "top",
+                       }}
+                       hasChart={hasChart}
+                       showChartIcon={false}
+                       week={""}
+                     />
+                   </div>
+                 );
+               })}
         </Marquee>
       </div>
     );
@@ -1579,29 +1342,25 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                   <div
                     className="absolute top-full mt-1 left-0 bg-gray-800 border border-gray-600 rounded-lg min-w-[100px] max-h-60 overflow-y-auto shadow-xl z-30"
                   >
-                    {(() => {
-                      // ensure we always show weeks 1-17 at minimum
-                      const totalWeeks = Math.max(17, Number(maxWeek || 17));
-                      return Array.from({ length: totalWeeks }, (_, i) => i + 1).map((w) => {
-                        const isPlayoffWeek = w >= 15;
-                        const isLocked = isPlayoffWeek && currentWeek < 15;
-                        return (
-                          <button
-                            key={w}
-                            onClick={() => !isLocked && w !== weekToShow && handleWeekDropdown(w)}
-                            disabled={isLocked}
-                            className={`w-full px-4 py-2 text-left transition-colors ${w === weekToShow
-                              ? "bg-emerald-600 text-white"
-                              : isLocked
-                                ? "text-gray-500 cursor-not-allowed"
-                                : "text-white hover:bg-gray-700"
-                              }`}
-                          >
-                            Week {w}
-                          </button>
-                        );
-                      });
-                    })()}
+                    {Array.from({ length: maxWeek }, (_, i) => i + 1).map((w) => {
+                      const isPlayoffWeek = w >= 15;
+                      const isLocked = isPlayoffWeek && currentWeek < 15;
+                      return (
+                        <button
+                          key={w}
+                          onClick={() => !isLocked && w !== weekToShow && handleWeekDropdown(w)}
+                          disabled={isLocked}
+                          className={`w-full px-4 py-2 text-left transition-colors ${w === weekToShow
+                            ? "bg-emerald-600 text-white"
+                            : isLocked
+                              ? "text-gray-500 cursor-not-allowed"
+                              : "text-white hover:bg-gray-700"
+                            }`}
+                        >
+                          Week {w}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1630,7 +1389,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
                     }`}
                 >
                   <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   NFL Games
                 </button>
@@ -1656,34 +1415,6 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
         )}
       </div>
 
-
-        {/* Ice Tracker dropdown (same UX as Ices page) */}
-        <div className="max-w-3xl mx-auto mb-6 px-4">
-          <div className="w-full">
-            <button
-              className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-4 font-extrabold text-emerald-200 text-2xl shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
-              onClick={() => setIceTrackerOpen((open) => !open)}
-              aria-expanded={iceTrackerOpen}
-              aria-controls="ice-tracker-panel"
-            >
-              <span>Ice Tracker</span>
-              {iceTrackerOpen ? <ChevronUp size={28} /> : <ChevronDown size={28} />}
-            </button>
-
-            <div
-              id="ice-tracker-panel"
-              className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0"}`}
-              aria-hidden={!iceTrackerOpen}
-            >
-              {iceTrackerMounted && (
-                <div className={`${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
-                  <IceTracker />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        
       {/* Main Content - Grid Layout */}
       <div className="max-w-7xl mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -1785,6 +1516,5 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     </div>
   );
 };
-
 
 export default Matchups;

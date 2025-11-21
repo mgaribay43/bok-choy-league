@@ -1050,11 +1050,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   };
 
   const handleNextWeek = () => {
-    const week = (viewWeek !== null ? viewWeek : currentWeek) + 1;
-    if (week <= maxWeek) {
-      setViewWeek(week);
-      fetchMatchups(week, false, true);
-      fetchNFLGames(week, false);
+    const next = (viewWeek !== null ? viewWeek : currentWeek) + 1;
+    if (isWeekLocked(next)) return;
+    if (next <= maxWeek) {
+      setViewWeek(next);
+      fetchMatchups(next, false, true);
+      fetchNFLGames(next, false);
     }
   };
 
@@ -1098,6 +1099,12 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     const sb = b == null ? "" : String(b).trim();
     // sort so order doesn't matter
     return [sa, sb].sort().join(" | ");
+  };
+
+  // Lock logic for playoff weeks: same rule used in dropdown (weeks >= 15 locked until currentWeek >= 15)
+  const isWeekLocked = (w: number) => {
+    const isPlayoffWeek = w >= 15;
+    return isPlayoffWeek && currentWeek < 15;
   };
 
   // Fetch which matchups have WinProbabilities in Firestore for the current season/week
@@ -1367,7 +1374,7 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
 
               <button
                 onClick={handleNextWeek}
-                disabled={weekToShow >= maxWeek}
+                disabled={weekToShow >= maxWeek || isWeekLocked(weekToShow + 1)}
                 className="p-2 rounded-lg bg-gray-800 border border-gray-600 text-emerald-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 aria-label="Next Week"
               >

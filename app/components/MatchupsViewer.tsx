@@ -7,6 +7,8 @@ import { WinProbChartModal, type WinProbChartSelection } from "./WinProbabilityT
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 // Helper to build Yahoo Fantasy matchup link for the app/browser
 function getYahooMatchupLink({
@@ -689,6 +691,9 @@ interface MatchupsViewerProps {
 const pollingRef = { current: null as null | NodeJS.Timeout };
 const nflPollingRef = { current: null as null | NodeJS.Timeout };
 
+// Dynamically import IceTracker (avoid SSR issues) - same pattern as Ices page
+const IceTracker = dynamic(() => import("./ices/IceTracker"), { ssr: false, loading: () => <div /> });
+
 const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }) => {
   const [matchups, setMatchups] = useState<Matchup[]>([]);
   const [nflGames, setNflGames] = useState<NFLGame[]>([]);
@@ -705,6 +710,8 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
   const [wpAvailableKeys, setWpAvailableKeys] = useState<Set<string>>(new Set());
   const [initializing, setInitializing] = useState(true);
   const router = useRouter(); // <-- add this here
+  const [iceTrackerOpen, setIceTrackerOpen] = useState(false);
+  const [iceTrackerMounted, setIceTrackerMounted] = useState(false);
 
   // Responsive state
   const [isDesktop, setIsDesktop] = useState(
@@ -714,6 +721,10 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
   const [hideCompletedGames, setHideCompletedGames] = useState(true);
+
+  useEffect(() => {
+    setIceTrackerMounted(true);
+  }, []);
 
   // Responsive: update isDesktop and showNFL on resize
   useEffect(() => {
@@ -1420,6 +1431,34 @@ const Matchups: React.FC<MatchupsViewerProps> = ({ Marquee: useMarquee = false }
             </div>
           </div>
         )}
+
+        {/* Ice Tracker - same UX as Ices page (collapsible, mounted but lazy) */}
+        {!initializing && (
+          <div className="w-full max-w-7xl mx-auto mt-2 mb-6 px-2 sm:px-0">
+            <button
+              className="w-full flex items-center justify-between bg-[#181818] border border-[#22d3ee] rounded-xl px-6 py-3 font-extrabold text-emerald-200 text-lg shadow-md transition hover:bg-[#1a1a1a] focus:outline-none"
+              onClick={() => setIceTrackerOpen(o => !o)}
+              aria-expanded={iceTrackerOpen}
+              aria-controls="ice-tracker-panel"
+            >
+              <span>Ice Tracker</span>
+              {iceTrackerOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+
+            <div
+              id="ice-tracker-panel"
+              className={`transition-all duration-300 overflow-hidden ${iceTrackerOpen ? "max-h-[1200px] opacity-100 mt-4" : "max-h-0 opacity-0"} `}
+              aria-hidden={!iceTrackerOpen}
+            >
+              {iceTrackerMounted && (
+                <div className={`${iceTrackerOpen ? "" : "pointer-events-none select-none"}`}>
+                  <IceTracker />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Main Content - Grid Layout */}
